@@ -1,29 +1,55 @@
 from Utils import *
 
+def LCM_receive(header, dic={}):
+    global GAME_STATE
+    print("GAME STATE OUTSIDE: ", GAME_STATE)
+    print(header, dic)
 
-def start():
-    global payload
-    if payload != EMPTY_PAYLOAD:
-        # do action
-        print(payload)
-    payload = EMPTY_PAYLOAD
+    if GAME_STATE == STATE.SETUP:
+        func = SETUP_FUNCTIONS.get(header)
+        if func is not None:
+            func(dic)
+        else:
+            print("Invalid Event in Setup")
+    elif GAME_STATE == STATE.END:
+        func = END_FUNCTIONS.get(header)
+        if func is not None:
+            func(dic)
+        else:
+            print("Invalid Event in End")
+    elif GAME_STATE == STATE.CHANCELLOR:
+        func = CHANCELLOR_FUNCTIONS.get(header)
+        if func is not None:
+            func(dic)
+        else:
+            print("Invalid Event in Chancellor")
+    elif GAME_STATE == STATE.VOTE:
+        func = VOTE_FUNCTIONS.get(header)
+        if func is not None:
+            func(dic)
+        else:
+            print("Invalid Event in Vote")
+    elif GAME_STATE == STATE.POLICY:
+        func = POLICY_FUNCTIONS.get(header)
+        if func is not None:
+            func(dic)
+        else:
+            print("Invalid Event in Policy")
+    elif GAME_STATE == STATE.ACTION:
+        func = ACTION_FUNCTIONS.get(header)
+        if func is not None:
+            func(dic)
+        else:
+            print("Invalid Event in Action")
+    else:
+        print("Invalid State")
 
 
-###########################################
-# Evergreen Variables
-###########################################
+GAME_STATE = STATE.SETUP
 
-GAME_STATE = STATE.GAME_OVER
-
-###########################################
-# LCM Simulator
-###########################################
-
-EMPTY_PAYLOAD = []
-
-payload = EMPTY_PAYLOAD
-
-
-def lcm_send(load):
-    global payload
-    payload = load
+SETUP_FUNCTIONS = {}
+END_FUNCTIONS = {}
+CHANCELLOR_FUNCTIONS = {}
+VOTE_FUNCTIONS = {}
+POLICY_FUNCTIONS = {}
+ACTION_FUNCTIONS = {}

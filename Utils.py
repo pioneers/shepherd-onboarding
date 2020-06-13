@@ -1,8 +1,12 @@
+# pylint: disable=invalid-name
 class STATE():
     SETUP = "setup"
-    NOMINATION = "nomination"
+    END = "end"
+    CHANCELLOR = "chancellor"
     VOTE = "vote"
-    PRESIDENT_DISCARD = "president_discard"
-    CHANCELLOR_DISCARD = "chancellor_discard"
-    EXECUTIVE_ACTION = "executive_action"
-    GAME_OVER = "game_over"
+    POLICY = "policy"
+    ACTION = "action"
+
+# pylint: disable=invalid-name
+class LCM_TARGETS():
+    SHEPHERD = "lcm_target_shepherd"
