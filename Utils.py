@@ -10,3 +10,13 @@ class STATE():
 # pylint: disable=invalid-name
 class LCM_TARGETS():
     SHEPHERD = "lcm_target_shepherd"
+
+class VOTES():
+    JA = "ja"
+    NEIN = "nein"
+    UNDEFINED = "undefined"
+
+class ROLES():
+    FACIST = "facist"
+    LIBERAL = "liberal"
+    HITLER = "hitler"
