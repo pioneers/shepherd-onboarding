@@ -44,8 +44,27 @@ def LCM_receive(header, dic={}):
     else:
         print("Invalid State")
 
+#===================================
+# game functions
+#===================================
+
+def player_joined(args):
+    global PLAYERS
+    id = args["id"]
+    name = args["name"]
+    #send data to player with that id
+    if not id in PLAYERS:
+        PLAYERS += [Player(id, name)]
+        #send data about that player joining to everyone
+
+
+#===================================
+# game variables
+#===================================
 
 GAME_STATE = STATE.SETUP
+
+PLAYERS = []
 
 SETUP_FUNCTIONS = {}
 END_FUNCTIONS = {}
