@@ -54,10 +54,10 @@ class VOTES():
     UNDEFINED = "undefined"
 
 class ROLES():
-    FACIST = "facist"
+    FASCIST = "fascist"
     LIBERAL = "liberal"
     HITLER = "hitler"
 
 class CARDS():
-    FACIST = "facist_card"
+    FASCIST = "fascist_card"
     LIBERAL = "liberal_card"

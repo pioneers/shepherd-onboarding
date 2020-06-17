@@ -1,5 +1,6 @@
+from Player import Player
 from Utils import *
-from LCM import lcm_send
+from LCM import *
 import random
 
 def LCM_receive(header, dic={}):
@@ -79,9 +80,9 @@ def player_joined_new_game(args):
     if not id in player_ids(PLAYERS):
         # is this someone reconnecting or joining for the first time?
         PLAYERS += [Player(id, name)]
-        lcm_data["recipients" = player_ids(PLAYERS)]
+        lcm_data["recipients"] = player_ids(PLAYERS)
     else:
-        lcm_data["recipients" = [id]]
+        lcm_data["recipients"] = [id]
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.PLAYERS, lcm_data)
 
 def player_joined_ongoing_game(args):
@@ -122,7 +123,7 @@ def shuffle_deck(deck):
 
 def new_deck():
     new_deck = [CARDS.LIBERAL for _ in range(6)]
-    new_deck += [CARDS.FACIST for _ in range(11)]
+    new_deck += [CARDS.FASCIST for _ in range(11)]
     shuffle_deck(new_deck)
     return new_deck
 
