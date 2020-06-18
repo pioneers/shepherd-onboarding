@@ -13,6 +13,11 @@ class Player:
         self.id = id
         self.name = name
 
+    @property
+    def role(self):
+        return self.role
+
+    @role.setter
     def set_role(self, role):
         self.role = role
 

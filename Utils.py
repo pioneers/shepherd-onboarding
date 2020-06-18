@@ -100,7 +100,7 @@ class SERVER_HEADERS:
 class STATE:
     SETUP = "setup"
     END = "end"
-    CHANCELLOR = "chancellor"
+    PICK_CHANCELLOR = "pick_chancellor"
     VOTE = "vote"
     POLICY = "policy"
     ACTION = "action"
