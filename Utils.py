@@ -15,6 +15,21 @@ class SHEPHERD_HEADERS():
     This is only useful for moving from END->SETUP and SETUP->CHANCELLOR.
     """
 
+    CHANCELLOR_NOMINATION = "chancellor_nomination"
+    """
+    Header to tell shepherd who the president has nominated to be chancellor
+    contains:
+        nominee - the id of the player who was nominated to be chancellor
+    """
+
+    PLAYER_VOTED = "player_voted"
+    """
+    Header to tell shepherd the player's vote on the chancellor
+    contains:
+        id   - the id of the voter
+        vote - true if the vote was yes
+    """
+
 # pylint: disable=invalid-name
 class SERVER_HEADERS():
     PLAYERS = "players"
@@ -23,7 +38,7 @@ class SERVER_HEADERS():
     to be brought up to speed, or because a new player has connected.
     contains:
         usernames  - an ordered list of usernames
-        recipients - a list of players by id who should recieve this update. A
+        recipients - a list of players by id who should receive this update. A
                      server may choose not to implement this, at the cost of
                      some extra network usage.
     """
@@ -32,6 +47,25 @@ class SERVER_HEADERS():
     """
     Header sent to server to force all clients to send a PLAYER_JOINED header
     back to shepherd
+    """
+
+    CHANCELLOR_REQUEST = "chancellor_request"
+    """
+    Header sent to server to start chancellor state for all players and request
+    chancellor nomination from current president through a
+    CHANCELLOR_NOMINATION header sent back to shepherd
+    contains:
+        president   - the id of the current president
+        ineligibles - the ids of players who cannot be nominated
+    """
+
+    AWAIT_VOTE = "await_vote"
+    """
+    Header sent to server to request vote from all players on the chancellor
+    through a PLAYER_VOTED header sent back to shepherd
+    contains:
+        president  - the id of the current president
+        chancellor - the id of the nominated chancellor
     """
 
 # pylint: disable=invalid-name
