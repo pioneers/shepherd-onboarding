@@ -1,5 +1,6 @@
+from Player import Player
 from Utils import *
-from LCM import lcm_send
+from LCM import *
 import random
 
 def LCM_receive(header, dic={}):
@@ -58,6 +59,7 @@ def to_setup(args):
     """
     A function that moves the game into setup phase.
     """
+    global CARD_DECK, GAME_STATE
     reset()
     CARD_DECK = new_deck()
     GAME_STATE = STATE.SETUP
@@ -79,9 +81,9 @@ def player_joined_new_game(args):
     if not id in player_ids(PLAYERS):
         # is this someone reconnecting or joining for the first time?
         PLAYERS += [Player(id, name)]
-        lcm_data["recipients" = player_ids(PLAYERS)]
+        lcm_data["recipients"] = player_ids(PLAYERS)
     else:
-        lcm_data["recipients" = [id]]
+        lcm_data["recipients"] = [id]
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.PLAYERS, lcm_data)
 
 def player_joined_ongoing_game(args):
@@ -97,6 +99,48 @@ def player_joined_ongoing_game(args):
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.PLAYERS, lcm_data)
         # TODO: there is more stuff to send to the player probably
 
+def to_chancellor(args):
+    """
+    A function that moves the game into the chancellor phase.
+    """
+    global GAME_STATE
+    GAME_STATE = STATE.CHANCELLOR
+    ineligibles = {player_id(PRESIDENT_INDEX), player_id(PREVIOUS_PRESIDENT_INDEX), player_id(PREVIOUS_CHANCELLOR_INDEX)}
+    lcm_data = {"president": player_id(PRESIDENT_INDEX), "ineligibles": list(ineligibles)}
+    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.CHANCELLOR_REQUEST, lcm_data)
+
+def receive_chancellor_nomination(args):
+    """
+    A function that reads who the president has nominated for chancellor and
+    starts the voting process.
+    """
+    global GAME_STATE, VOTES, NOMINATED_CHANCELLOR_INDEX
+    GAME_STATE = STATE.VOTE
+    VOTES = [0, 0]
+    chancellor = args["nominee"]
+    NOMINATED_CHANCELLOR_INDEX = player_ids(PLAYERS).index(chancellor)
+    lcm_data = {"president": player_id(PRESIDENT_INDEX), "chancellor": chancellor}
+    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.AWAIT_VOTE, lcm_data)
+
+def receive_vote(args):
+    global VOTES, PRESIDENT_INDEX, PREVIOUS_PRESIDENT_INDEX, PREVIOUS_CHANCELLOR_INDEX, ELECTION_TRACKER
+    if args["vote"]:
+        yes_vote()
+    else:
+        no_vote()
+    if number_of_votes() >= len(PLAYERS):
+        if passing_vote():
+            PREVIOUS_PRESIDENT_INDEX = PRESIDENT_INDEX
+            PREVIOUS_CHANCELLOR_INDEX = NOMINATED_CHANCELLOR_INDEX
+            # TODO: handle if it passed
+        else:
+            ELECTION_TRACKER += 1
+            if chaos():
+                ELECTION_TRACKER = 0
+                # TODO: handle the chaos
+            PRESIDENT_INDEX = next_president_index()
+            to_chancellor({})
+
 #===================================
 # helper functions
 #===================================
@@ -107,28 +151,50 @@ def player_names(players):
 def player_ids(players):
     return [player.id for player in players]
 
+def player_id(index):
+    return player_ids(PLAYERS)[index]
+
 def reset():
     """
-    Retuns the game state to what it was at the begining of executions
+    Returns the game state to what it was at the beginning of executions
     """
+    global PLAYERS, CARD_DECK, VOTES, PRESIDENT_INDEX, PREVIOUS_PRESIDENT_INDEX, ELECTION_TRACKER
     PLAYERS = []
     CARD_DECK = []
-    PLAYER_INDEX = 0
-    PREVIOUS_PLAYER_INDEX = 0
+    VOTES = [0, 0]
+    PRESIDENT_INDEX = 0
+    PREVIOUS_PRESIDENT_INDEX = 0
     ELECTION_TRACKER = 0
 
 def shuffle_deck(deck):
     random.shuffle(deck)
 
 def new_deck():
-    new_deck = [CARDS.LIBERAL for _ in range(6)]
-    new_deck += [CARDS.FACIST for _ in range(11)]
-    shuffle_deck(new_deck)
-    return new_deck
+    new_d = [CARDS.LIBERAL for _ in range(6)]
+    new_d += [CARDS.FASCIST for _ in range(11)]
+    shuffle_deck(new_d)
+    return new_d
 
-def next_player_index():
-    global PLAYER_INDEX, PLAYERS
-    return (PLAYER_INDEX + 1) % len(PLAYERS)
+def next_president_index():
+    global PRESIDENT_INDEX, PLAYERS
+    return (PRESIDENT_INDEX + 1) % len(PLAYERS)
+
+def yes_vote():
+    global VOTES
+    VOTES[0] += 1
+
+def no_vote():
+    global VOTES
+    VOTES[1] += 1
+
+def passing_vote():
+    return VOTES[0] > VOTES[1]
+
+def number_of_votes():
+    return VOTES[0] + VOTES[1]
+
+def chaos():
+    return ELECTION_TRACKER == 3
 
 #===================================
 # game variables
@@ -138,13 +204,19 @@ GAME_STATE = STATE.END
 
 PLAYERS = []
 CARD_DECK = []
-PLAYER_INDEX = 0
-PREVIOUS_PLAYER_INDEX = 0
+VOTES = [0, 0] # [yes, no]
+PRESIDENT_INDEX = 0
+PREVIOUS_PRESIDENT_INDEX = 0 # for remembering who is ineligible
+PREVIOUS_CHANCELLOR_INDEX = 0 # for remembering who is ineligible
+NOMINATED_CHANCELLOR_INDEX = 0
 ELECTION_TRACKER = 0
 
-SETUP_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_new_game}
-CHANCELLOR_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_ongoing_game}
-VOTE_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_ongoing_game}
+SETUP_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_new_game,
+                   SHEPHERD_HEADERS.NEXT_STAGE : to_chancellor}
+CHANCELLOR_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_ongoing_game,
+                        SHEPHERD_HEADERS.CHANCELLOR_NOMINATION : receive_chancellor_nomination}
+VOTE_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_ongoing_game,
+                  SHEPHERD_HEADERS.PLAYER_VOTED : receive_vote}
 POLICY_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_ongoing_game}
 ACTION_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_ongoing_game}
 END_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_ongoing_game,
