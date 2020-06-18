@@ -15,37 +15,37 @@ def LCM_receive(header, dic={}):
 
     if GAME_STATE == STATE.SETUP:
         func = SETUP_FUNCTIONS.get(header)
-        if func is not None:
+        if func:
             func(dic)
         else:
             print("Invalid Event in Setup")
     elif GAME_STATE == STATE.END:
         func = END_FUNCTIONS.get(header)
-        if func is not None:
+        if func:
             func(dic)
         else:
             print("Invalid Event in End")
-    elif GAME_STATE == STATE.CHANCELLOR:
+    elif GAME_STATE == STATE.PICK_CHANCELLOR:
         func = CHANCELLOR_FUNCTIONS.get(header)
-        if func is not None:
+        if func:
             func(dic)
         else:
-            print("Invalid Event in Chancellor")
+            print("Invalid Event in Pick Chancellor")
     elif GAME_STATE == STATE.VOTE:
         func = VOTE_FUNCTIONS.get(header)
-        if func is not None:
+        if func:
             func(dic)
         else:
             print("Invalid Event in Vote")
     elif GAME_STATE == STATE.POLICY:
         func = POLICY_FUNCTIONS.get(header)
-        if func is not None:
+        if func:
             func(dic)
         else:
             print("Invalid Event in Policy")
     elif GAME_STATE == STATE.ACTION:
         func = ACTION_FUNCTIONS.get(header)
-        if func is not None:
+        if func:
             func(dic)
         else:
             print("Invalid Event in Action")
@@ -106,7 +106,7 @@ def to_chancellor(args):
     A function that moves the game into the chancellor phase.
     """
     global GAME_STATE
-    GAME_STATE = STATE.CHANCELLOR
+    GAME_STATE = STATE.PICK_CHANCELLOR
     ineligibles = {player_id(PRESIDENT_INDEX), player_id(PREVIOUS_PRESIDENT_INDEX), player_id(PREVIOUS_CHANCELLOR_INDEX)}
     lcm_data = {"president": player_id(PRESIDENT_INDEX), "ineligibles": list(ineligibles)}
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.CHANCELLOR_REQUEST, lcm_data)

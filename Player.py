@@ -14,6 +14,11 @@ class Player:
         self.name = name
         self.vote = VOTES.UNDEFINED
 
+    @property
+    def role(self):
+        return self.role
+
+    @role.setter
     def set_role(self, role):
         self.role = role
 
