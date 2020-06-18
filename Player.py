@@ -12,12 +12,10 @@ class Player:
     def __init__(self, id, name):
         self.id = id
         self.name = name
+        self.vote = VOTES.UNDEFINED
 
     def set_role(self, role):
         self.role = role
-
-    def vote(self, vote):
-        self.vote = vote
 
     def clear_vote(self):
         self.vote = VOTES.UNDEFINED

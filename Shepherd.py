@@ -1,6 +1,7 @@
 from Player import Player
 from Utils import *
 from LCM import *
+from Board import Board
 import random
 
 def LCM_receive(header, dic={}):
@@ -74,7 +75,7 @@ def player_joined_new_game(args):
     A function that creates a new player instance for a player who has joined,
     or will allow a player to reconnect if they have joined before.
     """
-    global PLAYERS
+    global PLAYERS, BOARD
     id = args["id"]
     name = args["name"]
     lcm_data = {"usernames" : player_names(PLAYERS)}
@@ -84,6 +85,7 @@ def player_joined_new_game(args):
         lcm_data["recipients"] = player_ids(PLAYERS)
     else:
         lcm_data["recipients"] = [id]
+    BOARD = Board(len(PLAYERS))
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.PLAYERS, lcm_data)
 
 def player_joined_ongoing_game(args):
@@ -127,7 +129,7 @@ def receive_vote(args):
     """
     global GAME_STATE, PRESIDENT_INDEX, PREVIOUS_PRESIDENT_INDEX, PREVIOUS_CHANCELLOR_INDEX, ELECTION_TRACKER, CARD_DECK
     player = PLAYERS[player_ids(PLAYERS).index(args["id"])]
-    player.vote(args["vote"])
+    player.vote = args["vote"]
     if number_of_votes() >= len(PLAYERS):
         passed = passing_vote()
         for player in PLAYERS:
@@ -161,6 +163,29 @@ def chancellor_discarded(args):
     """
     A function that enacts the policy left over after two have been discarded.
     """
+    global GAME_STATE, BOARD, PRESIDENT_INDEX
+    card = args["card"]
+    BOARD.enact_policy(card)
+    lcm_data = {"liberal": BOARD.liberal_enacted, "fascist": BOARD.fascist_enacted}
+    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
+    if card == CARDS.LIBERAL or len(BOARD.current_power_list()) == 0:
+        PRESIDENT_INDEX = next_president_index()
+        to_chancellor({})
+    else:
+        # TODO: all of these functions
+        GAME_STATE = STATE.ACTION
+        for action in BOARD.current_power_list():
+            if action == POWERS.INVESTIGATE_LOYALTY:
+                investigate_loyalty()
+            elif action == POWERS.SPECIAL_ELECTION:
+                call_special_election()
+            elif action == POWERS.POLICY_PEEK:
+                policy_peek()
+            elif action == POWERS.EXECUTION:
+                execution()
+            elif action == POWERS.VETO:
+                veto()
+        to_chancellor({})
 
 #===================================
 # helper functions
@@ -238,6 +263,7 @@ PREVIOUS_PRESIDENT_INDEX = 0 # for remembering who is ineligible
 PREVIOUS_CHANCELLOR_INDEX = 0 # for remembering who is ineligible
 NOMINATED_CHANCELLOR_INDEX = 0
 ELECTION_TRACKER = 0
+BOARD = Board(5)
 
 SETUP_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_new_game,
                    SHEPHERD_HEADERS.NEXT_STAGE : to_chancellor}
@@ -246,7 +272,8 @@ CHANCELLOR_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_ongoing_g
 VOTE_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_ongoing_game,
                   SHEPHERD_HEADERS.PLAYER_VOTED : receive_vote}
 POLICY_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_ongoing_game,
-                    SHEPHERD_HEADERS.PRESIDENT_DISCARDED : president_discarded}
+                    SHEPHERD_HEADERS.PRESIDENT_DISCARDED : president_discarded,
+                    SHEPHERD_HEADERS.CHANCELLOR_DISCARDED : chancellor_discarded}
 ACTION_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_ongoing_game}
 END_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_ongoing_game,
                  SHEPHERD_HEADERS.NEXT_STAGE : to_setup}
