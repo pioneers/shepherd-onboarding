@@ -1,5 +1,5 @@
 # pylint: disable=invalid-name
-class SHEPHERD_HEADERS():
+class SHEPHERD_HEADERS:
     PLAYER_JOINED = "player_joined"
     """
     Header sent to shepherd whenever a player joins or reconnects to the server
@@ -30,8 +30,22 @@ class SHEPHERD_HEADERS():
         vote - true if the vote was yes
     """
 
+    PRESIDENT_DISCARDED = "president_discarded"
+    """
+    Header to tell shepherd that the president has discarded a policy
+    contains:
+        cards - the two policies left
+    """
+
+    CHANCELLOR_DISCARDED = "chancellor_discarded"
+    """
+    Header to tell shepherd that the chancellor has discarded a policy
+    contains:
+        card - the card left (String value)
+    """
+
 # pylint: disable=invalid-name
-class SERVER_HEADERS():
+class SERVER_HEADERS:
     PLAYERS = "players"
     """
     Header sent to the server either because a player has reconnected and needs
@@ -68,8 +82,22 @@ class SERVER_HEADERS():
         chancellor - the id of the nominated chancellor
     """
 
+    PRESIDENT_DISCARD = "president_discard"
+    """
+    Header sent to server to tell the president to discard a policy
+    contains:
+        cards - the three cards from which one must be discarded
+    """
+
+    CHANCELLOR_DISCARD = "chancellor_discard"
+    """
+    Header sent to server to tell the chancellor to discard a policy
+    contains:
+        cards - the two cards from which one must be discarded
+    """
+
 # pylint: disable=invalid-name
-class STATE():
+class STATE:
     SETUP = "setup"
     END = "end"
     CHANCELLOR = "chancellor"
@@ -78,20 +106,20 @@ class STATE():
     ACTION = "action"
 
 # pylint: disable=invalid-name
-class LCM_TARGETS():
+class LCM_TARGETS:
     SHEPHERD = "lcm_target_shepherd"
     SERVER = "lcm_target_server"
 
-class VOTES():
+class VOTES:
     JA = "ja"
     NEIN = "nein"
     UNDEFINED = "undefined"
 
-class ROLES():
+class ROLES:
     FASCIST = "fascist"
     LIBERAL = "liberal"
     HITLER = "hitler"
 
-class CARDS():
+class CARDS:
     FASCIST = "fascist_card"
     LIBERAL = "liberal_card"

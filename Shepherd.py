@@ -123,7 +123,10 @@ def receive_chancellor_nomination(args):
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.AWAIT_VOTE, lcm_data)
 
 def receive_vote(args):
-    global VOTES, PRESIDENT_INDEX, PREVIOUS_PRESIDENT_INDEX, PREVIOUS_CHANCELLOR_INDEX, ELECTION_TRACKER
+    """
+    A function that notes a vote and acts if the voting is done.
+    """
+    global GAME_STATE, VOTES, PRESIDENT_INDEX, PREVIOUS_PRESIDENT_INDEX, PREVIOUS_CHANCELLOR_INDEX, ELECTION_TRACKER, CARD_DECK
     if args["vote"]:
         yes_vote()
     else:
@@ -132,7 +135,12 @@ def receive_vote(args):
         if passing_vote():
             PREVIOUS_PRESIDENT_INDEX = PRESIDENT_INDEX
             PREVIOUS_CHANCELLOR_INDEX = NOMINATED_CHANCELLOR_INDEX
-            # TODO: handle if it passed
+            # TODO: if the chancellor is Hitler and 3 fascist policies have been enacted, game over
+            if len(CARD_DECK) < 3:
+                CARD_DECK = new_deck()
+            GAME_STATE = STATE.POLICY
+            lcm_data = {"cards": draw_cards(3)}
+            lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.PRESIDENT_DISCARD, lcm_data)
         else:
             ELECTION_TRACKER += 1
             if chaos():
@@ -140,6 +148,19 @@ def receive_vote(args):
                 # TODO: handle the chaos
             PRESIDENT_INDEX = next_president_index()
             to_chancellor({})
+
+def president_discarded(args):
+    """
+    A function that takes the policies left and passes them to the chancellor.
+    """
+    cards = args["cards"]
+    lcm_data = {"cards": cards}
+    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.CHANCELLOR_DISCARD, lcm_data)
+
+def chancellor_discarded(args):
+    """
+    A function that enacts the policy left over after two have been discarded.
+    """
 
 #===================================
 # helper functions
@@ -161,7 +182,7 @@ def reset():
     global PLAYERS, CARD_DECK, VOTES, PRESIDENT_INDEX, PREVIOUS_PRESIDENT_INDEX, ELECTION_TRACKER
     PLAYERS = []
     CARD_DECK = []
-    VOTES = [0, 0]
+    VOTES = 0
     PRESIDENT_INDEX = 0
     PREVIOUS_PRESIDENT_INDEX = 0
     ELECTION_TRACKER = 0
@@ -174,6 +195,13 @@ def new_deck():
     new_d += [CARDS.FASCIST for _ in range(11)]
     shuffle_deck(new_d)
     return new_d
+
+def draw_cards(number):
+    global CARD_DECK
+    cards = []
+    for i in range(number):
+        cards.append(CARD_DECK.pop(0))
+    return cards
 
 def next_president_index():
     global PRESIDENT_INDEX, PLAYERS
@@ -217,7 +245,8 @@ CHANCELLOR_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_ongoing_g
                         SHEPHERD_HEADERS.CHANCELLOR_NOMINATION : receive_chancellor_nomination}
 VOTE_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_ongoing_game,
                   SHEPHERD_HEADERS.PLAYER_VOTED : receive_vote}
-POLICY_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_ongoing_game}
+POLICY_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_ongoing_game,
+                    SHEPHERD_HEADERS.PRESIDENT_DISCARDED : president_discarded}
 ACTION_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_ongoing_game}
 END_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_ongoing_game,
                  SHEPHERD_HEADERS.NEXT_STAGE : to_setup}
