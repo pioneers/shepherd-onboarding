@@ -114,9 +114,8 @@ def receive_chancellor_nomination(args):
     A function that reads who the president has nominated for chancellor and
     starts the voting process.
     """
-    global GAME_STATE, VOTES, NOMINATED_CHANCELLOR_INDEX
+    global GAME_STATE, NOMINATED_CHANCELLOR_INDEX
     GAME_STATE = STATE.VOTE
-    VOTES = [0, 0]
     chancellor = args["nominee"]
     NOMINATED_CHANCELLOR_INDEX = player_ids(PLAYERS).index(chancellor)
     lcm_data = {"president": player_id(PRESIDENT_INDEX), "chancellor": chancellor}
@@ -126,13 +125,14 @@ def receive_vote(args):
     """
     A function that notes a vote and acts if the voting is done.
     """
-    global GAME_STATE, VOTES, PRESIDENT_INDEX, PREVIOUS_PRESIDENT_INDEX, PREVIOUS_CHANCELLOR_INDEX, ELECTION_TRACKER, CARD_DECK
-    if args["vote"]:
-        yes_vote()
-    else:
-        no_vote()
+    global GAME_STATE, PRESIDENT_INDEX, PREVIOUS_PRESIDENT_INDEX, PREVIOUS_CHANCELLOR_INDEX, ELECTION_TRACKER, CARD_DECK
+    player = PLAYERS[player_ids(PLAYERS).index(args["id"])]
+    player.vote(args["vote"])
     if number_of_votes() >= len(PLAYERS):
-        if passing_vote():
+        passed = passing_vote()
+        for player in PLAYERS:
+            player.clear_vote()
+        if passed:
             PREVIOUS_PRESIDENT_INDEX = PRESIDENT_INDEX
             PREVIOUS_CHANCELLOR_INDEX = NOMINATED_CHANCELLOR_INDEX
             # TODO: if the chancellor is Hitler and 3 fascist policies have been enacted, game over
@@ -179,10 +179,9 @@ def reset():
     """
     Returns the game state to what it was at the beginning of executions
     """
-    global PLAYERS, CARD_DECK, VOTES, PRESIDENT_INDEX, PREVIOUS_PRESIDENT_INDEX, ELECTION_TRACKER
+    global PLAYERS, CARD_DECK, PRESIDENT_INDEX, PREVIOUS_PRESIDENT_INDEX, ELECTION_TRACKER
     PLAYERS = []
     CARD_DECK = []
-    VOTES = 0
     PRESIDENT_INDEX = 0
     PREVIOUS_PRESIDENT_INDEX = 0
     ELECTION_TRACKER = 0
@@ -207,19 +206,21 @@ def next_president_index():
     global PRESIDENT_INDEX, PLAYERS
     return (PRESIDENT_INDEX + 1) % len(PLAYERS)
 
-def yes_vote():
-    global VOTES
-    VOTES[0] += 1
-
-def no_vote():
-    global VOTES
-    VOTES[1] += 1
+def number_of_votes():
+    votes = 0
+    for player in PLAYERS:
+        if player.vote != VOTES.UNDEFINED:
+            votes += 1
+    return votes
 
 def passing_vote():
-    return VOTES[0] > VOTES[1]
-
-def number_of_votes():
-    return VOTES[0] + VOTES[1]
+    diff = 0
+    for player in PLAYERS:
+        if player.vote == VOTES.JA:
+            diff += 1
+        else:
+            diff -= 1
+    return diff > 0
 
 def chaos():
     return ELECTION_TRACKER == 3
@@ -232,7 +233,6 @@ GAME_STATE = STATE.END
 
 PLAYERS = []
 CARD_DECK = []
-VOTES = [0, 0] # [yes, no]
 PRESIDENT_INDEX = 0
 PREVIOUS_PRESIDENT_INDEX = 0 # for remembering who is ineligible
 PREVIOUS_CHANCELLOR_INDEX = 0 # for remembering who is ineligible
