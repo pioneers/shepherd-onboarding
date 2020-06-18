@@ -96,6 +96,14 @@ class SERVER_HEADERS:
         cards - the two cards from which one must be discarded
     """
 
+    POLICIES_ENACTED = "policies_enacted"
+    """
+    Header sent to server to update the number of each policy enacted
+    contains:
+        liberal - the number of liberal policies enacted
+        fascist - the number of fascist policies enacted
+    """
+
 # pylint: disable=invalid-name
 class STATE:
     SETUP = "setup"
@@ -123,3 +131,15 @@ class ROLES:
 class CARDS:
     FASCIST = "fascist_card"
     LIBERAL = "liberal_card"
+
+class POWERS:
+    INVESTIGATE_LOYALTY = "investigate_loyalty"
+    SPECIAL_ELECTION = "special_election"
+    POLICY_PEEK = "policy_peek"
+    EXECUTION = "execution"
+    VETO = "veto"
+
+class BOARDS:
+    FIVE_SIX = [[], [], [POWERS.POLICY_PEEK], [POWERS.EXECUTION], [POWERS.EXECUTION, POWERS.VETO], []]
+    SEVEN_EIGHT = [[], [POWERS.INVESTIGATE_LOYALTY], [POWERS.SPECIAL_ELECTION], [POWERS.EXECUTION], [POWERS.EXECUTION, POWERS.VETO], []]
+    NINE_TEN = [[POWERS.INVESTIGATE_LOYALTY], [POWERS.INVESTIGATE_LOYALTY], [POWERS.SPECIAL_ELECTION], [POWERS.EXECUTION], [POWERS.EXECUTION, POWERS.VETO], []]
