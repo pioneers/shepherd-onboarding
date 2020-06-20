@@ -19,15 +19,19 @@ socketio = SocketIO(app, async_mode="gevent")
 def hello_world():
     return render_template('index.html')
 
+@socketio.on('join')
+def on_join(user_info):
+    data = json.loads(user_info)
+    username = data['name']
+    id = data['id']
+    join_room(id)
+    print('confirmed join: ', id)
+    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.PLAYER_JOINED, {"name" : username, "id" : id})
+    emit('event', "", room=id)
+
 @app.route('/game')
 def game():
     return render_template('game.html')
-
-@socketio.on('join')
-def handle_join(client_id):
-    print('confirmed join: ', client_id)
-    # lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.PLAYER_JOINED)
-    emit('event')
 
 @socketio.on('next_stage')
 def next_stage(client_id):
@@ -42,29 +46,29 @@ def chancellor_nomination(chancellor):
 #Score Adjustment
 @socketio.on('ui-to-server-scores')
 def ui_to_server_scores(scores):
-    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADER.SCORE_ADJUST, json.loads(scores))
+    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.SCORE_ADJUST, json.loads(scores))
 
 @socketio.on('ui-to-server-score-request')
 def ui_to_server_score_request():
-    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADER.GET_SCORES)
+    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.GET_SCORES)
 
 #Main GUI
 @socketio.on('ui-to-server-teams-info-request')
 def ui_to_server_match_info_request(match_num_dict):
-    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADER.GET_MATCH_INFO, json.loads(match_num_dict))
+    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.GET_MATCH_INFO, json.loads(match_num_dict))
     print(json.loads(match_num_dict))
 
 @socketio.on('ui-to-server-setup-match')
 def ui_to_server_setup_match(teams_info):
-    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADER.SETUP_MATCH, json.loads(teams_info))
+    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.SETUP_MATCH, json.loads(teams_info))
 
 @socketio.on('ui-to-server-start-next-stage')
 def ui_to_server_start_next_stage():
-    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADER.START_NEXT_STAGE)
+    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.START_NEXT_STAGE)
 
 @socketio.on('ui-to-server-reset-match')
 def ui_to_server_reset_match():
-    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADER.RESET_MATCH)
+    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.RESET_MATCH)
 
 # def receiver():
 #     events = gevent.queue.Queue()
@@ -84,4 +88,5 @@ def ui_to_server_reset_match():
 #         socketio.sleep(0.1)
 
 # socketio.start_background_task(receiver)
+
 socketio.run(app, host=HOST_URL, port=PORT)

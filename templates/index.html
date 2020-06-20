@@ -7,10 +7,10 @@
     </head>
     <body>
         <h1> BAAA </h1>
-<!--         <script>
+         <script>
         	const socket = io()
-        	socket.emit('join', 124098)
-        	socket.on('event', () => console.log("baa"))
-        </script> -->
+        	socket.emit('join', JSON.stringify({"name" : "hello world", "id" : Math.round(Math.random()*1000)}))
+        	socket.on('event', () => console.log("baa ")
+        </script>
     </body>
 </html>
