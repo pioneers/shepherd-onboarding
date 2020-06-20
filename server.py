@@ -27,50 +27,71 @@ def on_join(user_info):
     join_room(id)
     print('confirmed join: ', id)
     lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.PLAYER_JOINED, {"name" : username, "id" : id})
-    emit('event', "", room=id)
 
 @app.route('/game')
 def game():
     return render_template('game.html')
 
 @socketio.on('next_stage')
-def next_stage(client_id):
+def next_stage():
     print('request to transition to next stage')
     lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.NEXT_STAGE)
 
 @socketio.on('chancellor_nomination')
-def chancellor_nomination(chancellor):
-    print('chancellor has been nominated to be ', chancellor)
-    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.CHANCELLOR_NOMINATION)
+def chancellor_nomination(chancellor_info):
+    data = json.loads(chancellor_info)
+    print('chancellor has been nominated to be ', data['nominee'])
+    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.CHANCELLOR_NOMINATION, data)
 
-#Score Adjustment
-@socketio.on('ui-to-server-scores')
-def ui_to_server_scores(scores):
-    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.SCORE_ADJUST, json.loads(scores))
+@socketio.on('player_voted')
+def player_voted(vote_info):
+    data = json.loads(vote_info)
+    print('Player with id: ', data['id'], ' has voted ', data['vote'])
+    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.PLAYER_VOTED, data)
 
-@socketio.on('ui-to-server-score-request')
-def ui_to_server_score_request():
-    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.GET_SCORES)
+@socketio.on('president_discarded')
+def president_discarded(policy_info):
+    data = json.loads(policy_info)
+    print('after president discarded, cards remaining are: ', data['cards'])
+    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.PRESIDENT_DISCARDED, data)
 
-#Main GUI
-@socketio.on('ui-to-server-teams-info-request')
-def ui_to_server_match_info_request(match_num_dict):
-    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.GET_MATCH_INFO, json.loads(match_num_dict))
-    print(json.loads(match_num_dict))
+@socketio.on('chancellor_discarded')
+def chancellor_discarded(policy_info):
+    data = json.loads(policy_info)
+    print('after chancellor discarded, card remaining is: ', data['card'])
+    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.CHANCELLOR_DISCARDED, data)
 
-@socketio.on('ui-to-server-setup-match')
-def ui_to_server_setup_match(teams_info):
-    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.SETUP_MATCH, json.loads(teams_info))
+@socketio.on('chancellor_vetoed')
+def chancellor_vetoed():
+    print('chancellor vetoed :(')
+    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.CHANCELLOR_DISCARDED)
 
-@socketio.on('ui-to-server-start-next-stage')
-def ui_to_server_start_next_stage():
-    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.START_NEXT_STAGE)
+@socketio.on('president_veto_answer')
+def president_veto_answer(veto_info):
+    data = json.loads(veto_info)
+    print('did president decide to veto? ', data[veto], '. Cards for chancellor are: ', data[cards])
+    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.PRESIDENT_VETO_ANSWER)
 
-@socketio.on('ui-to-server-reset-match')
-def ui_to_server_reset_match():
-    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.RESET_MATCH)
+@socketio.on('investigate_player')
+def investigate_player(player_info):
+    data = json.loads(player_info)
+    print('Decided to investigate ', data['player'])
+    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.INVESTIGATE_PLAYER)
 
-# def receiver():
+@socketio.on('special_election_pick')
+def special_election_pick(player_info):
+    data = json.loads(player_info)
+    print('President picked ', data['player'], ' through special election.')
+    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.SPECIAL_ELECTION_PICK)
+
+@socketio.on('perform_execution')
+def perform_execution(player_info):
+    data = json.loads(player_info)
+    print('Perform execution on ', data['player'])
+    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.PERFORM_EXECUTION)
+
+def LCM_receive(header, data = {}):
+    print(data)
 #     events = gevent.queue.Queue()
 #     lcm_start_read(str.encode(LCM_TARGETS.UI), events)
 
@@ -88,5 +109,5 @@ def ui_to_server_reset_match():
 #         socketio.sleep(0.1)
 
 # socketio.start_background_task(receiver)
-
+    
 socketio.run(app, host=HOST_URL, port=PORT)
