@@ -16,6 +16,7 @@ class Board:
             self.board = BOARDS.NINE_TEN
         self.liberal_enacted = 0
         self.fascist_enacted = 0
+        self.can_veto = False
 
     def enact_policy(self, card):
         """

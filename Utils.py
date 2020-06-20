@@ -44,6 +44,40 @@ class SHEPHERD_HEADERS:
         card - the card left (String value)
     """
 
+    CHANCELLOR_VETOED = "chancellor_vetoed"
+    """
+    Header to tell shepherd that the chancellor decided to exercise the veto
+    """
+
+    PRESIDENT_VETO_ANSWER = "president_veto_answer"
+    """
+    Header to tell shepherd if the president decided to veto
+    contains:
+        veto  - Boolean if the president vetoes
+        cards - the cards the chancellor must choose from if the president doesn't veto
+    """
+
+    INVESTIGATE_PLAYER = "investigate_player"
+    """
+    Header to tell shepherd which player to investigate
+    contains:
+        player - the id of the player to investigate
+    """
+
+    SPECIAL_ELECTION_PICK = "special_election_pick"
+    """
+    Header to tell shepherd who the president picked in the special election
+    contains:
+        player - the id of the new president
+    """
+
+    PERFORM_EXECUTION = "perform_execution"
+    """
+    Header to tell shepherd to execute a player
+    contains:
+        player - the id of the player to execute
+    """
+
 # pylint: disable=invalid-name
 class SERVER_HEADERS:
     PLAYERS = "players"
@@ -93,7 +127,15 @@ class SERVER_HEADERS:
     """
     Header sent to server to tell the chancellor to discard a policy
     contains:
-        cards - the two cards from which one must be discarded
+        cards    - the two cards from which one must be discarded
+        can_veto - True if the chancellor is allowed to exercise a veto
+    """
+
+    ASK_PRESIDENT_VETO = "ask_president_veto"
+    """
+    Header sent to server to tell the president if they want to veto
+    contains:
+        president - the id of the president
     """
 
     POLICIES_ENACTED = "policies_enacted"
@@ -102,6 +144,44 @@ class SERVER_HEADERS:
     contains:
         liberal - the number of liberal policies enacted
         fascist - the number of fascist policies enacted
+    """
+
+    BEGIN_INVESTIGATION = "begin_investigation"
+    """
+    Header sent to server to tell the president to select a person to investigate
+    contains:
+        president - the id of the investigator
+        previous  - the ids of those who have already been investigated
+    """
+
+    RECEIVE_INVESTIGATION = "receive_investigation"
+    """
+    Header sent to server to give the president the result of the investigation
+    contains:
+        president - the id of the president
+        role      - the role of the person who was investigated
+    """
+
+    BEGIN_SPECIAL_ELECTION = "begin_special_election"
+    """
+    Header sent to server to ask the president to pick a new president
+    contains:
+        president - the id of the current president
+    """
+
+    PERFORM_POLICY_PEEK = "perform_policy_peek"
+    """
+    Header sent to server to allow the president to peek at the top 3 policies
+    contains:
+        president - the id of the president
+        cards     - the top 3 (or fewer if the deck is smaller) cards
+    """
+
+    BEGIN_EXECUTION = "begin_execution"
+    """
+    Header sent to server to ask for an execution
+    contains:
+        president - the id of the president
     """
 
 # pylint: disable=invalid-name
@@ -127,6 +207,7 @@ class ROLES:
     FASCIST = "fascist"
     LIBERAL = "liberal"
     HITLER = "hitler"
+    NONE = "none"
 
 class CARDS:
     FASCIST = "fascist_card"
