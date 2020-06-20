@@ -1,10 +1,10 @@
-from Utils import VOTES
+from Utils import VOTES, ROLES
 
 class Player:
     """This is the player class, which is used to track the player's role, the
     players session ID, and the player's vote
     name - String that is the username
-    role - Enum of FACIST, LIBERAL, or HITLER
+    role - Enum of FASCIST, LIBERAL, or HITLER
     id - String used to match an incoming request to the correct player
     vote - Enum of JA, NEIN, or UNDEFINED
     """
@@ -13,14 +13,8 @@ class Player:
         self.id = id
         self.name = name
         self.vote = VOTES.UNDEFINED
-
-    @property
-    def role(self):
-        return self.role
-
-    @role.setter
-    def set_role(self, role):
-        self.role = role
+        self.role = ROLES.NONE
+        self.investigated = False # have they been investigated yet?
 
     def clear_vote(self):
         self.vote = VOTES.UNDEFINED

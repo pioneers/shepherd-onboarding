@@ -101,7 +101,20 @@ def player_joined_ongoing_game(args):
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.PLAYERS, lcm_data)
         # TODO: there is more stuff to send to the player probably
 
-def to_chancellor(args):
+def start_game(args):
+    """
+    A function that initializes variables that require the number of players.
+    """
+    global PLAYERS
+    deck = [ROLES.LIBERAL] * (len(PLAYERS) // 2 + 1)
+    deck += [ROLES.FASCIST] * ((len(PLAYERS) - 1) // 2 - 1)
+    deck += [ROLES.HITLER]
+    shuffle_deck(deck)
+    for i in range(len(PLAYERS)):
+        PLAYERS[i].role = deck[i]
+    to_chancellor()
+
+def to_chancellor():
     """
     A function that moves the game into the chancellor phase.
     """
@@ -128,7 +141,7 @@ def receive_vote(args):
     A function that notes a vote and acts if the voting is done.
     """
     global GAME_STATE, PRESIDENT_INDEX, PREVIOUS_PRESIDENT_INDEX, PREVIOUS_CHANCELLOR_INDEX, ELECTION_TRACKER, CARD_DECK
-    player = PLAYERS[player_ids(PLAYERS).index(args["id"])]
+    player = player_for_id(args["id"])
     player.vote = args["vote"]
     if number_of_votes() >= len(PLAYERS):
         passed = passing_vote()
@@ -137,7 +150,8 @@ def receive_vote(args):
         if passed:
             PREVIOUS_PRESIDENT_INDEX = PRESIDENT_INDEX
             PREVIOUS_CHANCELLOR_INDEX = NOMINATED_CHANCELLOR_INDEX
-            # TODO: if the chancellor is Hitler and 3 fascist policies have been enacted, game over
+            if PLAYERS[NOMINATED_CHANCELLOR_INDEX].role == ROLES.HITLER and BOARD.fascist_enacted >= 3:
+                print("Game over") # TODO: game over
             if len(CARD_DECK) < 3:
                 CARD_DECK = new_deck()
             GAME_STATE = STATE.POLICY
@@ -149,15 +163,38 @@ def receive_vote(args):
                 ELECTION_TRACKER = 0
                 # TODO: handle the chaos
             PRESIDENT_INDEX = next_president_index()
-            to_chancellor({})
+            to_chancellor()
 
 def president_discarded(args):
     """
     A function that takes the policies left and passes them to the chancellor.
     """
     cards = args["cards"]
-    lcm_data = {"cards": cards}
+    lcm_data = {"cards": cards, "can_veto": BOARD.can_veto}
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.CHANCELLOR_DISCARD, lcm_data)
+
+def chancellor_vetoed(args):
+    """
+    A function that asks for the president's response after a chancellor veto.
+    """
+    lcm_data = {"president": player_id(PRESIDENT_INDEX)}
+    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.ASK_PRESIDENT_VETO, lcm_data)
+
+def president_veto_answer(args):
+    """
+    A function that receives if the president vetoes or not.
+    """
+    global ELECTION_TRACKER, PRESIDENT_INDEX
+    value = args["veto"]
+    if value:
+        ELECTION_TRACKER += 1
+        if chaos():
+            ELECTION_TRACKER = 0
+            # TODO: handle the chaos
+        PRESIDENT_INDEX = next_president_index()
+        to_chancellor()
+    else:
+        president_discarded({"cards": args["cards"]})
 
 def chancellor_discarded(args):
     """
@@ -168,24 +205,95 @@ def chancellor_discarded(args):
     BOARD.enact_policy(card)
     lcm_data = {"liberal": BOARD.liberal_enacted, "fascist": BOARD.fascist_enacted}
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
-    if card == CARDS.LIBERAL or len(BOARD.current_power_list()) == 0:
+    if BOARD.fascist_enacted >= 6:
+        print("Game over") # TODO: game over
+    elif card == CARDS.LIBERAL or len(BOARD.current_power_list()) == 0:
         PRESIDENT_INDEX = next_president_index()
-        to_chancellor({})
+        to_chancellor()
     else:
-        # TODO: all of these functions
         GAME_STATE = STATE.ACTION
         for action in BOARD.current_power_list():
             if action == POWERS.INVESTIGATE_LOYALTY:
                 investigate_loyalty()
+                PRESIDENT_INDEX = next_president_index()
             elif action == POWERS.SPECIAL_ELECTION:
                 call_special_election()
             elif action == POWERS.POLICY_PEEK:
                 policy_peek()
+                PRESIDENT_INDEX = next_president_index()
             elif action == POWERS.EXECUTION:
                 execution()
+                PRESIDENT_INDEX = next_president_index()
             elif action == POWERS.VETO:
                 veto()
-        to_chancellor({})
+                PRESIDENT_INDEX = next_president_index()
+        to_chancellor()
+
+def investigate_loyalty():
+    """
+    A function that begins the Investigate Loyalty power.
+    """
+    investigated = [player_id(i) for i in range(len(PLAYERS)) if not PLAYERS[i].investigated]
+    lcm_data = {"president": player_id(PRESIDENT_INDEX), "previous": investigated}
+    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.BEGIN_INVESTIGATION, lcm_data)
+
+def investigate_player(args):
+    """
+    A function that returns the loyalty (as a role) of the player the president
+    has asked to investigate.
+    """
+    player = player_for_id(args["player"])
+    loyalty = ROLES.LIBERAL if player.role == ROLES.LIBERAL else ROLES.FASCIST
+    lcm_data = {"president": player_id(PRESIDENT_INDEX), "loyalty": loyalty}
+    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.RECEIVE_INVESTIGATION, lcm_data)
+
+def call_special_election():
+    """
+    A function that begins the special election power.
+    """
+    lcm_data = {"president": player_id(PRESIDENT_INDEX)}
+    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.BEGIN_SPECIAL_ELECTION, lcm_data)
+
+def perform_special_election(args):
+    """
+    A function that starts the next session with the new president.
+    """
+    global PRESIDENT_INDEX, AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX
+    AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX = next_president_index()
+    PRESIDENT_INDEX = player_ids(PLAYERS).index(args["player"])
+    to_chancellor()
+
+def policy_peek():
+    """
+    A function that executes the policy peek power.
+    """
+    cards = [CARD_DECK[i] for i in range(min(len(CARD_DECK), 3))]
+    lcm_data = {"president": player_id(PRESIDENT_INDEX), "cards": cards}
+    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.PERFORM_POLICY_PEEK, lcm_data)
+
+def execution():
+    """
+    A function that begins the execution power.
+    """
+    lcm_data = {"president": player_id(PRESIDENT_INDEX)}
+    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.BEGIN_EXECUTION, lcm_data)
+
+def perform_execution(args):
+    """
+    A function that executes a player.
+    """
+    p_id = args["player"]
+    player = player_for_id(p_id)
+    if player.role == ROLES.HITLER:
+        print("Game over") # TODO: game over
+    del PLAYERS[player_ids(PLAYERS).index(p_id)]
+
+def veto():
+    """
+    A function that turns on the veto power.
+    """
+    global BOARD
+    BOARD.can_veto = True
 
 #===================================
 # helper functions
@@ -200,15 +308,21 @@ def player_ids(players):
 def player_id(index):
     return player_ids(PLAYERS)[index]
 
+def player_for_id(p_id):
+    return PLAYERS[player_ids(PLAYERS).index(p_id)]
+
 def reset():
     """
     Returns the game state to what it was at the beginning of executions
     """
-    global PLAYERS, CARD_DECK, PRESIDENT_INDEX, PREVIOUS_PRESIDENT_INDEX, ELECTION_TRACKER
+    global PLAYERS, CARD_DECK, PRESIDENT_INDEX, PREVIOUS_PRESIDENT_INDEX, PREVIOUS_CHANCELLOR_INDEX, NOMINATED_CHANCELLOR_INDEX, AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX, ELECTION_TRACKER
     PLAYERS = []
     CARD_DECK = []
     PRESIDENT_INDEX = 0
     PREVIOUS_PRESIDENT_INDEX = 0
+    PREVIOUS_CHANCELLOR_INDEX = 0
+    NOMINATED_CHANCELLOR_INDEX = 0
+    AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX = -1
     ELECTION_TRACKER = 0
 
 def shuffle_deck(deck):
@@ -228,7 +342,11 @@ def draw_cards(number):
     return cards
 
 def next_president_index():
-    global PRESIDENT_INDEX, PLAYERS
+    global AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX
+    if AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX != -1:
+        value = AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX
+        AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX = -1
+        return value
     return (PRESIDENT_INDEX + 1) % len(PLAYERS)
 
 def number_of_votes():
@@ -262,18 +380,24 @@ PRESIDENT_INDEX = 0
 PREVIOUS_PRESIDENT_INDEX = 0 # for remembering who is ineligible
 PREVIOUS_CHANCELLOR_INDEX = 0 # for remembering who is ineligible
 NOMINATED_CHANCELLOR_INDEX = 0
+AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX = -1 # for remembering the president after a special election cycle, -1 if not a special election cycle
 ELECTION_TRACKER = 0
 BOARD = Board(5)
 
 SETUP_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_new_game,
-                   SHEPHERD_HEADERS.NEXT_STAGE : to_chancellor}
+                   SHEPHERD_HEADERS.NEXT_STAGE : start_game}
 CHANCELLOR_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_ongoing_game,
                         SHEPHERD_HEADERS.CHANCELLOR_NOMINATION : receive_chancellor_nomination}
 VOTE_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_ongoing_game,
                   SHEPHERD_HEADERS.PLAYER_VOTED : receive_vote}
 POLICY_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_ongoing_game,
                     SHEPHERD_HEADERS.PRESIDENT_DISCARDED : president_discarded,
-                    SHEPHERD_HEADERS.CHANCELLOR_DISCARDED : chancellor_discarded}
-ACTION_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_ongoing_game}
+                    SHEPHERD_HEADERS.CHANCELLOR_DISCARDED : chancellor_discarded,
+                    SHEPHERD_HEADERS.CHANCELLOR_VETOED : chancellor_vetoed,
+                    SHEPHERD_HEADERS.PRESIDENT_VETO_ANSWER : president_veto_answer}
+ACTION_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_ongoing_game,
+                    SHEPHERD_HEADERS.INVESTIGATE_PLAYER : investigate_player,
+                    SHEPHERD_HEADERS.SPECIAL_ELECTION_PICK : perform_special_election,
+                    SHEPHERD_HEADERS.PERFORM_EXECUTION : perform_execution}
 END_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_ongoing_game,
                  SHEPHERD_HEADERS.NEXT_STAGE : to_setup}
