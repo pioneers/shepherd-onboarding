@@ -75,7 +75,7 @@ def player_joined_new_game(args):
     A function that creates a new player instance for a player who has joined,
     or will allow a player to reconnect if they have joined before.
     """
-    global PLAYERS, BOARD
+    global PLAYERS
     id = args["id"]
     name = args["name"]
     lcm_data = {"usernames" : player_names(PLAYERS)}
@@ -85,7 +85,6 @@ def player_joined_new_game(args):
         lcm_data["recipients"] = player_ids(PLAYERS)
     else:
         lcm_data["recipients"] = [id]
-    BOARD = Board(len(PLAYERS))
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.PLAYERS, lcm_data)
 
 def player_joined_ongoing_game(args):
@@ -105,13 +104,17 @@ def start_game(args):
     """
     A function that initializes variables that require the number of players.
     """
-    global PLAYERS
+    global PLAYERS, BOARD
+    if len(PLAYERS) < 5:
+        #TODO notify clients that there are not enough players.
+        return
     deck = [ROLES.LIBERAL] * (len(PLAYERS) // 2 + 1)
     deck += [ROLES.FASCIST] * ((len(PLAYERS) - 1) // 2 - 1)
     deck += [ROLES.HITLER]
     shuffle_deck(deck)
     for i in range(len(PLAYERS)):
         PLAYERS[i].role = deck[i]
+    BOARD = Board(len(PLAYERS))
     to_chancellor()
 
 def to_chancellor():
@@ -153,7 +156,8 @@ def receive_vote(args):
             if PLAYERS[NOMINATED_CHANCELLOR_INDEX].role == ROLES.HITLER and BOARD.fascist_enacted >= 3:
                 print("Game over") # TODO: game over
             if len(CARD_DECK) < 3:
-                CARD_DECK = new_deck()
+                CARD_DECK = DISCARD_DECK.copy().append(CARD_DECK)
+                shuffle_deck(CARD_DECK)
             GAME_STATE = STATE.POLICY
             lcm_data = {"cards": draw_cards(3)}
             lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.PRESIDENT_DISCARD, lcm_data)
@@ -161,7 +165,11 @@ def receive_vote(args):
             ELECTION_TRACKER += 1
             if chaos():
                 ELECTION_TRACKER = 0
-                # TODO: handle the chaos
+                if len(CARD_DECK) < 3:
+                    CARD_DECK = DISCARD_DECK.copy().append(CARD_DECK)
+                    shuffle_deck(CARD_DECK)
+                card = draw_cards(1)[0]
+                BOARD.enact_policy(card)
             PRESIDENT_INDEX = next_president_index()
             to_chancellor()
 
@@ -169,7 +177,10 @@ def president_discarded(args):
     """
     A function that takes the policies left and passes them to the chancellor.
     """
+    global DISCARD_DECK
     cards = args["cards"]
+    discarded = args["discarded"]
+    DISCARD_DECK.append(discarded)
     lcm_data = {"cards": cards, "can_veto": BOARD.can_veto}
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.CHANCELLOR_DISCARD, lcm_data)
 
@@ -202,6 +213,8 @@ def chancellor_discarded(args):
     """
     global GAME_STATE, BOARD, PRESIDENT_INDEX
     card = args["card"]
+    discarded = args["discarded"]
+    DISCARD_DECK.append(discarded)
     BOARD.enact_policy(card)
     lcm_data = {"liberal": BOARD.liberal_enacted, "fascist": BOARD.fascist_enacted}
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
@@ -318,6 +331,7 @@ def reset():
     global PLAYERS, CARD_DECK, PRESIDENT_INDEX, PREVIOUS_PRESIDENT_INDEX, PREVIOUS_CHANCELLOR_INDEX, NOMINATED_CHANCELLOR_INDEX, AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX, ELECTION_TRACKER
     PLAYERS = []
     CARD_DECK = []
+    DISCARD_DECK = []
     PRESIDENT_INDEX = 0
     PREVIOUS_PRESIDENT_INDEX = 0
     PREVIOUS_CHANCELLOR_INDEX = 0

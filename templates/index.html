@@ -10,7 +10,7 @@
          <script>
         	const socket = io()
         	socket.emit('join', JSON.stringify({"name" : "hello world", "id" : Math.round(Math.random()*1000)}))
-        	socket.on('event', () => console.log("baa ")
+        	socket.on('event', () => console.log("baa "))
         </script>
     </body>
 </html>
