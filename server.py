@@ -4,10 +4,11 @@ import time
 import queue
 import gevent # pylint: disable=import-error
 import flask_login
+import Shepherd
 from flask import Flask, render_template # pylint: disable=import-error
 from flask_socketio import SocketIO, emit, join_room, leave_room, send # pylint: disable=import-error
 from Utils import *
-from LCM import *
+from LCM import lcm_send, lcm_register
 
 HOST_URL = "127.0.0.1"
 PORT = 5000
@@ -18,6 +19,10 @@ socketio = SocketIO(app, async_mode="gevent")
 @app.route('/')
 def hello_world():
     return render_template('index.html')
+
+@app.route('/board')
+def render_board():
+    return render_template('board.html')
 
 @socketio.on('join')
 def on_join(user_info):
@@ -52,13 +57,13 @@ def player_voted(vote_info):
 @socketio.on('president_discarded')
 def president_discarded(policy_info):
     data = json.loads(policy_info)
-    print('after president discarded, cards remaining are: ', data['cards'])
+    print('after president discarded', data[discarded], ', cards remaining are: ', data['cards'])
     lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.PRESIDENT_DISCARDED, data)
 
 @socketio.on('chancellor_discarded')
 def chancellor_discarded(policy_info):
     data = json.loads(policy_info)
-    print('after chancellor discarded, card remaining is: ', data['card'])
+    print('after chancellor discarded', data[discarded], ', card remaining is: ', data['card'])
     lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.CHANCELLOR_DISCARDED, data)
 
 @socketio.on('chancellor_vetoed')
@@ -109,5 +114,8 @@ def LCM_receive(header, data = {}):
 #         socketio.sleep(0.1)
 
 # socketio.start_background_task(receiver)
-    
+
+lcm_register(LCM_TARGETS.SERVER, LCM_receive)
+lcm_register(LCM_TARGETS.SHEPHERD, Shepherd.LCM_receive)
+
 socketio.run(app, host=HOST_URL, port=PORT)

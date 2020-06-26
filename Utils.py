@@ -35,6 +35,7 @@ class SHEPHERD_HEADERS:
     Header to tell shepherd that the president has discarded a policy
     contains:
         cards - the two policies left
+        discarded - the card discarded (String value)
     """
 
     CHANCELLOR_DISCARDED = "chancellor_discarded"
@@ -42,6 +43,7 @@ class SHEPHERD_HEADERS:
     Header to tell shepherd that the chancellor has discarded a policy
     contains:
         card - the card left (String value)
+        discarded - the card discarded (String value)
     """
 
     CHANCELLOR_VETOED = "chancellor_vetoed"

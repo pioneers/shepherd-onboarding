@@ -1,6 +1,6 @@
 from Player import Player
 from Utils import *
-from LCM import *
+from LCM import lcm_send, lcm_register
 from Board import Board
 import random
 
@@ -78,27 +78,46 @@ def player_joined_new_game(args):
     global PLAYERS
     id = args["id"]
     name = args["name"]
-    lcm_data = {"usernames" : player_names(PLAYERS)}
+    lcm_data = {}
+    if(len(PLAYERS) >= 10):
+        # this will need to be a spectator
+        SPECTATORS.append(Player(id, name))
+        return
     if not id in player_ids(PLAYERS):
         # is this someone reconnecting or joining for the first time?
+        print("# Shepherd: Welcome", name)
         PLAYERS += [Player(id, name)]
         lcm_data["recipients"] = player_ids(PLAYERS)
     else:
         lcm_data["recipients"] = [id]
+        print("# Shepherd: Welcome back", name)
+    lcm_data["usernames"] = player_names(PLAYERS)
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.PLAYERS, lcm_data)
 
 def player_joined_ongoing_game(args):
     """
     A function that allows players to reconnect to the game.
     """
-    global PLAYERS
+    global PLAYERS, SPECTATORS
     id = args["id"]
     name = args["name"]
     if id in player_ids(PLAYERS):
         # is this someone reconnecting or joining for the first time?
+        print("# Shepherd: Welcome back", name)
         lcm_data = {"usernames" : player_names(PLAYERS), "recipients" : [id]}
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.PLAYERS, lcm_data)
         # TODO: there is more stuff to send to the player probably
+    elif id in player_ids(SPECTATORS):
+        print("# Shepherd: Welcome as a spectator", name)
+        lcm_data = {"usernames" : player_names(PLAYERS), "recipients" : [id]}
+        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.PLAYERS, lcm_data)
+        # TODO: there is more stuff to send to the spectator probably
+    else:
+        print("# Shepherd: Welcome as a spectator", name)
+        lcm_data = {"usernames" : player_names(PLAYERS), "recipients" : [id]}
+        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.PLAYERS, lcm_data)
+        # TODO: there is more stuff to send to the spectator probably
+        SPECTATORS.append(Player(id, name))
 
 def start_game(args):
     """
@@ -300,6 +319,7 @@ def perform_execution(args):
     if player.role == ROLES.HITLER:
         print("Game over") # TODO: game over
     del PLAYERS[player_ids(PLAYERS).index(p_id)]
+    SPECTATORS.append(player)
 
 def veto():
     """
@@ -328,8 +348,9 @@ def reset():
     """
     Returns the game state to what it was at the beginning of executions
     """
-    global PLAYERS, CARD_DECK, PRESIDENT_INDEX, PREVIOUS_PRESIDENT_INDEX, PREVIOUS_CHANCELLOR_INDEX, NOMINATED_CHANCELLOR_INDEX, AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX, ELECTION_TRACKER
+    global PLAYERS, SPECTATORS, DISCARD_DECK, CARD_DECK, PRESIDENT_INDEX, PREVIOUS_PRESIDENT_INDEX, PREVIOUS_CHANCELLOR_INDEX, NOMINATED_CHANCELLOR_INDEX, AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX, ELECTION_TRACKER
     PLAYERS = []
+    SPECTATORS = []
     CARD_DECK = []
     DISCARD_DECK = []
     PRESIDENT_INDEX = 0
@@ -386,10 +407,12 @@ def chaos():
 # game variables
 #===================================
 
-GAME_STATE = STATE.END
+GAME_STATE = STATE.SETUP
 
 PLAYERS = []
+SPECTATORS = []
 CARD_DECK = []
+DISCARD_DECK = []
 PRESIDENT_INDEX = 0
 PREVIOUS_PRESIDENT_INDEX = 0 # for remembering who is ineligible
 PREVIOUS_CHANCELLOR_INDEX = 0 # for remembering who is ineligible
