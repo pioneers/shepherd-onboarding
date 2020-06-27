@@ -115,7 +115,8 @@ def perform_execution(player_info):
 
 
 def LCM_receive(header, data={}):
-    print(data)
+    print("server.py: LCM_receive", header, data)
+    socketio.emit('players', json.dumps(data))
 #     events = gevent.queue.Queue()
 #     lcm_start_read(str.encode(LCM_TARGETS.UI), events)
 

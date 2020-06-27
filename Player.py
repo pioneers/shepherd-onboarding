@@ -1,5 +1,6 @@
 from Utils import VOTES, ROLES
 
+
 class Player:
     """This is the player class, which is used to track the player's role, the
     players session ID, and the player's vote
@@ -16,10 +17,10 @@ class Player:
         self.name = name
         self.vote = VOTES.UNDEFINED
         self.role = ROLES.NONE
-        self.investigated = False # have they been investigated yet?
+        self.investigated = False  # have they been investigated yet?
 
     def clear_vote(self):
         self.vote = VOTES.UNDEFINED
 
     def __str__(self):
-        return "Name: " + self.name + ", ID: " + self.id
+        return "Name: " + self.name + ", ID: " + str(self.id)

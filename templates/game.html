@@ -11,19 +11,28 @@
   </head>
   <body>
     <h1 id="title">BAAA play here</h1>
+    <h4>Players are below:</h4>
+    <a id="players"></a>
     <script>
       const socket = io();
+      const name = getCookie("name");
+      const id = getCookie("id");
       document.getElementById("title").textContent = `BAA play here ${getCookie(
         "name"
       )}. Your id: ${getCookie("id")}`;
       socket.emit(
         "join",
         JSON.stringify({
-          name: "hello world",
-          id: Math.round(Math.random() * 1000),
+          name,
+          id,
         })
       );
       socket.on("event", () => console.log("baa "));
+      socket.on("players", (data) => {
+        const { usernames } = JSON.parse(data);
+        console.log("players are: ", usernames);
+        document.getElementById("players").textContent = usernames.toString();
+      });
     </script>
   </body>
 </html>

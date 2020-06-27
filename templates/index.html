@@ -15,16 +15,9 @@
       const joinGame = () => {
         const id = Math.round(Math.random() * 1000);
         const name = document.getElementById("nameField").value;
-        console.log("Joining game with id ", id);
+        console.log("id and name are ", id, name);
         setCookie("id", id);
         setCookie("name", name);
-        socket.emit(
-          "join",
-          JSON.stringify({
-            name,
-            id,
-          })
-        );
         location.href = "/game";
       };
     </script>
