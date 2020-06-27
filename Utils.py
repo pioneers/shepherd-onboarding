@@ -99,6 +99,13 @@ class SERVER_HEADERS:
     back to shepherd
     """
 
+    NOT_ENOUGH_PLAYERS = "not_enough_players"
+    """
+    Header sent to server to tell clients that there are not enough players
+    contains:
+        players - number of players currently joined
+    """
+
     CHANCELLOR_REQUEST = "chancellor_request"
     """
     Header sent to server to start chancellor state for all players and request
@@ -184,6 +191,13 @@ class SERVER_HEADERS:
     Header sent to server to ask for an execution
     contains:
         president - the id of the president
+    """
+
+    GAME_OVER = "game_over"
+    """
+    Header sent to server to report the end of the game
+    contains:
+        winner - the role of the winning team
     """
 
 # pylint: disable=invalid-name

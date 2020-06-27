@@ -67,10 +67,9 @@ def to_setup(args):
     CARD_DECK = new_deck()
     GAME_STATE = STATE.SETUP
     # this needs to be the last thing that happens, since due to how this
-    # pseudo-LCM actually works, this will do a signifigant amount of work on
+    # pseudo-LCM actually works, this will do a significant amount of work on
     # the server's side, and may spawn more LCM messages.
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.FORCE_RECONNECT, {})
-
 
 def player_joined_new_game(args):
     """
@@ -127,7 +126,8 @@ def start_game(args):
     """
     global PLAYERS, BOARD
     if len(PLAYERS) < 5:
-        #TODO notify clients that there are not enough players.
+        lcm_data = {"players": len(PLAYERS)}
+        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.NOT_ENOUGH_PLAYERS, lcm_data)
         return
     deck = [ROLES.LIBERAL] * (len(PLAYERS) // 2 + 1)
     deck += [ROLES.FASCIST] * ((len(PLAYERS) - 1) // 2 - 1)
@@ -175,7 +175,7 @@ def receive_vote(args):
             PREVIOUS_PRESIDENT_INDEX = PRESIDENT_INDEX
             PREVIOUS_CHANCELLOR_INDEX = NOMINATED_CHANCELLOR_INDEX
             if PLAYERS[NOMINATED_CHANCELLOR_INDEX].role == ROLES.HITLER and BOARD.fascist_enacted >= 3:
-                print("Game over") # TODO: game over
+                game_over(ROLES.FASCIST)
             if len(CARD_DECK) < 3:
                 CARD_DECK = DISCARD_DECK.copy().append(CARD_DECK)
                 shuffle_deck(CARD_DECK)
@@ -248,7 +248,7 @@ def chancellor_discarded(args):
     lcm_data = {"liberal": BOARD.liberal_enacted, "fascist": BOARD.fascist_enacted}
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
     if BOARD.fascist_enacted >= 6:
-        print("Game over") # TODO: game over
+        game_over(ROLES.FASCIST)
     elif card == CARDS.LIBERAL or len(BOARD.current_power_list()) == 0:
         PRESIDENT_INDEX = next_president_index()
         to_chancellor()
@@ -265,11 +265,9 @@ def chancellor_discarded(args):
                 PRESIDENT_INDEX = next_president_index()
             elif action == POWERS.EXECUTION:
                 execution()
-                PRESIDENT_INDEX = next_president_index()
             elif action == POWERS.VETO:
                 veto()
                 PRESIDENT_INDEX = next_president_index()
-        to_chancellor()
 
 def investigate_loyalty():
     """
@@ -288,6 +286,7 @@ def investigate_player(args):
     loyalty = ROLES.LIBERAL if player.role == ROLES.LIBERAL else ROLES.FASCIST
     lcm_data = {"president": player_id(PRESIDENT_INDEX), "loyalty": loyalty}
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.RECEIVE_INVESTIGATION, lcm_data)
+    to_chancellor()
 
 def call_special_election():
     """
@@ -312,6 +311,7 @@ def policy_peek():
     cards = [CARD_DECK[i] for i in range(min(len(CARD_DECK), 3))]
     lcm_data = {"president": player_id(PRESIDENT_INDEX), "cards": cards}
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.PERFORM_POLICY_PEEK, lcm_data)
+    to_chancellor()
 
 def execution():
     """
@@ -324,12 +324,22 @@ def perform_execution(args):
     """
     A function that executes a player.
     """
+    global PRESIDENT_INDEX, NOMINATED_CHANCELLOR_INDEX, PREVIOUS_PRESIDENT_INDEX, PREVIOUS_CHANCELLOR_INDEX
     p_id = args["player"]
     player = player_for_id(p_id)
     if player.role == ROLES.HITLER:
-        print("Game over") # TODO: game over
-    del PLAYERS[player_ids(PLAYERS).index(p_id)]
+        game_over(ROLES.LIBERAL)
+    ind = player_ids(PLAYERS).index(p_id)
+    del PLAYERS[ind]
+
+    PRESIDENT_INDEX = Player.NONE if ind == PRESIDENT_INDEX else (PRESIDENT_INDEX - 1 if ind < PRESIDENT_INDEX else PRESIDENT_INDEX)
+    NOMINATED_CHANCELLOR_INDEX = Player.NONE if ind == NOMINATED_CHANCELLOR_INDEX else (NOMINATED_CHANCELLOR_INDEX - 1 if ind < NOMINATED_CHANCELLOR_INDEX else NOMINATED_CHANCELLOR_INDEX)
+    PREVIOUS_PRESIDENT_INDEX = Player.NONE if ind == PREVIOUS_PRESIDENT_INDEX else (PREVIOUS_PRESIDENT_INDEX - 1 if ind < PREVIOUS_PRESIDENT_INDEX else PREVIOUS_PRESIDENT_INDEX)
+    PREVIOUS_CHANCELLOR_INDEX = Player.NONE if ind == PREVIOUS_CHANCELLOR_INDEX else (PREVIOUS_CHANCELLOR_INDEX - 1 if ind < PREVIOUS_CHANCELLOR_INDEX else PREVIOUS_CHANCELLOR_INDEX)
+
     SPECTATORS.append(player)
+    PRESIDENT_INDEX = next_president_index()
+    to_chancellor()
 
 def veto():
     """
@@ -337,6 +347,13 @@ def veto():
     """
     global BOARD
     BOARD.can_veto = True
+
+def game_over(winner):
+    """
+    A function that reports the end of a game.
+    """
+    lcm_data = {"winner": winner}
+    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.GAME_OVER, lcm_data)
 
 #===================================
 # helper functions
@@ -367,7 +384,7 @@ def reset():
     PREVIOUS_PRESIDENT_INDEX = Player.NONE
     PREVIOUS_CHANCELLOR_INDEX = Player.NONE
     NOMINATED_CHANCELLOR_INDEX = Player.NONE
-    AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX = -1
+    AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX = Player.NONE
     ELECTION_TRACKER = 0
 
 def shuffle_deck(deck):
@@ -417,10 +434,10 @@ def diagnostics():
     diag = "State: " + GAME_STATE + "\n"
     diag += "Players: " + str([str(p) for p in PLAYERS])
     diag += "\nSpectators: " + str([str(s) for s in SPECTATORS])
-    diag += "\nPresident: " + str(PLAYERS[PRESIDENT_INDEX])
-    diag += "\nNominated Chancellor: " + str(PLAYERS[NOMINATED_CHANCELLOR_INDEX])
-    diag += "\nPrevious President: " + str(PLAYERS[PREVIOUS_PRESIDENT_INDEX])
-    diag += "\nPrevious Chancellor: " + str(PLAYERS[PREVIOUS_CHANCELLOR_INDEX])
+    diag += "\nPresident: " + ("None" if PRESIDENT_INDEX == -1 else str(PLAYERS[PRESIDENT_INDEX]))
+    diag += "\nNominated Chancellor: " + ("None" if NOMINATED_CHANCELLOR_INDEX == -1 else str(PLAYERS[NOMINATED_CHANCELLOR_INDEX]))
+    diag += "\nPrevious President: " + ("None" if PREVIOUS_PRESIDENT_INDEX == -1 else str(PLAYERS[PREVIOUS_PRESIDENT_INDEX]))
+    diag += "\nPrevious Chancellor: " + ("None" if PREVIOUS_CHANCELLOR_INDEX == -1 else str(PLAYERS[PREVIOUS_CHANCELLOR_INDEX]))
     diag += "\nElection Tracker: " + str(ELECTION_TRACKER)
     diag += "\nLiberal Enacted: " + str(BOARD.liberal_enacted)
     diag += "\nFascist Enacted: " + str(BOARD.fascist_enacted)
@@ -437,6 +454,7 @@ SPECTATORS = []
 CARD_DECK = []
 DISCARD_DECK = []
 PRESIDENT_INDEX = 0
+# TODO: do these -1s cause problems with array indexing?
 PREVIOUS_PRESIDENT_INDEX = Player.NONE # for remembering who is ineligible
 PREVIOUS_CHANCELLOR_INDEX = Player.NONE # for remembering who is ineligible
 NOMINATED_CHANCELLOR_INDEX = Player.NONE
