@@ -9,6 +9,8 @@ class Player:
     vote - Enum of JA, NEIN, or UNDEFINED
     """
 
+    NONE = -1
+
     def __init__(self, id, name):
         self.id = id
         self.name = name

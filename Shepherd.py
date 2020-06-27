@@ -191,6 +191,8 @@ def receive_vote(args):
                     shuffle_deck(CARD_DECK)
                 card = draw_cards(1)[0]
                 BOARD.enact_policy(card)
+                PREVIOUS_PRESIDENT_INDEX = Player.NONE
+                PREVIOUS_CHANCELLOR_INDEX = Player.NONE
             PRESIDENT_INDEX = next_president_index()
             to_chancellor()
 
@@ -216,13 +218,19 @@ def president_veto_answer(args):
     """
     A function that receives if the president vetoes or not.
     """
-    global ELECTION_TRACKER, PRESIDENT_INDEX
+    global ELECTION_TRACKER, PRESIDENT_INDEX, PREVIOUS_PRESIDENT_INDEX, PREVIOUS_CHANCELLOR_INDEX, CARD_DECK
     value = args["veto"]
     if value:
         ELECTION_TRACKER += 1
         if chaos():
             ELECTION_TRACKER = 0
-            # TODO: handle the chaos
+            if len(CARD_DECK) < 3:
+                CARD_DECK = DISCARD_DECK.copy().append(CARD_DECK)
+                shuffle_deck(CARD_DECK)
+            card = draw_cards(1)[0]
+            BOARD.enact_policy(card)
+            PREVIOUS_PRESIDENT_INDEX = Player.NONE
+            PREVIOUS_CHANCELLOR_INDEX = Player.NONE
         PRESIDENT_INDEX = next_president_index()
         to_chancellor()
     else:
@@ -356,9 +364,9 @@ def reset():
     CARD_DECK = []
     DISCARD_DECK = []
     PRESIDENT_INDEX = 0
-    PREVIOUS_PRESIDENT_INDEX = 0
-    PREVIOUS_CHANCELLOR_INDEX = 0
-    NOMINATED_CHANCELLOR_INDEX = 0
+    PREVIOUS_PRESIDENT_INDEX = Player.NONE
+    PREVIOUS_CHANCELLOR_INDEX = Player.NONE
+    NOMINATED_CHANCELLOR_INDEX = Player.NONE
     AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX = -1
     ELECTION_TRACKER = 0
 
@@ -429,10 +437,10 @@ SPECTATORS = []
 CARD_DECK = []
 DISCARD_DECK = []
 PRESIDENT_INDEX = 0
-PREVIOUS_PRESIDENT_INDEX = 0 # for remembering who is ineligible
-PREVIOUS_CHANCELLOR_INDEX = 0 # for remembering who is ineligible
-NOMINATED_CHANCELLOR_INDEX = 0
-AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX = -1 # for remembering the president after a special election cycle, -1 if not a special election cycle
+PREVIOUS_PRESIDENT_INDEX = Player.NONE # for remembering who is ineligible
+PREVIOUS_CHANCELLOR_INDEX = Player.NONE # for remembering who is ineligible
+NOMINATED_CHANCELLOR_INDEX = Player.NONE
+AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX = Player.NONE # for remembering the president after a special election cycle, -1 if not a special election cycle
 ELECTION_TRACKER = 0
 BOARD = Board(5)
 
