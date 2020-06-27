@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+    <script src="{{url_for('static', filename='utils/cookies.js')}}"></script>
+    <link
+      rel="stylesheet"
+      href="{{url_for('static', filename='bootstrap.min.css')}}"
+    />
+    <title>Game</title>
+  </head>
+  <body>
+    <h1 id="title">BAAA play here</h1>
+    <script>
+      const socket = io();
+      document.getElementById("title").textContent = `BAA play here ${getCookie(
+        "name"
+      )}. Your id: ${getCookie("id")}`;
+      socket.emit(
+        "join",
+        JSON.stringify({
+          name: "hello world",
+          id: Math.round(Math.random() * 1000),
+        })
+      );
+      socket.on("event", () => console.log("baa "));
+    </script>
+  </body>
+</html>
