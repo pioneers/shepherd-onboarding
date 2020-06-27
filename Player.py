@@ -18,3 +18,6 @@ class Player:
 
     def clear_vote(self):
         self.vote = VOTES.UNDEFINED
+
+    def __str__(self):
+        return "Name: " + self.name + ", ID: " + self.id

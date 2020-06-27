@@ -52,6 +52,8 @@ def LCM_receive(header, dic={}):
     else:
         print("Invalid State")
 
+    print(diagnostics())
+
 #===================================
 # game functions
 #===================================
@@ -79,7 +81,7 @@ def player_joined_new_game(args):
     id = args["id"]
     name = args["name"]
     lcm_data = {}
-    if(len(PLAYERS) >= 10):
+    if len(PLAYERS) >= 10:
         # this will need to be a spectator
         SPECTATORS.append(Player(id, name))
         return
@@ -402,6 +404,19 @@ def passing_vote():
 
 def chaos():
     return ELECTION_TRACKER == 3
+
+def diagnostics():
+    diag = "State: " + GAME_STATE + "\n"
+    diag += "Players: " + str([str(p) for p in PLAYERS])
+    diag += "\nSpectators: " + str([str(s) for s in SPECTATORS])
+    diag += "\nPresident: " + str(PLAYERS[PRESIDENT_INDEX])
+    diag += "\nNominated Chancellor: " + str(PLAYERS[NOMINATED_CHANCELLOR_INDEX])
+    diag += "\nPrevious President: " + str(PLAYERS[PREVIOUS_PRESIDENT_INDEX])
+    diag += "\nPrevious Chancellor: " + str(PLAYERS[PREVIOUS_CHANCELLOR_INDEX])
+    diag += "\nElection Tracker: " + str(ELECTION_TRACKER)
+    diag += "\nLiberal Enacted: " + str(BOARD.liberal_enacted)
+    diag += "\nFascist Enacted: " + str(BOARD.fascist_enacted)
+    return diag
 
 #===================================
 # game variables
