@@ -359,17 +359,29 @@ def game_over(winner):
 #===================================
 
 def player_names(players):
+    """
+    Returns the list of player names
+    """
     return [player.name for player in players]
 
 def player_ids(players):
+    """
+    Returns the list of player IDs
+    """
     return [player.id for player in players]
 
 def player_id(index):
+    """
+    Returns the ID of a player at an index, returns None if the index is Player.NONE
+    """
     if index == Player.NONE:
         return None
     return player_ids(PLAYERS)[index]
 
 def player_for_id(p_id):
+    """
+    Returns the player with a specified ID
+    """
     return PLAYERS[player_ids(PLAYERS).index(p_id)]
 
 def reset():
@@ -389,15 +401,24 @@ def reset():
     ELECTION_TRACKER = 0
 
 def shuffle_deck(deck):
+    """
+    Shuffles a card deck
+    """
     random.shuffle(deck)
 
 def new_deck():
+    """
+    Returns a new full card deck with the appropriate cards
+    """
     new_d = [CARDS.LIBERAL for _ in range(6)]
     new_d += [CARDS.FASCIST for _ in range(11)]
     shuffle_deck(new_d)
     return new_d
 
 def reshuffle_deck():
+    """
+    Joins the discard pile with the rest of the card deck, then shuffles the card deck
+    """
     global DISCARD_DECK, CARD_DECK
     discard_copy = DISCARD_DECK.copy()
     discard_copy.extend(CARD_DECK)
@@ -406,6 +427,9 @@ def reshuffle_deck():
     shuffle_deck(CARD_DECK)
 
 def draw_cards(number):
+    """
+    Draws and returns cards from the card deck
+    """
     global CARD_DECK
     cards = []
     for i in range(number):
@@ -413,6 +437,9 @@ def draw_cards(number):
     return cards
 
 def next_president_index():
+    """
+    Gets the index of the next president, taking into account special elections
+    """
     global AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX
     if AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX != Player.NONE:
         value = AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX
@@ -421,6 +448,9 @@ def next_president_index():
     return (PRESIDENT_INDEX + 1) % len(PLAYERS)
 
 def number_of_votes():
+    """
+    Returns the number of players that recorded votes
+    """
     votes = 0
     for player in PLAYERS:
         if player.vote != VOTES.UNDEFINED:
@@ -428,6 +458,9 @@ def number_of_votes():
     return votes
 
 def passing_vote():
+    """
+    Returns if the recorded votes would elect the proposed government
+    """
     diff = 0
     for player in PLAYERS:
         if player.vote == VOTES.JA:
@@ -437,9 +470,15 @@ def passing_vote():
     return diff > 0
 
 def chaos():
+    """
+    Returns if the country should be thrown into chaos
+    """
     return ELECTION_TRACKER == 3
 
 def diagnostics():
+    """
+    Returns information about the current game
+    """
     diag = "State: " + GAME_STATE + "\n"
     diag += "Players: " + str([str(p) for p in PLAYERS])
     diag += "\nSpectators: " + str([str(s) for s in SPECTATORS])
@@ -456,19 +495,23 @@ def diagnostics():
 # game variables
 #===================================
 
-GAME_STATE = STATE.SETUP
+GAME_STATE = STATE.SETUP # the current game state (setup, pick chancellor, vote, policy, action, end)
 
-PLAYERS = []
-SPECTATORS = []
-CARD_DECK = []
-DISCARD_DECK = []
-PRESIDENT_INDEX = 0
-PREVIOUS_PRESIDENT_INDEX = Player.NONE # for remembering who is ineligible
-PREVIOUS_CHANCELLOR_INDEX = Player.NONE # for remembering who is ineligible
-NOMINATED_CHANCELLOR_INDEX = Player.NONE
-AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX = Player.NONE # for remembering the president after a special election cycle, -1 if not a special election cycle
-ELECTION_TRACKER = 0
-BOARD = Board(5)
+PLAYERS = [] # a list of Player objects representing the players in the game
+SPECTATORS = [] # a list of Player objects representing the spectators
+CARD_DECK = [] # the cards in the deck (not including discarded cards)
+DISCARD_DECK = [] # the discarded cards
+PRESIDENT_INDEX = 0 # the index of the president — this changes before the government is elected
+PREVIOUS_PRESIDENT_INDEX = Player.NONE # the previous elected president (for remembering who is ineligible)
+PREVIOUS_CHANCELLOR_INDEX = Player.NONE # the previous elected chancellor (for remembering who is ineligible)
+NOMINATED_CHANCELLOR_INDEX = Player.NONE # the player who is nominated for chancellor
+AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX = Player.NONE # for remembering the president after a special election cycle, Player.NONE if not a special election cycle
+ELECTION_TRACKER = 0 # for tracking failed elections
+BOARD = Board(5) # the game board
+
+#===================================
+# header to function map
+#===================================
 
 SETUP_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED : player_joined_new_game,
                    SHEPHERD_HEADERS.NEXT_STAGE : start_game}
