@@ -177,8 +177,7 @@ def receive_vote(args):
             if PLAYERS[NOMINATED_CHANCELLOR_INDEX].role == ROLES.HITLER and BOARD.fascist_enacted >= 3:
                 game_over(ROLES.FASCIST)
             if len(CARD_DECK) < 3:
-                CARD_DECK = DISCARD_DECK.copy().append(CARD_DECK)
-                shuffle_deck(CARD_DECK)
+                reshuffle_deck()
             GAME_STATE = STATE.POLICY
             lcm_data = {"cards": draw_cards(3)}
             lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.PRESIDENT_DISCARD, lcm_data)
@@ -187,8 +186,7 @@ def receive_vote(args):
             if chaos():
                 ELECTION_TRACKER = 0
                 if len(CARD_DECK) < 3:
-                    CARD_DECK = DISCARD_DECK.copy().append(CARD_DECK)
-                    shuffle_deck(CARD_DECK)
+                    reshuffle_deck()
                 card = draw_cards(1)[0]
                 BOARD.enact_policy(card)
                 PREVIOUS_PRESIDENT_INDEX = Player.NONE
@@ -225,8 +223,7 @@ def president_veto_answer(args):
         if chaos():
             ELECTION_TRACKER = 0
             if len(CARD_DECK) < 3:
-                CARD_DECK = DISCARD_DECK.copy().append(CARD_DECK)
-                shuffle_deck(CARD_DECK)
+                reshuffle_deck()
             card = draw_cards(1)[0]
             BOARD.enact_policy(card)
             PREVIOUS_PRESIDENT_INDEX = Player.NONE
@@ -245,6 +242,7 @@ def chancellor_discarded(args):
     discarded = args["discarded"]
     DISCARD_DECK.append(discarded)
     BOARD.enact_policy(card)
+    DISCARD_DECK.append(card)
     lcm_data = {"liberal": BOARD.liberal_enacted, "fascist": BOARD.fascist_enacted}
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
     if BOARD.fascist_enacted >= 6:
@@ -396,6 +394,14 @@ def new_deck():
     shuffle_deck(new_d)
     return new_d
 
+def reshuffle_deck():
+    global DISCARD_DECK, CARD_DECK
+    discard_copy = DISCARD_DECK.copy()
+    discard_copy.extend(CARD_DECK)
+    CARD_DECK = discard_copy.copy()
+    DISCARD_DECK = []
+    shuffle_deck(CARD_DECK)
+
 def draw_cards(number):
     global CARD_DECK
     cards = []
@@ -451,7 +457,6 @@ GAME_STATE = STATE.SETUP
 
 PLAYERS = []
 SPECTATORS = []
-# TODO: test deck
 CARD_DECK = []
 DISCARD_DECK = []
 PRESIDENT_INDEX = 0
