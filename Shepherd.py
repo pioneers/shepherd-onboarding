@@ -145,7 +145,8 @@ def to_chancellor():
     global GAME_STATE
     GAME_STATE = STATE.PICK_CHANCELLOR
     ineligibles = {player_id(PRESIDENT_INDEX), player_id(PREVIOUS_PRESIDENT_INDEX), player_id(PREVIOUS_CHANCELLOR_INDEX)}
-    lcm_data = {"president": player_id(PRESIDENT_INDEX), "ineligibles": list(ineligibles)}
+    ineligibles_final = [i for i in list(ineligibles) if i is not None]
+    lcm_data = {"president": player_id(PRESIDENT_INDEX), "ineligibles": ineligibles_final}
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.CHANCELLOR_REQUEST, lcm_data)
 
 def receive_chancellor_nomination(args):
@@ -364,6 +365,8 @@ def player_ids(players):
     return [player.id for player in players]
 
 def player_id(index):
+    if index == Player.NONE:
+        return None
     return player_ids(PLAYERS)[index]
 
 def player_for_id(p_id):
@@ -411,9 +414,9 @@ def draw_cards(number):
 
 def next_president_index():
     global AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX
-    if AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX != -1:
+    if AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX != Player.NONE:
         value = AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX
-        AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX = -1
+        AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX = Player.NONE
         return value
     return (PRESIDENT_INDEX + 1) % len(PLAYERS)
 
@@ -460,7 +463,6 @@ SPECTATORS = []
 CARD_DECK = []
 DISCARD_DECK = []
 PRESIDENT_INDEX = 0
-# TODO: do these -1s cause problems with array indexing?
 PREVIOUS_PRESIDENT_INDEX = Player.NONE # for remembering who is ineligible
 PREVIOUS_CHANCELLOR_INDEX = Player.NONE # for remembering who is ineligible
 NOMINATED_CHANCELLOR_INDEX = Player.NONE
