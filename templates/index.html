@@ -7,14 +7,26 @@
       href="{{url_for('static', filename='bootstrap.min.css')}}"
     />
     <script src="{{url_for('static', filename='utils/cookies.js')}}"></script>
+    <script >
+      String.prototype.hashCode = function() {
+        var hash = 0, i, chr;
+        for (i = 0; i< this.length; i++) {
+          chr = this.charCodeAt(i);
+          hash = ((hash << 5) - hash) + chr;
+          hash |= 0;
+        }
+        return hash
+      };
+    </script>
   </head>
   <body>
     <script type="text/javascript">
       const socket = io();
       socket.on("event", () => console.log("baa "));
-      const joinGame = () => {
-        const id = Math.round(Math.random() * 1000);
+      function joinGame () {
+        const password = document.getElementById("passwordField").value;
         const name = document.getElementById("nameField").value;
+        const id = password.concat(name).hashCode();
         console.log("id and name are ", id, name);
         setCookie("id", id);
         setCookie("name", name);
@@ -27,6 +39,12 @@
       type="text"
       class="form-control"
       placeholder="name plz"
+    />
+    <input
+      id="passwordField"
+      type="password"
+      class="form-control"
+      placeholder="create a password"
     />
     <button type="button" class="btn btn-primary" onclick="joinGame()">
       Join Game!

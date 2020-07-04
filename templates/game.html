@@ -14,12 +14,21 @@
     <h4>Players are below:</h4>
     <a id="players"></a>
     <script>
-      const socket = io();
+      console.log("loaded");
+      let socket;
+      try {
+        socket = io();
+      } catch (error) {
+        document.getElementById("title").textContent = `Looks like you don't have a full connection to the server! Try checking your internet connection!`;
+        throw error;
+      }
       const name = getCookie("name");
       const id = getCookie("id");
-      document.getElementById("title").textContent = `BAA play here ${getCookie(
-        "name"
-      )}. Your id: ${getCookie("id")}`;
+      document.getElementById("title").textContent = `BAA play here, you are ${name}`;
+      console.log(name);
+      if (!id && !name) {
+        location.href = "/index";
+      }
       socket.emit(
         "join",
         JSON.stringify({
