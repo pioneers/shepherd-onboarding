@@ -21,11 +21,14 @@
   </head>
   <body>
     <script type="text/javascript">
-      const socket = io();
-      socket.on("event", () => console.log("baa "));
       function joinGame () {
         const password = document.getElementById("passwordField").value;
         const name = document.getElementById("nameField").value;
+        if(password.length == 0 || name.length == 0) {
+          document.getElementById("errorField").style.display = "block";
+          document.getElementById("errorField").textContent = "Error, username and password cannot be empty!";
+          return;
+        }
         const id = password.concat(name).hashCode();
         console.log("id and name are ", id, name);
         setCookie("id", id);
@@ -46,6 +49,7 @@
       class="form-control"
       placeholder="create a password"
     />
+    <p id = "errorField" style="color:red;display:none"></p>
     <button type="button" class="btn btn-primary" onclick="joinGame()">
       Join Game!
     </button>
