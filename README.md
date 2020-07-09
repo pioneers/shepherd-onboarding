@@ -91,3 +91,7 @@ TODO
 
 ### Your Task
 TODO
+
+### Credit
+
+Secret Hitler is not our creation! That credit goes to Mike, Tommy, Mex, and Mac at [secrethitler.com](https://secrethitler.com). We are making no attempt to make money from the game, and our work falls under the original Creative Commons License (BY-NC-SA 4.0) that the game was released with. You can find that license [here](https://CreativeCommons.ord/licenses/by-nc-sa/4.0/legalcode).
