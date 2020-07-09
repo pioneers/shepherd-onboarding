@@ -63,7 +63,7 @@ data = {"stage": GAME_STATE}
 lcm_send(LCM_TARGETS.SCOREBOARD, SCOREBOARD_HEADER.STAGE, data)
 ```
 
-It is important to use an appropriate correct header, and to name all the arguments in the dictionary with the correct key.
+It is important to use an appropriate header, and to name all the arguments in the dictionary with the correct key.
 
 ## Shepherd Onboarding Project
 That was a ton of information to handle, so in order to bring you up to speed, we are going to have you use the Shepherd framework to implement the game [Secret Hitler](https://secrethitler.com), [rules](https://secrethitler.com/assets/Secret_Hitler_rules.pdf), while using a much simpler version of Shepherd.
