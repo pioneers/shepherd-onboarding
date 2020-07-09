@@ -127,7 +127,15 @@ LCM changes:
 ### Using Github
 Hopefully you have been to the git tutorial by now. If you haven't, please talk to Alex or Akshit!
 
-First you need to fork this repository. You will do this by clicking on fork in the upper right corner of github, and this will give you a copy of this repo for your own use. Only one person per group needs to fork this repo. Next you will need to add your partner(s) to your repo, which you can do by clicking on the gear icon next to the name of your newly created repo and adding collaborators. Lastly, you will need to clone the new repo onto your computer. Copy the link at the top right of the page, and run `git clone <link>`. You can also optionally run `TODO`
+First you need to fork this repository. You will do this by clicking on fork in the upper right corner of github.
+
+[Fork button](https://github.com/pioneers/shepherd-onboarding/blob/master/readmefigures/Fork%20Button.png)
+
+This will give you a copy of this repo for your own use. Only one person per group needs to fork this repo. Next you will need to add your partner(s) to your repo, which you can do by clicking on the gear icon next to the name of your newly created repo and adding collaborators. Lastly, you will need to clone the new repo onto your computer. Copy the link at the top right of the page:
+
+[Download button](https://github.com/pioneers/shepherd-onboarding/blob/master/readmefigures/Download%20Button.png)
+
+ and run `git clone <link>`. You can also optionally run `TODO`
 
 Git issues is a very helpful tool for organizing the workflow of a project. We will be using them for shepherd, and we have set up issues to guide you through the creation of this game as well. Git issues can be assigned to specific people, discussed, linked to certain pull requests, and finally when an issue is completed, closing the issues lets you track what still needs to be done. I recommend that you create and close issues as you work on the project to help you get used to using them.
 
