@@ -129,11 +129,11 @@ Hopefully you have been to the git tutorial by now. If you haven't, please talk 
 
 First you need to fork this repository. You will do this by clicking on fork in the upper right corner of github.
 
-![Fork button](https://github.com/pioneers/shepherd-onboarding/blob/master/readmefigures/Fork%20Button.png)
+![Fork button](https://github.com/pioneers/shepherd-onboarding/blob/master/readmefigures/Fork%20button.png)
 
 This will give you a copy of this repo for your own use. Only one person per group needs to fork this repo. Next you will need to add your partner(s) to your repo, which you can do by clicking on the gear icon next to the name of your newly created repo and adding collaborators. Lastly, you will need to clone the new repo onto your computer. Copy the link at the top right of the page:
 
-![Download button](https://github.com/pioneers/shepherd-onboarding/blob/master/readmefigures/Download%20Button.png)
+![Download button](https://github.com/pioneers/shepherd-onboarding/blob/master/readmefigures/Download%20button.png)
 
  and run `git clone <link>`. You can also optionally run `TODO`
 
