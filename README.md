@@ -40,6 +40,50 @@ Here each of the greyed out blocks is initialized in its own thread.
   * Blue lines represent communication via the serial ports of the computer. This is used to communicate with [Arduinos](https://en.m.wikipedia.org/wiki/Arduino), which we use to power our field sensors.
   * Black lines represent communication via a function call. This means that the two blocks shown are not running in separate threads and can simply be called / data returned normally.
 
+Now, we are going to dive a little into the nitty gritty of how the state machine works. Feel free to skip to the next section.
+
+As you've probably noticed, the main part of the state machine is Shepherd.py, however this file doesn't exist in a vacuum. Lets look at the helper files first:
+
+  * [Utils.py](https://github.com/pioneers/shepherd/blob/master/Utils.py) is perhaps the most important periphery. This file first and foremost defines the targets and headers that LCM uses to tie shepherd together (more on that below). This file also defines constants that are widely used in the code, and should be easy to find / change. There are also quite a few ENUMs that are defined in Utils.py, however these are not really python enums, just unique strings that serve the same purpose. Lastly, Utils.py defines the various timers that shepherd uses.
+
+  * On the subject of timers, we come to [Timer.py](https://github.com/pioneers/shepherd/blob/master/Timer.py). This file contains a class Timer, which takes a `timer_type` enum from Utils.py, and creates a new timer object that can be later initialized with a duration using `timer.start_timer(durration)`. You can check if these timers are still running using the `timer.is_running()` function, as well as reset them with `timer.reset()` or `Timer.reset_all()`. Each of these timer instances will spawn a new thread, so that they can run un-interrupted, and if specified they will send an LCM message when they finish.
+
+    The timer type enum in Utils.py is a dictionary with the following arguments:
+
+      * TYPE, a unique string used to identify the timer_type.
+      * NEEDS_FUNCTION, a boolean that tells the timer class whether or not it should send an empty LCM message to Shepherd.py when the timer runs out.
+      * FUNCTION, the LCM header to be sent if NEEDS_FUNCTION is true
+
+  * [Alliance.py](https://github.com/pioneers/shepherd/blob/master/Alliance.py) defines the Alliance class, which is responsible for holding information about an alliance such as the teams in the alliance, and the color of the alliance, as well as game-specific data for the alliance such as a score variable, which is subject to change each year.
+
+  * [Sheet.py](https://github.com/pioneers/shepherd/blob/master/Sheet.py) handles communication with a google sheet used for recording match scores and is populated with that day's match data. If no internet connection can be established, it will discard the scored rather than write them and it will pull match data from a downloaded CSV, the path to which is defined in Utils.py
+
+  * [Code.py](https://github.com/pioneers/shepherd/blob/master/Code.py) is a file that is subject to frequent change, however it will always be used to implement the seed generation and solution generation of the coding challenges.
+
+  * [LCM.py](https://github.com/pioneers/shepherd/blob/master/LCM.py) is a file that serves as a wrapper for LCM communication in shepherd. It is referenced by any file that engages in LCM communication.
+
+  * Audio.py, bot.py, and runtime_manager.py all have important uses, but are not finalized enough to be worth mentioning here.
+
+Lastly, lets talk about Shepherd.py. It might be useful to read the section on LCM before reading this, or you might want to read this section twice.
+
+[Shepherd.py](https://github.com/pioneers/shepherd/blob/master/Shepherd.py) is structured as follows:
+
+  * LCM queue and dispatch loop, which translates LCM requests to function calls, taking into account the GAME_STATE global variable as well as the given header. This uses the set of dictionaries found at the bottom of the file.
+
+    LCM queues can be started via `lcm_start_read(target, queue)`, where target is the lcm target that this queue will receive messages from, and queue is a python Queue where those events will be stored. The event object is structured as `[header, args]`.
+
+    LCM events may be sent using `lcm_send(target, header, args)`, where args is a dictionary of argument names and values.
+
+  * Evergreen functions, which are functions often invoked via LCM that are needed every year. These include the functions such as to_auto, which helps advance the game state, score keeping functions, information sharing functions, and a reset function.
+
+  * Game specific functions, which are also typically called via LCM, but are subject to change based on the current game. These are typically the functions responsible for implementing the rules of the game and serving as a referee.
+
+  * LCM header mappings, which are a collection of dictionaries that translate LCM headers to functions. There is one of these dictionaries for each game state, and when an event is processed by the dispatch loop, it will use the dictionary corresponding to the current game state. It is important to note that a header can map to different functions depending on the current game state, and that a function may be mapped to by multiple headers.
+
+  * Evergreen variables, which are global variables that will be used every year.
+
+  * Game specific variables, which are global variables that are subject to change each year.
+
 ### How Shepherd uses LCM
 LCM is used to send messages asynchronously throughout the shepherd backend. We use these messages to request a certain action to be performed by another program. When an LCM message is sent to a piece of shepherd, that message is stored in a queue, where it will be processed in a FIFO (first in first out) order. Thus, there is constantly a queue of incoming requests that dictate the actions that our programs must take. When a message is pulled off the queue, it is dispatched via some dispatching code and runs the corresponding function.
 
@@ -94,4 +138,4 @@ TODO
 
 ### Credit
 
-Secret Hitler is not our creation! That credit goes to Mike, Tommy, Mex, and Mac at [secrethitler.com](https://secrethitler.com). We are making no attempt to make money from the game, and our work falls under the original Creative Commons License (BY-NC-SA 4.0) that the game was released with. You can find that license [here](https://CreativeCommons.org/licenses/by-nc-sa/4.0/legalcode).
+Secret Hitler is not our creation! That credit goes to Mike, Tommy, Max, and Mac at [secrethitler.com](https://secrethitler.com). We are making no attempt to make money from the game, and our work falls under the original Creative Commons License (BY-NC-SA 4.0) that the game was released with. You can find that license [here](https://CreativeCommons.org/licenses/by-nc-sa/4.0/legalcode).
