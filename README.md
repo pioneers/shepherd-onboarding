@@ -33,7 +33,7 @@ Here we have the same diagram as before, colored to show the form of communicati
 
 Here each of the greyed out blocks is initialized in its own thread.
   * Red lines represent communication performed via LCM.
-   
+
     This is a library that is used to send data between two threads on the same machine and we have wrapped it in a file called LCM.py. There is a lot more to know about Shepherd's use of LCM, but we will cover that later.
   * Green lines represent communication via Proto Buffs (this is new to shepherd this year), which is similar in functionality to JSON but is much lighter weight.
   * Orange lines represent communication via SocketIO and JSON. We use these two libraries to communicate with other computers on the internet (or often just on the same WIFI network).
@@ -41,13 +41,29 @@ Here each of the greyed out blocks is initialized in its own thread.
   * Black lines represent communication via a function call. This means that the two blocks shown are not running in separate threads and can simply be called / data returned normally.
 
 ### How Shepherd uses LCM
-queues
+LCM is used to send messages asynchronously throughout the shepherd backend. We use these messages to request a certain action to be performed by another program. When an LCM message is sent to a piece of shepherd, that message is stored in a queue, where it will be processed in a FIFO (first in first out) order. Thus, there is constantly a queue of incoming requests that dictate the actions that our programs must take. When a message is pulled off the queue, it is dispatched via some dispatching code and runs the corresponding function.
 
-targets and headers
+  * in Shepherd.py, this dispatching code uses dictionaries to map the LCM message to a function, which is then called. This method is not needed for the other smaller and simpler server files.
 
-examples
+![LCM Diagram](https://github.com/pioneers/shepherd-onboarding/blob/master/readmefigures/LCM%20Diagram.png)
 
-TODO
+A LCM message is structured as a target, then a header, and then a body of arguments, which is typically a dictionary. LCM message:
+
+`[TARGET][HEADER][ARGUMENTS]`
+
+The LCM targets and headers are defined in the Utils.py file, and are instrumental to the function of LCM. Each target represents a receiving queue, while the header is used to indicate to the dispatching code which function to invoke.
+
+A LCM message telling the scoreboard what stage the game is in might be sent as follows:
+
+```
+from LCM import *
+from Utils import *
+
+data = {"stage": GAME_STATE}
+lcm_send(LCM_TARGETS.SCOREBOARD, SCOREBOARD_HEADER.STAGE, data)
+```
+
+It is important to use an appropriate correct header, and to name all the arguments in the dictionary with the correct key.
 
 ## Shepherd Onboarding Project
 That was a ton of information to handle, so in order to bring you up to speed, we are going to have you use the Shepherd framework to implement the game [Secret Hitler](https://secrethitler.com), [rules](https://secrethitler.com/assets/Secret_Hitler_rules.pdf), while using a much simpler version of Shepherd.
@@ -67,9 +83,9 @@ LCM changes:
 ### Using Github
 Hopefully you have been to the git tutorial by now. If you haven't, please talk to Alex or Akshit!
 
-First you need to clone this repository
+First you need to fork this repository. You will do this by clicking on fork in the upper right corner of github, and this will give you a copy of this repo for your own use. Only one person per group needs to fork this repo. Next you will need to add your partner(s) to your repo, which you can do by clicking on the gear icon next to the name of your newly created repo and adding collaborators. Lastly, you will need to clone the new repo onto your computer. Copy the link at the top right of the page, and run `git clone <link>`. You can also optionally run `TODO`
 
-Use git Issues...
+Git issues is a very helpful tool for organizing the workflow of a project. We will be using them for shepherd, and we have set up issues to guide you through the creation of this game as well. Git issues can be assigned to specific people, discussed, linked to certain pull requests, and finally when an issue is completed, closing the issues lets you track what still needs to be done. I recommend that you create and close issues as you work on the project to help you get used to using them.
 
 TODO
 
