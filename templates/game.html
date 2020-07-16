@@ -17,18 +17,32 @@
     <h1 id="title">BAAA play here</h1>
     <h4>Players are below:</h4>
     <a id="players"></a>
+    <button
+      id="startGame"
+      type="button"
+      class="btn btn-primary"
+      onclick="startGame()"
+      style="display: none;"
+    >
+      Start Game
+    </button>
+
     <script>
       console.log("loaded");
       let socket;
       try {
         socket = io();
       } catch (error) {
-        document.getElementById("title").textContent = `Looks like you don't have a full connection to the server! Try checking your internet connection!`;
+        document.getElementById(
+          "title"
+        ).textContent = `Looks like you don't have a full connection to the server! Try checking your internet connection!`;
         throw error;
       }
       const name = getCookie("name");
       const id = getCookie("id");
-      document.getElementById("title").textContent = `BAA play here, you are ${name}`;
+      document.getElementById(
+        "title"
+      ).textContent = `BAA play here, you are ${name}`;
       console.log(name);
       if (!id && !name) {
         location.href = "/index";
@@ -45,7 +59,18 @@
         const { usernames } = JSON.parse(data);
         console.log("players are: ", usernames);
         document.getElementById("players").textContent = usernames.toString();
+        if (usernames.length >= 5) {
+          document.getElementById("startGame").style.display = "block";
+        }
       });
+
+      function startGame() {
+        // hide start game button
+        socket.emit("next_stage");
+        socket.on("startGame").then((data) => {
+          document.getElementById("startGame").style.display = "none";
+        });
+      }
     </script>
   </body>
 </html>

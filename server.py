@@ -113,9 +113,21 @@ def perform_execution(player_info):
     lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.PERFORM_EXECUTION)
 
 
+def emit_to_rooms(message, data, recipients):
+    for recipient in recipients:
+        socketio.emit(message, json.dumps(data), room=recipients)
+
+
+def emit_to_all(message, data):
+    socketio.emit(message, json.dumps(data))
+
+
 def LCM_receive(header, data={}):
     print("server.py: LCM_receive", header, data)
-    socketio.emit('players', json.dumps(data))
+    if data.get('recipients', []):
+        emit_to_rooms(header, data, data['recipients'])
+    else:
+        emit_to_all(header, data)
 #     events = gevent.queue.Queue()
 #     lcm_start_read(str.encode(LCM_TARGETS.UI), events)
 

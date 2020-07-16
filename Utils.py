@@ -81,6 +81,8 @@ class SHEPHERD_HEADERS:
     """
 
 # pylint: disable=invalid-name
+
+
 class SERVER_HEADERS:
     PLAYERS = "players"
     """
@@ -201,6 +203,8 @@ class SERVER_HEADERS:
     """
 
 # pylint: disable=invalid-name
+
+
 class STATE:
     SETUP = "setup"
     END = "end"
@@ -210,14 +214,18 @@ class STATE:
     ACTION = "action"
 
 # pylint: disable=invalid-name
+
+
 class LCM_TARGETS:
     SHEPHERD = "lcm_target_shepherd"
     SERVER = "lcm_target_server"
+
 
 class VOTES:
     JA = "ja"
     NEIN = "nein"
     UNDEFINED = "undefined"
+
 
 class ROLES:
     FASCIST = "fascist"
@@ -225,9 +233,11 @@ class ROLES:
     HITLER = "hitler"
     NONE = "none"
 
+
 class CARDS:
     FASCIST = "fascist_card"
     LIBERAL = "liberal_card"
+
 
 class POWERS:
     INVESTIGATE_LOYALTY = "investigate_loyalty"
@@ -236,7 +246,11 @@ class POWERS:
     EXECUTION = "execution"
     VETO = "veto"
 
+
 class BOARDS:
-    FIVE_SIX = [[], [], [POWERS.POLICY_PEEK], [POWERS.EXECUTION], [POWERS.EXECUTION, POWERS.VETO], []]
-    SEVEN_EIGHT = [[], [POWERS.INVESTIGATE_LOYALTY], [POWERS.SPECIAL_ELECTION], [POWERS.EXECUTION], [POWERS.EXECUTION, POWERS.VETO], []]
-    NINE_TEN = [[POWERS.INVESTIGATE_LOYALTY], [POWERS.INVESTIGATE_LOYALTY], [POWERS.SPECIAL_ELECTION], [POWERS.EXECUTION], [POWERS.EXECUTION, POWERS.VETO], []]
+    FIVE_SIX = [[], [], [POWERS.POLICY_PEEK], [
+        POWERS.EXECUTION], [POWERS.EXECUTION, POWERS.VETO], []]
+    SEVEN_EIGHT = [[], [POWERS.INVESTIGATE_LOYALTY], [POWERS.SPECIAL_ELECTION], [
+        POWERS.EXECUTION], [POWERS.EXECUTION, POWERS.VETO], []]
+    NINE_TEN = [[POWERS.INVESTIGATE_LOYALTY], [POWERS.INVESTIGATE_LOYALTY], [
+        POWERS.SPECIAL_ELECTION], [POWERS.EXECUTION], [POWERS.EXECUTION, POWERS.VETO], []]
