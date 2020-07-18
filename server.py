@@ -115,7 +115,7 @@ def perform_execution(player_info):
 
 def emit_to_rooms(message, data, recipients):
     for recipient in recipients:
-        socketio.emit(message, json.dumps(data), room=recipients)
+        socketio.emit(message, json.dumps(data), room=recipient)
 
 
 def emit_to_all(message, data):

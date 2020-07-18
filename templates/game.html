@@ -14,11 +14,12 @@
     <title>Game</title>
   </head>
   <body>
+    <!-- waiting room -->
     <h1 id="title">BAAA play here</h1>
     <h4>Players are below:</h4>
     <a id="players"></a>
     <button
-      id="startGame"
+      id="startGameButton"
       type="button"
       class="btn btn-primary"
       onclick="startGame()"
@@ -27,7 +28,48 @@
       Start Game
     </button>
 
+    <!-- select chancellor -->
+    <h4 id="nominateChancellorText"></h4>
+    <input
+      id="nominateChancellorField"
+      type="text"
+      class="form-control"
+      placeholder="chancellor"
+      style="display: none;"
+    />
+    <button
+      id="nominateChancellorButton"
+      type="button"
+      class="btn btn-primary"
+      onclick="nominateChancellor()"
+      style="display: none;"
+    >
+      Nominate Chancellor
+    </button>
+
+    <!-- vote on chancellor -->
+    <h4 id="chancellorVoteText"></h4>
+    <button
+      id="chancellorVoteYesButton"
+      type="button"
+      class="btn btn-primary"
+      onclick="chancellorVoteYes()"
+      style="display: none;"
+    >
+      Yes
+    </button>
+    <button
+      id="chancellorVoteNoButton"
+      type="button"
+      class="btn btn-primary"
+      onclick="chancellorVoteNo()"
+      style="display: none;"
+    >
+      No
+    </button>
+
     <script>
+      // initialize socket
       console.log("loaded");
       let socket;
       try {
@@ -38,6 +80,8 @@
         ).textContent = `Looks like you don't have a full connection to the server! Try checking your internet connection!`;
         throw error;
       }
+
+      // get player information and display waiting room
       const name = getCookie("name");
       const id = getCookie("id");
       document.getElementById(
@@ -54,22 +98,90 @@
           id,
         })
       );
+
+      // receive information from shepherd
+
       socket.on("event", () => console.log("baa "));
+
       socket.on("players", (data) => {
         const { usernames } = JSON.parse(data);
         console.log("players are: ", usernames);
         document.getElementById("players").textContent = usernames.toString();
         if (usernames.length >= 5) {
-          document.getElementById("startGame").style.display = "block";
+          document.getElementById("startGameButton").style.display = "block";
         }
       });
+
+      socket.on("chancellor_request", (data) => {
+        const d = JSON.parse(data);
+        const president = d["president"];
+        const eligibles = d["eligibles"];
+
+        document.getElementById("startGameButton").style.display = "none";
+        if (president == id) {
+          document.getElementById("nominateChancellorText").textContent = "Type your chancellor nominee. Options are " + eligibles.toString();
+          document.getElementById("nominateChancellorField").style.display = "block";
+          document.getElementById("nominateChancellorButton").style.display = "block";
+        } else {
+          document.getElementById("nominateChancellorText").textContent = "";
+        }
+        document.getElementById("chancellorVoteText").textContent = ""; 
+        document.getElementById("chancellorVoteYesButton").style.display = "none";
+        document.getElementById("chancellorVoteNoButton").style.display = "none";
+      });
+
+      socket.on("await_vote", (data) => {
+        const d = JSON.parse(data);
+        const president = d["president"];
+        const chancellor = d["chancellor"];
+
+        document.getElementById("nominateChancellorText").textContent = "";
+        document.getElementById("nominateChancellorField").style.display = "none";
+        document.getElementById("nominateChancellorButton").style.display = "none";
+        document.getElementById("chancellorVoteText").textContent = president.toString() + " has nominated " + chancellor.toString() + ". Please vote."
+        document.getElementById("chancellorVoteYesButton").style.display = "block";
+        document.getElementById("chancellorVoteNoButton").style.display = "block";
+      });
+
+      socket.on("president_discard", (data) => {
+        const d = JSON.parse(data);
+        const president = d["president"];
+        const cards = d["cards"];
+
+        if (president == id) {
+          document.getElementById("chancellorVoteText").textContent = "The vote has passed. Discard a policy."
+        } else {
+          document.getElementById("chancellorVoteText").textContent = "The vote has passed. The president is discarding a policy."
+        }
+        document.getElementById("chancellorVoteYesButton").style.display = "none";
+        document.getElementById("chancellorVoteNoButton").style.display = "none";
+
+        // todo: rest of the function (buttons for the cards, etc.)
+      })
+
+      // functions that send information to shepherd
 
       function startGame() {
         // hide start game button
         socket.emit("next_stage");
-        socket.on("startGame").then((data) => {
-          document.getElementById("startGame").style.display = "none";
-        });
+      }
+
+      function nominateChancellor() {
+        // nominate chancellor
+        const nominee = document.getElementById("nominateChancellorField").value;
+        socket.emit("chancellor_nomination", JSON.stringify({nominee}));
+      }
+
+      function chancellorVoteYes() {
+        // vote yes on chancellor
+        const vote = "ja";
+        socket.emit("player_voted", JSON.stringify({id, vote}));
+      }
+
+      function chancellorVoteNo() {
+        // vote no on chancellor
+        const vote = "nein";
+        socket.emit("player_voted", JSON.stringify({id, vote}));
       }
     </script>
   </body>

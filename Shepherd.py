@@ -153,8 +153,9 @@ def to_chancellor():
     ineligibles = {player_id(PRESIDENT_INDEX), player_id(
         PREVIOUS_PRESIDENT_INDEX), player_id(PREVIOUS_CHANCELLOR_INDEX)}
     ineligibles_final = [i for i in list(ineligibles) if i is not None]
+    eligibles = [d for d in player_ids(PLAYERS) if d not in ineligibles_final]
     lcm_data = {"president": player_id(
-        PRESIDENT_INDEX), "ineligibles": ineligibles_final}
+        PRESIDENT_INDEX), "eligibles": eligibles}
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.CHANCELLOR_REQUEST, lcm_data)
 
 
@@ -191,7 +192,7 @@ def receive_vote(args):
             if len(CARD_DECK) < 3:
                 reshuffle_deck()
             GAME_STATE = STATE.POLICY
-            lcm_data = {"cards": draw_cards(3)}
+            lcm_data = {"president": player_id(PRESIDENT_INDEX), "cards": draw_cards(3)}
             lcm_send(LCM_TARGETS.SERVER,
                      SERVER_HEADERS.PRESIDENT_DISCARD, lcm_data)
         else:
@@ -216,7 +217,7 @@ def president_discarded(args):
     cards = args["cards"]
     discarded = args["discarded"]
     DISCARD_DECK.append(discarded)
-    lcm_data = {"cards": cards, "can_veto": BOARD.can_veto}
+    lcm_data = {"chancellor": player_id(NOMINATED_CHANCELLOR_INDEX), "cards": cards, "can_veto": BOARD.can_veto}
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.CHANCELLOR_DISCARD, lcm_data)
 
 
@@ -542,6 +543,7 @@ def diagnostics():
     diag += "\nElection Tracker: " + str(ELECTION_TRACKER)
     diag += "\nLiberal Enacted: " + str(BOARD.liberal_enacted)
     diag += "\nFascist Enacted: " + str(BOARD.fascist_enacted)
+    diag += "\nCard Deck: " + str(CARD_DECK)
     return diag
 
 # ===================================
@@ -554,7 +556,7 @@ GAME_STATE = STATE.SETUP
 
 PLAYERS = []  # a list of Player objects representing the players in the game
 SPECTATORS = []  # a list of Player objects representing the spectators
-CARD_DECK = []  # the cards in the deck (not including discarded cards)
+CARD_DECK = new_deck()  # the cards in the deck (not including discarded cards)
 DISCARD_DECK = []  # the discarded cards
 # the index of the president — this changes before the government is elected
 PRESIDENT_INDEX = 0

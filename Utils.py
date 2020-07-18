@@ -115,7 +115,7 @@ class SERVER_HEADERS:
     CHANCELLOR_NOMINATION header sent back to shepherd
     contains:
         president   - the id of the current president
-        ineligibles - the ids of players who cannot be nominated
+        eligibles   - the ids of players who can be nominated
     """
 
     AWAIT_VOTE = "await_vote"
@@ -131,15 +131,17 @@ class SERVER_HEADERS:
     """
     Header sent to server to tell the president to discard a policy
     contains:
-        cards - the three cards from which one must be discarded
+        president - the id of the president
+        cards     - the three cards from which one must be discarded
     """
 
     CHANCELLOR_DISCARD = "chancellor_discard"
     """
     Header sent to server to tell the chancellor to discard a policy
     contains:
-        cards    - the two cards from which one must be discarded
-        can_veto - True if the chancellor is allowed to exercise a veto
+        chancellor - the id of the chancellor
+        cards      - the two cards from which one must be discarded
+        can_veto   - True if the chancellor is allowed to exercise a veto
     """
 
     ASK_PRESIDENT_VETO = "ask_president_veto"
