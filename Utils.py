@@ -84,15 +84,16 @@ class SHEPHERD_HEADERS:
 
 
 class SERVER_HEADERS:
-    PLAYERS = "players"
+    ON_JOIN = "on_join"
     """
     Header sent to the server either because a player has reconnected and needs
     to be brought up to speed, or because a new player has connected.
     contains:
-        usernames  - an ordered list of usernames
-        recipients - a list of players by id who should receive this update. A
-                     server may choose not to implement this, at the cost of
-                     some extra network usage.
+        usernames    - an ordered list of usernames
+        recipients   - a list of players by id who should receive this update. A
+                       server may choose not to implement this, at the cost of
+                       some extra network usage.
+        ongoing_game - a boolean value that is True iff a game has been started.
     """
 
     FORCE_RECONNECT = "force_reconnect"
@@ -163,8 +164,8 @@ class SERVER_HEADERS:
     """
     Header sent to server to tell the president to select a person to investigate
     contains:
-        president - the id of the investigator
-        previous  - the ids of those who have already been investigated
+        president  - the id of the investigator
+        eligibles  - the ids of those who have already been investigated
     """
 
     RECEIVE_INVESTIGATION = "receive_investigation"

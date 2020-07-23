@@ -28,13 +28,17 @@
       Start Game
     </button>
 
-    <!-- select chancellor -->
-    <h4 id="nominateChancellorText"></h4>
+    <!-- general game state -->
+    <h3 id="liberalEnactedText">Liberal: 0</h3>
+    <h3 id="fascistEnactedText">Fascist: 0</h3>
+
+    <!-- generic text entry -->
+    <h4 id="miscEntryText"></h4>
     <input
-      id="nominateChancellorField"
+      id="miscEntryField"
       type="text"
       class="form-control"
-      placeholder="chancellor"
+      placeholder=""
       style="display: none;"
     />
     <button
@@ -66,6 +70,56 @@
       style="display: none;"
     >
       No
+    </button>
+
+    <!-- cards to select -->
+    <button
+      id="card1Button"
+      type="button"
+      class="btn btn-primary"
+      onclick="pressedCard(0)"
+      style="display: none;"
+    >
+    </button>
+
+    <button
+      id="card2Button"
+      type="button"
+      class="btn btn-primary"
+      onclick="pressedCard(1)"
+      style="display: none;"
+    >
+    </button>
+
+    <button
+      id="card3Button"
+      type="button"
+      class="btn btn-primary"
+      onclick="pressedCard(2)"
+      style="display: none;"
+    >
+    </button>
+
+    <!-- investigating -->
+    <button
+      id="investigateButton"
+      type="button"
+      class="btn btn-primary"
+      onclick="investigate()"
+      style="display: none;"
+    >
+      Investigate
+    </button>
+
+    <!-- special election -->
+    <button
+      id="specialElectionButton"
+      type="button"
+      class="btn btn-primary"
+      onclick="specialElection()"
+      style="display: none;"
+    >
+      Select Player
     </button>
 
     <script>
@@ -103,11 +157,11 @@
 
       socket.on("event", () => console.log("baa "));
 
-      socket.on("players", (data) => {
-        const { usernames } = JSON.parse(data);
+      socket.on("on_join", (data) => {
+        const { usernames, ongoingGame: ongoing_game } = JSON.parse(data);
         console.log("players are: ", usernames);
         document.getElementById("players").textContent = usernames.toString();
-        if (usernames.length >= 5) {
+        if (!ongoing_game && usernames.length >= 5) {
           document.getElementById("startGameButton").style.display = "block";
         }
       });
@@ -119,11 +173,11 @@
 
         document.getElementById("startGameButton").style.display = "none";
         if (president == id) {
-          document.getElementById("nominateChancellorText").textContent = "Type your chancellor nominee. Options are " + eligibles.toString();
-          document.getElementById("nominateChancellorField").style.display = "block";
+          document.getElementById("miscEntryText").textContent = "Type your chancellor nominee. Options are " + eligibles.toString();
+          document.getElementById("miscEntryField").style.display = "block";
           document.getElementById("nominateChancellorButton").style.display = "block";
         } else {
-          document.getElementById("nominateChancellorText").textContent = "";
+          document.getElementById("miscEntryText").textContent = "";
         }
         document.getElementById("chancellorVoteText").textContent = ""; 
         document.getElementById("chancellorVoteYesButton").style.display = "none";
@@ -135,8 +189,8 @@
         const president = d["president"];
         const chancellor = d["chancellor"];
 
-        document.getElementById("nominateChancellorText").textContent = "";
-        document.getElementById("nominateChancellorField").style.display = "none";
+        document.getElementById("miscEntryText").textContent = "";
+        document.getElementById("miscEntryField").style.display = "none";
         document.getElementById("nominateChancellorButton").style.display = "none";
         document.getElementById("chancellorVoteText").textContent = president.toString() + " has nominated " + chancellor.toString() + ". Please vote."
         document.getElementById("chancellorVoteYesButton").style.display = "block";
@@ -148,16 +202,100 @@
         const president = d["president"];
         const cards = d["cards"];
 
+        presidentDiscarding = true;
+        currentCards = cards;
+
         if (president == id) {
-          document.getElementById("chancellorVoteText").textContent = "The vote has passed. Discard a policy."
+          document.getElementById("chancellorVoteText").textContent = "The vote has passed. Discard a policy.";
+          document.getElementById("card1Button").textContent = cards[0] == "fascist_card" ? "Fascist" : "Liberal";
+          document.getElementById("card1Button").style.display = "block";
+          document.getElementById("card2Button").textContent = cards[1] == "fascist_card" ? "Fascist" : "Liberal";
+          document.getElementById("card2Button").style.display = "block";
+          document.getElementById("card3Button").textContent = cards[2] == "fascist_card" ? "Fascist" : "Liberal";
+          document.getElementById("card3Button").style.display = "block";
         } else {
           document.getElementById("chancellorVoteText").textContent = "The vote has passed. The president is discarding a policy."
+          document.getElementById("card1Button").style.display = "none";
+          document.getElementById("card2Button").style.display = "none";
+          document.getElementById("card3Button").style.display = "none";
         }
+        hideYesAndNoButtons();
+      })
+
+      socket.on("chancellor_discard", (data) => {
+        const d = JSON.parse(data);
+        const chancellor = d["chancellor"];
+        const cards = d["cards"];
+        const can_veto = d["can_veto"];
+
+        // todo: veto
+
+        presidentDiscarding = false;
+        currentCards = cards;
+
+        if (chancellor == id) {
+          document.getElementById("chancellorVoteText").textContent = "Discard a policy.";
+          document.getElementById("card1Button").textContent = cards[0] == "fascist_card" ? "Fascist" : "Liberal";
+          document.getElementById("card1Button").style.display = "block";
+          document.getElementById("card2Button").textContent = cards[1] == "fascist_card" ? "Fascist" : "Liberal";
+          document.getElementById("card2Button").style.display = "block";
+        } else {
+          document.getElementById("chancellorVoteText").textContent = "The chancellor is discarding a policy."
+          document.getElementById("card1Button").style.display = "none";
+          document.getElementById("card2Button").style.display = "none";
+          document.getElementById("card3Button").style.display = "none";
+        }
+        hideYesAndNoButtons();
+      })
+
+      socket.on("policies_enacted", (data) => {
+        const d = JSON.parse(data);
+        const liberal = d["liberal"];
+        const fascist = d["fascist"];
+
+        document.getElementById("liberalEnactedText").textContent = "Liberal: " + liberal;
+        document.getElementById("fascistEnactedText").textContent = "Fascist: " + fascist;
+      })
+
+      socket.on("begin_investigation", (data) => {
+        const d = JSON.parse(data);
+        const president = d["president"];
+        const eligibles = d["eligibles"];
+
+        if (president == id) {
+          document.getElementById("miscEntryText").textContent = "Type who you want to investigate. Options are " + eligibles.toString();
+          document.getElementById("miscEntryField").style.display = "block"
+          document.getElementById("investigateButton").style.display = "block"
+        } else {
+          document.getElementById("miscEntryText").textContent = ""
+        }
+      })
+
+      socket.on("receive_investigation", (data) => {
+        const d = JSON.parse(data);
+        const { role, president } = d;
+
+        if (president === id) {
+          document.getElementById("miscEntryText").textContent = 
+            `That player's role is ${role}`;
+        }
+      })
+
+      socket.on("begin_special_election", (data) => {
+        const d = JSON.parse(data);
+        const president = d["president"];
+
+        if (president == id) {
+          document.getElementById("miscEntryText").textContent = "Special election. Select a player to be the next president."
+          document.getElementById("miscEntryField").style.display = "block";
+          document.getElementById("specialElectionButton").style.display = "block";
+        }
+      })
+
+      const hideYesAndNoButtons = () => {
         document.getElementById("chancellorVoteYesButton").style.display = "none";
         document.getElementById("chancellorVoteNoButton").style.display = "none";
-
-        // todo: rest of the function (buttons for the cards, etc.)
-      })
+      }
 
       // functions that send information to shepherd
 
@@ -168,21 +306,48 @@
 
       function nominateChancellor() {
         // nominate chancellor
-        const nominee = document.getElementById("nominateChancellorField").value;
+        const nominee = document.getElementById("miscEntryField").value;
         socket.emit("chancellor_nomination", JSON.stringify({nominee}));
       }
 
       function chancellorVoteYes() {
         // vote yes on chancellor
         const vote = "ja";
-        socket.emit("player_voted", JSON.stringify({id, vote}));
+        socket.emit("player_voted", JSON.stringify({"id": id, "vote": vote}));
+        hideYesAndNoButtons()
       }
+      
 
       function chancellorVoteNo() {
         // vote no on chancellor
         const vote = "nein";
         socket.emit("player_voted", JSON.stringify({id, vote}));
       }
+
+      function pressedCard(ind) {
+        const discarded = currentCards[ind];
+        currentCards.splice(ind, 1);
+        if (presidentDiscarding) {
+          socket.emit("president_discarded", JSON.stringify({"cards": currentCards, "discarded": discarded}));
+        } else {
+          const card = currentCards[0]
+          socket.emit("chancellor_discarded", JSON.stringify({"card": card, "discarded": discarded}));
+        }
+      }
+
+      function investigatePlayer() {
+        const player = document.getElementById("miscEntryField").value;
+        socket.emit("investigate_player", JSON.stringify({player}));
+      }
+
+      function specialElection() {
+        const player = document.getElementById("miscEntryField").value;
+        socket.emit("special_election_pick", JSON.stringify({player}));
+      }
+
+      // variables
+      var presidentDiscarding = true;
+      var currentCards = [];
     </script>
   </body>
 </html>

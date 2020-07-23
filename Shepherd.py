@@ -96,7 +96,8 @@ def player_joined_new_game(args):
         lcm_data["recipients"] = [id]
         print("# Shepherd: Welcome back", name)
     lcm_data["usernames"] = player_names(PLAYERS)
-    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.PLAYERS, lcm_data)
+    lcm_data["ongoing_game"] = False
+    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.ON_JOIN, lcm_data)
 
 
 def player_joined_ongoing_game(args):
@@ -109,18 +110,18 @@ def player_joined_ongoing_game(args):
     if id in player_ids(PLAYERS):
         # is this someone reconnecting or joining for the first time?
         print("# Shepherd: Welcome back", name)
-        lcm_data = {"usernames": player_names(PLAYERS), "recipients": [id]}
-        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.PLAYERS, lcm_data)
+        lcm_data = {"usernames": player_names(PLAYERS), "recipients": [id], "ongoing_game": True}
+        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.ON_JOIN, lcm_data)
         # TODO: there is more stuff to send to the player probably
     elif id in player_ids(SPECTATORS):
         print("# Shepherd: Welcome as a spectator", name)
-        lcm_data = {"usernames": player_names(PLAYERS), "recipients": [id]}
-        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.PLAYERS, lcm_data)
+        lcm_data = {"usernames": player_names(PLAYERS), "recipients": [id], "ongoing_game": True}
+        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.ON_JOIN, lcm_data)
         # TODO: there is more stuff to send to the spectator probably
     else:
         print("# Shepherd: Welcome as a spectator", name)
-        lcm_data = {"usernames": player_names(PLAYERS), "recipients": [id]}
-        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.PLAYERS, lcm_data)
+        lcm_data = {"usernames": player_names(PLAYERS), "recipients": [id], "ongoing_game": True}
+        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.ON_JOIN, lcm_data)
         # TODO: there is more stuff to send to the spectator probably
         SPECTATORS.append(Player(id, name))
 
@@ -294,7 +295,7 @@ def investigate_loyalty():
     investigated = [player_id(i) for i in range(
         len(PLAYERS)) if not PLAYERS[i].investigated]
     lcm_data = {"president": player_id(
-        PRESIDENT_INDEX), "previous": investigated}
+        PRESIDENT_INDEX), "eligibles": investigated}
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.BEGIN_INVESTIGATION, lcm_data)
 
 
@@ -304,6 +305,7 @@ def investigate_player(args):
     has asked to investigate.
     """
     player = player_for_id(args["player"])
+    player.investigated = True
     loyalty = ROLES.LIBERAL if player.role == ROLES.LIBERAL else ROLES.FASCIST
     lcm_data = {"president": player_id(PRESIDENT_INDEX), "loyalty": loyalty}
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.RECEIVE_INVESTIGATION, lcm_data)
