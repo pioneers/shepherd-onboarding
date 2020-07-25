@@ -96,6 +96,7 @@ def player_joined_new_game(args):
         lcm_data["recipients"] = [id]
         print("# Shepherd: Welcome back", name)
     lcm_data["usernames"] = player_names(PLAYERS)
+    lcm_data["ids"] = player_ids(PLAYERS)
     lcm_data["ongoing_game"] = False
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.ON_JOIN, lcm_data)
 
@@ -110,17 +111,17 @@ def player_joined_ongoing_game(args):
     if id in player_ids(PLAYERS):
         # is this someone reconnecting or joining for the first time?
         print("# Shepherd: Welcome back", name)
-        lcm_data = {"usernames": player_names(PLAYERS), "recipients": [id], "ongoing_game": True}
+        lcm_data = {"usernames": player_names(PLAYERS), "ids": player_ids(PLAYERS), "recipients": [id], "ongoing_game": True}
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.ON_JOIN, lcm_data)
         # TODO: there is more stuff to send to the player probably
     elif id in player_ids(SPECTATORS):
         print("# Shepherd: Welcome as a spectator", name)
-        lcm_data = {"usernames": player_names(PLAYERS), "recipients": [id], "ongoing_game": True}
+        lcm_data = {"usernames": player_names(PLAYERS), "ids": player_ids(PLAYERS), "recipients": [id], "ongoing_game": True}
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.ON_JOIN, lcm_data)
         # TODO: there is more stuff to send to the spectator probably
     else:
         print("# Shepherd: Welcome as a spectator", name)
-        lcm_data = {"usernames": player_names(PLAYERS), "recipients": [id], "ongoing_game": True}
+        lcm_data = {"usernames": player_names(PLAYERS), "ids": player_ids(PLAYERS), "recipients": [id], "ongoing_game": True}
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.ON_JOIN, lcm_data)
         # TODO: there is more stuff to send to the spectator probably
         SPECTATORS.append(Player(id, name))
@@ -206,6 +207,9 @@ def receive_vote(args):
                 BOARD.enact_policy(card)
                 PREVIOUS_PRESIDENT_INDEX = Player.NONE
                 PREVIOUS_CHANCELLOR_INDEX = Player.NONE
+                lcm_data = {"liberal": BOARD.liberal_enacted,
+                            "fascist": BOARD.fascist_enacted}
+                lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
             PRESIDENT_INDEX = next_president_index()
             to_chancellor()
 
@@ -246,6 +250,9 @@ def president_veto_answer(args):
             BOARD.enact_policy(card)
             PREVIOUS_PRESIDENT_INDEX = Player.NONE
             PREVIOUS_CHANCELLOR_INDEX = Player.NONE
+            lcm_data = {"liberal": BOARD.liberal_enacted,
+                        "fascist": BOARD.fascist_enacted}
+            lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
         PRESIDENT_INDEX = next_president_index()
         to_chancellor()
     else:
@@ -380,6 +387,7 @@ def veto():
     """
     global BOARD
     BOARD.can_veto = True
+    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.VETO_ENABLED, {})
 
 
 def game_over(winner):

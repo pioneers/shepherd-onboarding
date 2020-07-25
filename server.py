@@ -21,6 +21,10 @@ socketio = SocketIO(app, async_mode="gevent")
 def hello_world():
     return render_template('index.html')
 
+@app.route('/test')
+def testy_boi():
+    return render_template('testing.html')
+
 # @app.route('/game')
 # def render_board():
 #     return render_template('game.html')

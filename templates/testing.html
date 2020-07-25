@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+    <script src="{{url_for('static', filename='utils/cookies.js')}}"></script>
+    <link
+      rel="stylesheet"
+      href="{{url_for('static', filename='gamestyle.css')}}"
+    />
+    <link
+      rel="shortcut icon"
+      href="{{url_for('static', filename='favicon.ico')}}"
+    />
+    <title>Game</title>
+  </head>
+  <body>
+    <div class="container" style="--m: 8; --tan: .41">
+        <a style="--i: 1">
+            <img src="{{url_for('static', filename='assets/Mystery Sheep.png')}}" alt="????"/>
+        </a>
+        <a style="--i: 2">
+            <img src="{{url_for('static', filename='assets/Mystery Sheep.png')}}" alt="????"/>
+        </a>
+        <a style="--i: 3">
+            <img src="{{url_for('static', filename='assets/Mystery Sheep.png')}}" alt="????"/>
+        </a>
+        <a style="--i: 4">
+            <img src="{{url_for('static', filename='assets/Mystery Sheep.png')}}" alt="????"/>
+        </a>
+        <a style="--i: 5">
+            <img src="{{url_for('static', filename='assets/Mystery Sheep.png')}}" alt="????"/>
+        </a>
+        <a style="--i: 6">
+            <img src="{{url_for('static', filename='assets/Mystery Sheep.png')}}" alt="????"/>
+        </a>
+        <a style="--i: 7">
+            <img src="{{url_for('static', filename='assets/Mystery Sheep.png')}}" alt="????"/>
+        </a>
+        <a style="--i: 8">
+            <img src="{{url_for('static', filename='assets/Mystery Sheep.png')}}" alt="????"/>
+        </a>
+        <div class="name_card" style="--i: 8">Name</div>
+      </div>
+      <script>
+          function display_players() {
+
+          };
+      </script>
+  </body>

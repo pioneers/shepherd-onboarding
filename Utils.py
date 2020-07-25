@@ -90,6 +90,7 @@ class SERVER_HEADERS:
     to be brought up to speed, or because a new player has connected.
     contains:
         usernames    - an ordered list of usernames
+        ids          - an ordered list of ids
         recipients   - a list of players by id who should receive this update. A
                        server may choose not to implement this, at the cost of
                        some extra network usage.
@@ -196,6 +197,11 @@ class SERVER_HEADERS:
     Header sent to server to ask for an execution
     contains:
         president - the id of the president
+    """
+
+    VETO_ENABLED = "veto_enabled"
+    """
+    Header sent to server to say veto is allowed
     """
 
     GAME_OVER = "game_over"
