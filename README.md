@@ -1,6 +1,6 @@
-# Shepherd Secret Hitler Onboarding
-
 <img align="right" src="https://github.com/pioneers/shepherd-onboarding/blob/master/readmefigures/PiE%20Sheep.png" alt="PiE Sheep" width="86" height="135">
+
+# Shepherd Secret Hitler Onboarding
 
 Right now this is just the PM solution, there will probably be a new skeleton code branch here in the future and a branch for all the onboarding groups
 
