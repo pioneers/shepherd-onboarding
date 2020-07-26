@@ -14,36 +14,43 @@
     <title>Game</title>
   </head>
   <body>
-    <div class="container" style="--m: 8; --tan: .41">
-        <a style="--i: 1">
-            <img src="{{url_for('static', filename='assets/Mystery Sheep.png')}}" alt="????"/>
-        </a>
-        <a style="--i: 2">
-            <img src="{{url_for('static', filename='assets/Mystery Sheep.png')}}" alt="????"/>
-        </a>
-        <a style="--i: 3">
-            <img src="{{url_for('static', filename='assets/Mystery Sheep.png')}}" alt="????"/>
-        </a>
-        <a style="--i: 4">
-            <img src="{{url_for('static', filename='assets/Mystery Sheep.png')}}" alt="????"/>
-        </a>
-        <a style="--i: 5">
-            <img src="{{url_for('static', filename='assets/Mystery Sheep.png')}}" alt="????"/>
-        </a>
-        <a style="--i: 6">
-            <img src="{{url_for('static', filename='assets/Mystery Sheep.png')}}" alt="????"/>
-        </a>
-        <a style="--i: 7">
-            <img src="{{url_for('static', filename='assets/Mystery Sheep.png')}}" alt="????"/>
-        </a>
-        <a style="--i: 8">
-            <img src="{{url_for('static', filename='assets/Mystery Sheep.png')}}" alt="????"/>
-        </a>
-        <div class="name_card" style="--i: 8">Name</div>
-      </div>
-      <script>
-          function display_players() {
+    <div class="container" id="game_canvas">
+    </div>
+    <script>
+        var image_url_mappings = {"unknown" : "{{url_for('static', filename='assets/Mystery Sheep.png')}}",
+                                  "liberal" : "{{url_for('static', filename='assets/Liberal Sheep.png')}}",
+                                  "fascist" : "{{url_for('static', filename='assets/Fascist Sheep.png')}}",
+                                  "hitler" : "{{url_for('static', filename='assets/Hitler Sheep.png')}}",
+        };
 
-          };
-      </script>
+        function display_players(players) {
+            /*players is a list of [player names, followed by player identites {liberal, fascist, hitler, unknown}]
+            the player list should appear in the order that the game is being played.*/
+            //remove all elements on the game_canvas
+            let game_canvas = document.getElementById("game_canvas");
+            while (game_canvas.firstChild) {
+              game_canvas.removeChild(game_canvas.firstChild);
+            }
+            //add all new elements!
+            for (i = 1; i < players.length + 1; i++) {
+              //set the class
+              var newElement = document.createElement("portrait");
+              //set the style
+              newElement.setAttribute("style", "--i: " + i);
+              //get the correct image
+              var url = image_url_mappings[players[i-1][1]];
+              //set the rest of the HTML tag
+              newElement.innerHTML = '<img src="' + url + '" alt="' + players[i-1][0] + '"/> ' +
+                                      '<div class="name_card" style="--i: ' + i + '">' + players[i-1][0] + '</div>';
+              //finally append!
+              game_canvas.appendChild(newElement);
+            }
+            //adjust the style for the overarching game_canvas div
+            game_canvas.setAttribute("style", "--m: " + players.length + "; --tan: " + Math.tan(Math.PI/players.length).toFixed(2));
+        };
+
+        function test_disp_players() {
+          display_players([["Alex","unknown"],["Matthew","fascist"],["Akshit","liberal"],["Charles","hitler"],["Ben","unknown"],["Ryan","liberal"]]);
+        };
+    </script>
   </body>
