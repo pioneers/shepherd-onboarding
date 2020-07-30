@@ -330,7 +330,6 @@
     })
 
     function hideAllExcept(idArray) {
-      idArray.extend("")
       allIDs.forEach((elementID, index) => {
         if (idArray.includes(elementID)) {
           document.getElementById(elementID).style.display = "block";
@@ -434,10 +433,11 @@
         newElement.setAttribute("style", "--i: " + i);
         //get the correct image
         var url = image_url_mappings[players[i - 1][2]];
+        var on_click = "selectPlayer('" + players[i - 1][1] + "')";
         //set the rest of the HTML tag
         newElement.innerHTML = '<img src="' + url + '" alt="' + players[i - 1][0] + '"/> ' +
           '<div class="name_card" style="--i: ' + i + '">' + players[i - 1][0] + '</div>' +
-          '<button id="selectPlayer' + players[i - 1][1] + '" type="button" class="btn btn-primary" onclick="selectPlayer(' + [i - 1][1] + ')" style="display: none; vertical-align: middle;">Select Player</button>';
+          '<button id="selectPlayer' + players[i - 1][1] + '" type="button" class="btn btn-primary" onclick="selectPlayer(' + on_click + ')" style="display: none; margin: auto">Select</button>';
         //finally append!
         game_canvas.appendChild(newElement);
       }
