@@ -1,4 +1,5 @@
 from Player import Player
+from typing import List, Set, Dict, Tuple, Optional
 from Utils import *
 from LCM import lcm_send, lcm_register
 from Board import Board
@@ -143,6 +144,19 @@ def start_game(args):
     for i in range(len(PLAYERS)):
         PLAYERS[i].role = deck[i]
     BOARD = Board(len(PLAYERS))
+    for player in PLAYERS:
+        player_roles = []
+        lcm_data = {"recipients": [player.id], "individual_role": player.role, "roles": player_roles}
+        if player.role == ROLES.LIBERAL or (player.role == ROLES.HITLER and len(PLAYERS) > 6):
+            for other in PLAYERS:
+                if player == other:
+                    player_roles.append([player.name, player.id, player.role])
+                else:
+                    player_roles.append([other.name, other.id , ROLES.NONE])
+        elif player.role == ROLES.FASCIST or (player.role == ROLES.HITLER and len(PLAYERS) <= 6):
+            for other in PLAYERS:
+                player_roles.append([other.name, other.id, other.role])
+        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.INDIVIDUAL_SETUP, lcm_data)
     to_chancellor()
 
 

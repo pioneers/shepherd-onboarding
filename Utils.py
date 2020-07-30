@@ -110,6 +110,14 @@ class SERVER_HEADERS:
         players - number of players currently joined
     """
 
+    INDIVIDUAL_SETUP = "individual_setup"
+    """
+    Header sent to server to tell each individual client information necessary to render the ui and have the appropriate game state
+        recipients - player ids to send this message to (this is a list, but should only have a single entry)
+        roles - a list of player names and their associated roles... [[player, id, role],[player, id, role]]
+        individual_role - the role of the player this is given to
+    """
+
     CHANCELLOR_REQUEST = "chancellor_request"
     """
     Header sent to server to start chancellor state for all players and request
@@ -240,7 +248,7 @@ class ROLES:
     FASCIST = "fascist"
     LIBERAL = "liberal"
     HITLER = "hitler"
-    NONE = "none"
+    NONE = "unknown"
 
 
 class CARDS:

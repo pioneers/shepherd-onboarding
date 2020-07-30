@@ -4,6 +4,7 @@
     --r: calc(.5*(1 + var(--rel)) * var(--d) / var(--tan)); /* circle radius */
     --s: calc(2*var(--r) + var(--d)); /* container size */
     position: relative;
+    margin: auto;
     width: var(--s); height: var(--s);
 }
 

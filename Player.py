@@ -21,6 +21,9 @@ class Player:
 
     def clear_vote(self):
         self.vote = VOTES.UNDEFINED
+    
+    def __eq__(self, other):
+        return self.id == other.id
 
     def __str__(self):
         return "Name: " + self.name + ", ID: " + str(self.id)
