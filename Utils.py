@@ -114,7 +114,7 @@ class SERVER_HEADERS:
     """
     Header sent to server to tell each individual client information necessary to render the ui and have the appropriate game state
         recipients - player ids to send this message to (this is a list, but should only have a single entry)
-        roles - a list of player names and their associated roles... [[player, id, role],[player, id, role]]
+        roles - a list of player names and their associated roles... [[player, id, role],[player, id, role],...]
         individual_role - the role of the player this is given to
     """
 
