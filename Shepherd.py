@@ -82,6 +82,7 @@ def player_joined_new_game(args):
     """
     global PLAYERS
     id = args["id"]
+    print("id is of type", type(id), "and is ")
     name = args["name"]
     lcm_data = {}
     if len(PLAYERS) >= 10:
@@ -183,6 +184,7 @@ def receive_chancellor_nomination(args):
     global GAME_STATE, NOMINATED_CHANCELLOR_INDEX
     GAME_STATE = STATE.VOTE
     chancellor = args["nominee"]
+    print(type(chancellor))
     NOMINATED_CHANCELLOR_INDEX = player_ids(PLAYERS).index(chancellor)
     lcm_data = {"president": player_id(
         PRESIDENT_INDEX), "chancellor": chancellor}
@@ -337,7 +339,8 @@ def call_special_election():
     """
     A function that begins the special election power.
     """
-    lcm_data = {"president": player_id(PRESIDENT_INDEX)}
+    president = player_id(PRESIDENT_INDEX)
+    lcm_data = {"president": president, "eligibles": [i for i in player_ids(PLAYERS) if i != president]}
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.BEGIN_SPECIAL_ELECTION, lcm_data)
 
 
@@ -358,6 +361,12 @@ def policy_peek():
     cards = [CARD_DECK[i] for i in range(min(len(CARD_DECK), 3))]
     lcm_data = {"president": player_id(PRESIDENT_INDEX), "cards": cards}
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.PERFORM_POLICY_PEEK, lcm_data)
+
+
+def end_policy_peek():
+    """
+    A function that ends the policy peek.
+    """
     to_chancellor()
 
 
@@ -365,7 +374,8 @@ def execution():
     """
     A function that begins the execution power.
     """
-    lcm_data = {"president": player_id(PRESIDENT_INDEX)}
+    president = player_id(PRESIDENT_INDEX)
+    lcm_data = {"president": president, "eligibles": [i for i in player_ids(PLAYERS) if i != president]}
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.BEGIN_EXECUTION, lcm_data)
 
 
@@ -609,7 +619,8 @@ POLICY_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED: player_joined_ongoing_game,
                     SHEPHERD_HEADERS.PRESIDENT_DISCARDED: president_discarded,
                     SHEPHERD_HEADERS.CHANCELLOR_DISCARDED: chancellor_discarded,
                     SHEPHERD_HEADERS.CHANCELLOR_VETOED: chancellor_vetoed,
-                    SHEPHERD_HEADERS.PRESIDENT_VETO_ANSWER: president_veto_answer}
+                    SHEPHERD_HEADERS.PRESIDENT_VETO_ANSWER: president_veto_answer,
+                    SHEPHERD_HEADERS.END_POLICY_PEEK: end_policy_peek}
 ACTION_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED: player_joined_ongoing_game,
                     SHEPHERD_HEADERS.INVESTIGATE_PLAYER: investigate_player,
                     SHEPHERD_HEADERS.SPECIAL_ELECTION_PICK: perform_special_election,

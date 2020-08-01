@@ -46,4 +46,20 @@
     border-color: #a8abae;
   }
 
+.board{
+    position: relative;
+    margin: auto;
+    --w: 10.5em; /* image size */
+    --h: 13.5em;
+    width: calc(var(--n)*var(--s)); height: var(--h);
+}
+
+.board .tile{
+    width: var(--w); height: var(--h);
+}
+
+.board .card{
+    width: calc(var(--w) / 1.1); height: calc(var(--h) / 1.1);
+}
+
 img { max-width: 100% }

@@ -13,11 +13,11 @@ class Player:
     NONE = -1
 
     def __init__(self, id, name):
-        self.id = id
-        self.name = name
+        self.id: str = id
+        self.name: str = name
         self.vote = VOTES.UNDEFINED
         self.role = ROLES.NONE
-        self.investigated = False  # have they been investigated yet?
+        self.investigated: bool = False  # have they been investigated yet?
 
     def clear_vote(self):
         self.vote = VOTES.UNDEFINED

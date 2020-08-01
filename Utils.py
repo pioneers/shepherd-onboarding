@@ -59,6 +59,11 @@ class SHEPHERD_HEADERS:
         cards - the cards the chancellor must choose from if the president doesn't veto
     """
 
+    END_POLICY_PEEK = "end_policy_peek"
+    """
+    Header sent to shepherd to end the policy peek
+    """
+
     INVESTIGATE_PLAYER = "investigate_player"
     """
     Header to tell shepherd which player to investigate
@@ -190,6 +195,7 @@ class SERVER_HEADERS:
     Header sent to server to ask the president to pick a new president
     contains:
         president - the id of the current president
+        eligibles - the ids of the players that can be elected (anyone except the president)
     """
 
     PERFORM_POLICY_PEEK = "perform_policy_peek"
@@ -205,6 +211,7 @@ class SERVER_HEADERS:
     Header sent to server to ask for an execution
     contains:
         president - the id of the president
+        eligibles - players who can be executed (anyone but the president)
     """
 
     VETO_ENABLED = "veto_enabled"
