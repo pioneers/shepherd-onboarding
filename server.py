@@ -12,6 +12,7 @@ from LCM import lcm_send, lcm_register
 
 HOST_URL = "127.0.0.1"
 PORT = 5000
+last_header = None
 
 app = Flask(__name__)
 socketio = SocketIO(app, async_mode="gevent")
@@ -69,6 +70,7 @@ def player_voted(vote_info):
 @socketio.on('president_discarded')
 def president_discarded(policy_info):
     data = json.loads(policy_info)
+    print(data)
     print('after president discarded',
           data['discarded'], ', cards remaining are: ', data['cards'])
     lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.PRESIDENT_DISCARDED, data)
@@ -95,26 +97,32 @@ def president_veto_answer(veto_info):
           data['veto'], '. Cards for chancellor are: ', data['cards'])
     lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.PRESIDENT_VETO_ANSWER)
 
+    
+@socketio.on('end_policy_peek')
+def end_policy_peek():
+    print('policy peek over.')
+    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.END_POLICY_PEEK)
+
 
 @socketio.on('investigate_player')
 def investigate_player(player_info):
     data = json.loads(player_info)
     print('Decided to investigate ', data['player'])
-    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.INVESTIGATE_PLAYER)
+    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.INVESTIGATE_PLAYER, data)
 
 
 @socketio.on('special_election_pick')
 def special_election_pick(player_info):
     data = json.loads(player_info)
     print('President picked ', data['player'], ' through special election.')
-    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.SPECIAL_ELECTION_PICK)
+    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.SPECIAL_ELECTION_PICK, data)
 
 
 @socketio.on('perform_execution')
 def perform_execution(player_info):
     data = json.loads(player_info)
     print('Perform execution on ', data['player'])
-    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.PERFORM_EXECUTION)
+    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.PERFORM_EXECUTION, data)
 
 
 def emit_to_rooms(message, data, recipients):
@@ -127,11 +135,21 @@ def emit_to_all(message, data):
 
 
 def LCM_receive(header, data={}):
+    global last_header
     print("server.py: LCM_receive", header, data)
+    if header == SERVER_HEADERS.REPEAT_MESSAGE and last_header:
+        recipients = data['recipients']
+        header = last_header[0]
+        data = last_header[1]
+        data['recipients'] = recipients
+        print("sending last privileged header:")
+        print(header, data)
     if data.get('recipients', []):
         emit_to_rooms(header, data, data['recipients'])
     else:
         emit_to_all(header, data)
+    if header in LCM_UTILS.PRIVILEGED_HEADERS:
+        last_header = (header, data)
 #     events = gevent.queue.Queue()
 #     lcm_start_read(str.encode(LCM_TARGETS.UI), events)
 

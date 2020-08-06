@@ -226,6 +226,16 @@ class SERVER_HEADERS:
         winner - the role of the winning team
     """
 
+    REPEAT_MESSAGE = "repeat_message"
+    """
+    Header used to syncronize an re-connecting client that will send the previous header a second time (but only to that recipient)
+    """
+
+# pylint: disable=invalid-name
+
+class LCM_UTILS:
+    PRIVILEGED_HEADERS = [SERVER_HEADERS.CHANCELLOR_REQUEST,SERVER_HEADERS.AWAIT_VOTE,SERVER_HEADERS.PRESIDENT_DISCARD,SERVER_HEADERS.CHANCELLOR_DISCARD,SERVER_HEADERS.ASK_PRESIDENT_VETO,SERVER_HEADERS.BEGIN_INVESTIGATION,SERVER_HEADERS.RECEIVE_INVESTIGATION,SERVER_HEADERS.BEGIN_SPECIAL_ELECTION,SERVER_HEADERS.PERFORM_POLICY_PEEK,SERVER_HEADERS.BEGIN_EXECUTION,SERVER_HEADERS.GAME_OVER]
+
 # pylint: disable=invalid-name
 
 

@@ -47,7 +47,7 @@
   </button>
 
   <!-- policy peek -->
-  <button id="endPolicyPeekButton" type="button" class="butn btn-primary" onclick="endPolicyPeek()" style="display: none;">
+  <button id="endPolicyPeekButton" type="button" class="btn btn-primary" onclick="endPolicyPeek()" style="display: none;">
     Done
   </button>
 
@@ -73,23 +73,23 @@
   <div class="board" id="liberal board" style="--n: 5">
     <tile>
       <img src="{{url_for('static', filename='assets/liberal board.png')}}" alt="liberal background" style="margin-top: 50px;"/>
-      <img class="card" src="{{url_for('static', filename='assets/liberal Card.png')}}" alt="liberal background" style="margin-top: 50px;"/>
+      <img class="card" id="liberal card 1" src="{{url_for('static', filename='assets/liberal Card.png')}}" alt="liberal Card" style="margin-top: 50px; display: none"/>
     </tile>
     <tile>
       <img src="{{url_for('static', filename='assets/liberal board.png')}}" alt="liberal background" style="margin-top: 50px;"/>
-      <img class="card" src="{{url_for('static', filename='assets/liberal Card.png')}}" alt="liberal background" style="margin-top: 50px;"/>
+      <img class="card" id="liberal card 2" src="{{url_for('static', filename='assets/liberal Card.png')}}" alt="liberal Card" style="margin-top: 50px; display: none"/>
     </tile>
     <tile>
       <img src="{{url_for('static', filename='assets/liberal board.png')}}" alt="liberal background" style="margin-top: 50px;"/>
-      <img class="card" src="{{url_for('static', filename='assets/liberal Card.png')}}" alt="liberal background" style="margin-top: 50px;"/>
+      <img class="card" id="liberal card 3" src="{{url_for('static', filename='assets/liberal Card.png')}}" alt="liberal Card" style="margin-top: 50px; display: none"/>
     </tile>
     <tile>
       <img src="{{url_for('static', filename='assets/liberal board.png')}}" alt="liberal background" style="margin-top: 50px;"/>
-      <img class="card" src="{{url_for('static', filename='assets/liberal Card.png')}}" alt="liberal background" style="margin-top: 50px;"/>
+      <img class="card" id="liberal card 4" src="{{url_for('static', filename='assets/liberal Card.png')}}" alt="liberal Card" style="margin-top: 50px; display: none"/>
     </tile>
     <tile>
-      <img src="{{url_for('static', filename='assets/liberal board.png')}}" alt="liberal background" style="margin-top: 50px;"/>
-      <img class="card" src="{{url_for('static', filename='assets/liberal Card.png')}}" alt="liberal background" style="margin-top: 50px;"/>
+      <img src="{{url_for('static', filename='assets/liberal board dark.png')}}" alt="liberal background" style="margin-top: 50px;"/>
+      <img class="card" id="liberal card 5" src="{{url_for('static', filename='assets/liberal Card.png')}}" alt="liberal Card" style="margin-top: 50px; display: none"/>
     </tile>
     <div style="clear:both;">
     </div>
@@ -97,21 +97,27 @@
   <div class="board" id="fascist board" style="--n: 6">
     <tile>
       <img src="{{url_for('static', filename='assets/fascist board.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
+      <img class="card" id="fascist card 1" src="{{url_for('static', filename='assets/fascist Card.png')}}" alt="fascist Card" style="margin-top: 50px; display: none"/>
     </tile>
     <tile>
       <img src="{{url_for('static', filename='assets/fascist board.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
+      <img class="card" id="fascist card 2" src="{{url_for('static', filename='assets/fascist Card.png')}}" alt="fascist Card" style="margin-top: 50px; display: none"/>
     </tile>
     <tile>
       <img src="{{url_for('static', filename='assets/fascist board.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
+      <img class="card" id="fascist card 3" src="{{url_for('static', filename='assets/fascist Card.png')}}" alt="fascist Card" style="margin-top: 50px; display: none"/>
     </tile>
     <tile>
-      <img src="{{url_for('static', filename='assets/fascist board.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
+      <img src="{{url_for('static', filename='assets/fascist board dark.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
+      <img class="card" id="fascist card 4" src="{{url_for('static', filename='assets/fascist Card.png')}}" alt="fascist Card" style="margin-top: 50px; display: none"/>
     </tile>
     <tile>
-      <img src="{{url_for('static', filename='assets/fascist board.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
+      <img src="{{url_for('static', filename='assets/fascist board dark.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
+      <img class="card" id="fascist card 5" src="{{url_for('static', filename='assets/fascist Card.png')}}" alt="fascist Card" style="margin-top: 50px; display: none"/>
     </tile>
     <tile>
-      <img src="{{url_for('static', filename='assets/fascist board.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
+      <img src="{{url_for('static', filename='assets/fascist board dark.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
+      <img class="card" id="fascist card 6" src="{{url_for('static', filename='assets/fascist Card.png')}}" alt="fascist Card" style="margin-top: 50px; display: none"/>
     </tile>
     <div style="clear:both;">
     </div>
@@ -130,7 +136,7 @@
     }
 
     // global variables
-    let presidentDiscarding = true;
+    let cardClickState = 0; // 0: don't click, 1: president discarding, 2: chancellor discarding
     let currentCards = [];
     let vetoEnabled = false;
     var allIDs = ["titleText", "playersText", "startGameButton", "liberalEnactedText", "fascistEnactedText",
@@ -217,7 +223,7 @@
       const president = d["president"];
       const cards = d["cards"];
 
-      presidentDiscarding = true;
+      cardClickState = 1;
       currentCards = cards;
 
       if (president == id) {
@@ -238,7 +244,7 @@
       const cards = d["cards"];
       const can_veto = d["can_veto"];
 
-      presidentDiscarding = false;
+      cardClickState = 2;
       currentCards = cards;
 
       if (chancellor == id) {
@@ -264,6 +270,7 @@
       show("fascistEnactedText");
       document.getElementById("liberalEnactedText").textContent = "Liberal: " + liberal;
       document.getElementById("fascistEnactedText").textContent = "Fascist: " + fascist;
+      updateCards(liberal, fascist);
     })
 
     socket.on("begin_investigation", (data) => {
@@ -312,6 +319,8 @@
       const d = JSON.parse(data);
       const president = d["president"];
       const cards = d["cards"];
+      
+      cardClickState = 0;
 
       if (president == id) {
         hideAllExcept(["miscEntryText", "card1Button", "card2Button", "card3Button", "endPolicyPeekButton"]);
@@ -392,24 +401,28 @@
 
     function chancellorVoteYes() {
       // vote yes on chancellor
+      hideAllExcept([]);
       const vote = "ja";
       socket.emit("player_voted", JSON.stringify({ id, vote }));
     }
 
     function chancellorVoteNo() {
       // vote no on chancellor
+      hideAllExcept([]);
       const vote = "nein";
       socket.emit("player_voted", JSON.stringify({ id, vote }));
     }
 
     function pressedCard(ind) {
-      const discarded = currentCards[ind];
-      currentCards.splice(ind, 1);
-      if (presidentDiscarding) {
-        socket.emit("president_discarded", JSON.stringify({ cards: currentCards, discarded }));
-      } else {
-        const card = currentCards[0];
-        socket.emit("chancellor_discarded", JSON.stringify({ card, discarded }));
+      if (cardClickState != 0) {
+        const discarded = currentCards[ind];
+        currentCards.splice(ind, 1);
+        if (cardClickState == 1) {
+          socket.emit("president_discarded", JSON.stringify({ cards: currentCards, discarded }));
+        } else {
+          const card = currentCards[0];
+          socket.emit("chancellor_discarded", JSON.stringify({ card, discarded }));
+        }
       }
     }
 
@@ -493,6 +506,17 @@
         button.style.display = "block";
         button.setAttribute("onclick", `${method}('${player}')`);
       });
+    };
+
+    function updateCards(liberal, fascist) {
+      /*Will make this many of each type of card appear as played on the field!
+      */
+      for(i = 0; i < liberal; i++){
+        document.getElementById("liberal card " + (i + 1)).style.display = "block";
+      }
+      for(i = 0; i < fascist; i++){
+        document.getElementById("fascist card " + (i + 1)).style.display = "block";
+      }
     };
 
   </script>

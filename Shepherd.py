@@ -115,7 +115,35 @@ def player_joined_ongoing_game(args):
         print("# Shepherd: Welcome back", name)
         lcm_data = {"usernames": player_names(PLAYERS), "ids": player_ids(PLAYERS), "recipients": [id], "ongoing_game": True}
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.ON_JOIN, lcm_data)
-        # TODO: there is more stuff to send to the player probably
+
+        # individual setup
+        player_roles = []
+        player = player_for_id(id)
+        lcm_data = {"recipients": [player.id], "individual_role": player.role, "roles": player_roles}
+        if player.role == ROLES.LIBERAL or (player.role == ROLES.HITLER and len(PLAYERS) > 6):
+            for other in PLAYERS:
+                if player == other:
+                    player_roles.append([player.name, player.id, player.role])
+                else:
+                    player_roles.append([other.name, other.id , ROLES.NONE])
+        elif player.role == ROLES.FASCIST or (player.role == ROLES.HITLER and len(PLAYERS) <= 6):
+            for other in PLAYERS:
+                player_roles.append([other.name, other.id, other.role])
+        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.INDIVIDUAL_SETUP, lcm_data)
+
+        # policies enacted
+        lcm_data = {"liberal": BOARD.liberal_enacted,
+                    "fascist": BOARD.fascist_enacted,
+                    "recipients": [id]}
+        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
+
+        # veto enabled
+        if BOARD.can_veto:
+            lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.VETO_ENABLED, {}) 
+
+        # repeat last server message
+        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.REPEAT_MESSAGE, {'recipients' : [id]})
+
     elif id in player_ids(SPECTATORS):
         print("# Shepherd: Welcome as a spectator", name)
         lcm_data = {"usernames": player_names(PLAYERS), "ids": player_ids(PLAYERS), "recipients": [id], "ongoing_game": True}
@@ -363,7 +391,7 @@ def policy_peek():
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.PERFORM_POLICY_PEEK, lcm_data)
 
 
-def end_policy_peek():
+def end_policy_peek(args):
     """
     A function that ends the policy peek.
     """
@@ -619,11 +647,11 @@ POLICY_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED: player_joined_ongoing_game,
                     SHEPHERD_HEADERS.PRESIDENT_DISCARDED: president_discarded,
                     SHEPHERD_HEADERS.CHANCELLOR_DISCARDED: chancellor_discarded,
                     SHEPHERD_HEADERS.CHANCELLOR_VETOED: chancellor_vetoed,
-                    SHEPHERD_HEADERS.PRESIDENT_VETO_ANSWER: president_veto_answer,
-                    SHEPHERD_HEADERS.END_POLICY_PEEK: end_policy_peek}
+                    SHEPHERD_HEADERS.PRESIDENT_VETO_ANSWER: president_veto_answer}
 ACTION_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED: player_joined_ongoing_game,
                     SHEPHERD_HEADERS.INVESTIGATE_PLAYER: investigate_player,
                     SHEPHERD_HEADERS.SPECIAL_ELECTION_PICK: perform_special_election,
-                    SHEPHERD_HEADERS.PERFORM_EXECUTION: perform_execution}
+                    SHEPHERD_HEADERS.PERFORM_EXECUTION: perform_execution,
+                    SHEPHERD_HEADERS.END_POLICY_PEEK: end_policy_peek}
 END_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED: player_joined_ongoing_game,
                  SHEPHERD_HEADERS.NEXT_STAGE: to_setup}

@@ -58,6 +58,7 @@
 }
 
 .board tile{
+    position: relative;
     float: left;
     width: var(--w); height: var(--h);
 }
@@ -66,6 +67,8 @@
     width: calc(var(--w) / 1.1); height: calc(var(--h) / 1.1);
     position: absolute;
     top: calc(var(--h)/22); left: calc(var(--w)/22);
+    background: transparent;
+    border-color: transparent;
 }
 
 img { max-width: 100% }
