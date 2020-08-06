@@ -49,17 +49,23 @@
 .board{
     position: relative;
     margin: auto;
-    --w: 10.5em; /* image size */
-    --h: 13.5em;
-    width: calc(var(--n)*var(--s)); height: var(--h);
+    --bw: 10.5em; /* image size */
+    --bh: 13.5em;
+    --scale: .5;
+    --w: calc(var(--scale) * var(--bw));
+    --h: calc(var(--scale) * var(--bh));
+    width: calc(var(--n) * var(--w)); height: var(--h);
 }
 
-.board .tile{
+.board tile{
+    float: left;
     width: var(--w); height: var(--h);
 }
 
 .board .card{
     width: calc(var(--w) / 1.1); height: calc(var(--h) / 1.1);
+    position: absolute;
+    top: calc(var(--h)/22); left: calc(var(--w)/22);
 }
 
 img { max-width: 100% }

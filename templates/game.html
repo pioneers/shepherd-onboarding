@@ -70,25 +70,52 @@
   <div class="container" id="game_canvas">
   </div>
 
-  <div class="board" id="liberal board">
-    <div class="tile">
-      <img src="{{url_for('static', filename='assets/liberal board.png')}}" alt="liberal background"/>
-    </div>
-    <div class="tile">
-      <img src="{{url_for('static', filename='assets/liberal board.png')}}" alt="liberal background"/>
-    </div>
-    <div class="tile">
-      <img src="{{url_for('static', filename='assets/liberal board.png')}}" alt="liberal background"/>
-    </div>
-    <div class="tile">
-      <img src="{{url_for('static', filename='assets/liberal board.png')}}" alt="liberal background"/>
-    </div>
-    <div class="tile">
-      <img src="{{url_for('static', filename='assets/liberal board.png')}}" alt="liberal background"/>
-    </div>
+  <div class="board" id="liberal board" style="--n: 5">
+    <tile>
+      <img src="{{url_for('static', filename='assets/liberal board.png')}}" alt="liberal background" style="margin-top: 50px;"/>
+      <img class="card" src="{{url_for('static', filename='assets/liberal Card.png')}}" alt="liberal background" style="margin-top: 50px;"/>
+    </tile>
+    <tile>
+      <img src="{{url_for('static', filename='assets/liberal board.png')}}" alt="liberal background" style="margin-top: 50px;"/>
+      <img class="card" src="{{url_for('static', filename='assets/liberal Card.png')}}" alt="liberal background" style="margin-top: 50px;"/>
+    </tile>
+    <tile>
+      <img src="{{url_for('static', filename='assets/liberal board.png')}}" alt="liberal background" style="margin-top: 50px;"/>
+      <img class="card" src="{{url_for('static', filename='assets/liberal Card.png')}}" alt="liberal background" style="margin-top: 50px;"/>
+    </tile>
+    <tile>
+      <img src="{{url_for('static', filename='assets/liberal board.png')}}" alt="liberal background" style="margin-top: 50px;"/>
+      <img class="card" src="{{url_for('static', filename='assets/liberal Card.png')}}" alt="liberal background" style="margin-top: 50px;"/>
+    </tile>
+    <tile>
+      <img src="{{url_for('static', filename='assets/liberal board.png')}}" alt="liberal background" style="margin-top: 50px;"/>
+      <img class="card" src="{{url_for('static', filename='assets/liberal Card.png')}}" alt="liberal background" style="margin-top: 50px;"/>
+    </tile>
     <div style="clear:both;">
+    </div>
   </div>
-
+  <div class="board" id="fascist board" style="--n: 6">
+    <tile>
+      <img src="{{url_for('static', filename='assets/fascist board.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
+    </tile>
+    <tile>
+      <img src="{{url_for('static', filename='assets/fascist board.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
+    </tile>
+    <tile>
+      <img src="{{url_for('static', filename='assets/fascist board.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
+    </tile>
+    <tile>
+      <img src="{{url_for('static', filename='assets/fascist board.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
+    </tile>
+    <tile>
+      <img src="{{url_for('static', filename='assets/fascist board.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
+    </tile>
+    <tile>
+      <img src="{{url_for('static', filename='assets/fascist board.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
+    </tile>
+    <div style="clear:both;">
+    </div>
+  </div>
   <script>
     // initialize socket
     console.log("loaded");
@@ -108,7 +135,7 @@
     let vetoEnabled = false;
     var allIDs = ["titleText", "playersText", "startGameButton", "liberalEnactedText", "fascistEnactedText",
       "miscEntryText", "chancellorVoteText", "chancellorVoteYesButton",
-      "chancellorVoteNoButton", "card1Button", "card2Button", "card3Button", "endPolicyPeekButton", 
+      "chancellorVoteNoButton", "card1Button", "card2Button", "card3Button", "endPolicyPeekButton",
       "chancellorVetoButton", "presidentVetoButton", "presidentNoVetoButton"]
     let idToName = {};
 
