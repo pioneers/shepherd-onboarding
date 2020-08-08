@@ -139,23 +139,23 @@ def player_joined_ongoing_game(args):
 
         # veto enabled
         if BOARD.can_veto:
-            lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.VETO_ENABLED, {}) 
+            lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.VETO_ENABLED, {})
 
         # repeat last server message
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.REPEAT_MESSAGE, {'recipients' : [id]})
-
-    elif id in player_ids(SPECTATORS):
-        print("# Shepherd: Welcome as a spectator", name)
-        lcm_data = {"usernames": player_names(PLAYERS), "ids": player_ids(PLAYERS), "recipients": [id], "ongoing_game": True}
-        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.ON_JOIN, lcm_data)
-        # TODO: there is more stuff to send to the spectator probably
     else:
+        if id not in player_ids(SPECTATORS):
+            SPECTATORS.append(Player(id, name))
         print("# Shepherd: Welcome as a spectator", name)
         lcm_data = {"usernames": player_names(PLAYERS), "ids": player_ids(PLAYERS), "recipients": [id], "ongoing_game": True}
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.ON_JOIN, lcm_data)
+        player_roles = []
+        spectator = spectator_for_id(id)
+        lcm_data = {"recipients": [spectator.id], "individual_role": spectator.role, "roles": player_roles}
+        for other in PLAYERS:
+            player_roles.append([other.name, other.id, other.role])
+        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.INDIVIDUAL_SETUP, lcm_data)
         # TODO: there is more stuff to send to the spectator probably
-        SPECTATORS.append(Player(id, name))
-
 
 def start_game(args):
     """
@@ -235,6 +235,7 @@ def receive_vote(args):
             PREVIOUS_CHANCELLOR_INDEX = NOMINATED_CHANCELLOR_INDEX
             if PLAYERS[NOMINATED_CHANCELLOR_INDEX].role == ROLES.HITLER and BOARD.fascist_enacted >= 3:
                 game_over(ROLES.FASCIST)
+                return
             if len(CARD_DECK) < 3:
                 reshuffle_deck()
             GAME_STATE = STATE.POLICY
@@ -318,6 +319,7 @@ def chancellor_discarded(args):
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
     if BOARD.fascist_enacted >= 6:
         game_over(ROLES.FASCIST)
+        return
     elif card == CARDS.LIBERAL or len(BOARD.current_power_list()) == 0:
         PRESIDENT_INDEX = next_president_index()
         to_chancellor()
@@ -326,7 +328,6 @@ def chancellor_discarded(args):
         for action in BOARD.current_power_list():
             if action == POWERS.INVESTIGATE_LOYALTY:
                 investigate_loyalty()
-                PRESIDENT_INDEX = next_president_index()
             elif action == POWERS.SPECIAL_ELECTION:
                 call_special_election()
             elif action == POWERS.POLICY_PEEK:
@@ -360,7 +361,6 @@ def investigate_player(args):
     loyalty = ROLES.LIBERAL if player.role == ROLES.LIBERAL else ROLES.FASCIST
     lcm_data = {"president": player_id(PRESIDENT_INDEX), "loyalty": loyalty}
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.RECEIVE_INVESTIGATION, lcm_data)
-    to_chancellor()
 
 
 def call_special_election():
@@ -397,6 +397,13 @@ def end_policy_peek(args):
     """
     to_chancellor()
 
+def end_investigate_player(args):
+    """
+    A function that ends the investigate player.
+    """
+    global PRESIDENT_INDEX
+    PRESIDENT_INDEX = next_president_index()
+    to_chancellor()
 
 def execution():
     """
@@ -416,6 +423,7 @@ def perform_execution(args):
     player = player_for_id(p_id)
     if player.role == ROLES.HITLER:
         game_over(ROLES.LIBERAL)
+        return
     ind = player_ids(PLAYERS).index(p_id)
     del PLAYERS[ind]
 
@@ -446,6 +454,8 @@ def game_over(winner):
     """
     A function that reports the end of a game.
     """
+    global GAME_STATE
+    GAME_STATE = STATE.END
     lcm_data = {"winner": winner}
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.GAME_OVER, lcm_data)
 
@@ -482,6 +492,12 @@ def player_for_id(p_id):
     Returns the player with a specified ID
     """
     return PLAYERS[player_ids(PLAYERS).index(p_id)]
+
+def spectator_for_id(s_id):
+    """
+    Returns the player with a specified ID
+    """
+    return SPECTATORS[player_ids(SPECTATORS).index(s_id)]
 
 
 def reset():
@@ -652,6 +668,8 @@ ACTION_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED: player_joined_ongoing_game,
                     SHEPHERD_HEADERS.INVESTIGATE_PLAYER: investigate_player,
                     SHEPHERD_HEADERS.SPECIAL_ELECTION_PICK: perform_special_election,
                     SHEPHERD_HEADERS.PERFORM_EXECUTION: perform_execution,
-                    SHEPHERD_HEADERS.END_POLICY_PEEK: end_policy_peek}
+                    SHEPHERD_HEADERS.END_POLICY_PEEK: end_policy_peek,
+                    SHEPHERD_HEADERS.END_INVESTIGATE_PLAYER: end_investigate_player
+                    }
 END_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED: player_joined_ongoing_game,
                  SHEPHERD_HEADERS.NEXT_STAGE: to_setup}

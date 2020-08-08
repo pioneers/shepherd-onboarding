@@ -71,6 +71,11 @@ class SHEPHERD_HEADERS:
         player - the id of the player to investigate
     """
 
+    END_INVESTIGATE_PLAYER = "end_investigate_player"
+    """
+    Header to tell shepherd to end the player investigation
+    """
+
     SPECIAL_ELECTION_PICK = "special_election_pick"
     """
     Header to tell shepherd who the president picked in the special election
@@ -265,6 +270,7 @@ class ROLES:
     FASCIST = "fascist"
     LIBERAL = "liberal"
     HITLER = "hitler"
+    SPECTATOR = "spectator"
     NONE = "unknown"
 
 

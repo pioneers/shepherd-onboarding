@@ -85,7 +85,7 @@ def chancellor_discarded(policy_info):
 
 
 @socketio.on('chancellor_vetoed')
-def chancellor_vetoed():
+def chancellor_vetoed(veto_info):
     print('chancellor vetoed :(')
     lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.CHANCELLOR_DISCARDED)
 
@@ -99,7 +99,7 @@ def president_veto_answer(veto_info):
 
     
 @socketio.on('end_policy_peek')
-def end_policy_peek():
+def end_policy_peek(peek_info):
     print('policy peek over.')
     lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.END_POLICY_PEEK)
 
@@ -110,6 +110,10 @@ def investigate_player(player_info):
     print('Decided to investigate ', data['player'])
     lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.INVESTIGATE_PLAYER, data)
 
+@socketio.on('end_investigate_player')
+def end_investigate_player(player_info):
+    print('investigation over.')
+    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.END_INVESTIGATE_PLAYER)
 
 @socketio.on('special_election_pick')
 def special_election_pick(player_info):
