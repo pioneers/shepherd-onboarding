@@ -87,7 +87,7 @@ def chancellor_discarded(policy_info):
 @socketio.on('chancellor_vetoed')
 def chancellor_vetoed(veto_info):
     print('chancellor vetoed :(')
-    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.CHANCELLOR_DISCARDED)
+    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.CHANCELLOR_VETOED)
 
 
 @socketio.on('president_veto_answer')
@@ -95,7 +95,7 @@ def president_veto_answer(veto_info):
     data = json.loads(veto_info)
     print('did president decide to veto? ',
           data['veto'], '. Cards for chancellor are: ', data['cards'])
-    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.PRESIDENT_VETO_ANSWER)
+    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.PRESIDENT_VETO_ANSWER, data)
 
     
 @socketio.on('end_policy_peek')

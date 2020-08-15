@@ -152,6 +152,7 @@
       "chancellorVoteNoButton", "card1Button", "card2Button", "card3Button", "endPolicyPeekButton", "chancellorVetoButton", "presidentVetoButton", "presidentNoVetoButton", "startNewGameButton", "endInvestigatePlayerButton"]
     let idToName = {};
     let isSpectator = false;
+    let roles = [];
 
     // get player information and display waiting room
     const name = getCookie("name");
@@ -198,7 +199,7 @@
     socket.on("individual_setup", (data) => {
       const d = JSON.parse(data);
       const individual_role = d["individual_role"];
-      const roles = d["roles"];
+      roles = d["roles"];
 
       if (individual_role == "spectator") {
         isSpectator = true;
@@ -229,9 +230,15 @@
       const chancellor = d["chancellor"];
       const presidentName = idToName[president];
       const chancellorName = idToName[chancellor];
-
-      hideAllExcept(["chancellorVoteText", "chancellorVoteYesButton", "chancellorVoteNoButton"]);
-      document.getElementById("chancellorVoteText").textContent = presidentName + " has nominated " + chancellorName + ". Please vote."
+      let voteText = `${presidentName} has nominated ${chancellorName}`;
+      if (!isSpectator) {
+        hideAllExcept(["chancellorVoteText", "chancellorVoteYesButton", "chancellorVoteNoButton"]);
+        voteText = `${voteText}. Please vote.`;
+      } else {
+        hideAllExcept(["chancellorVoteText"]); 
+        voteText = `${voteText}. You are a sad boi who cannot vote.`;
+      }
+      document.getElementById("chancellorVoteText").textContent = voteText;
     });
 
     socket.on("president_discard", (data) => {
@@ -363,6 +370,17 @@
       }
     })
 
+    socket.on("player_executed", (data) => {
+      const d = JSON.parse(data);
+      const { player: executedPlayer } = d;
+      roles = roles.filter(player => player[1] !== executedPlayer);
+      if (executedPlayer == id) {
+        isSpectator = true;
+      }
+      allIDs = allIDs.filter(elementID => elementID !== `selectPlayer${executedPlayer}`);
+      display_players(roles)
+    })
+
     socket.on("veto_enabled", (data) => {
       vetoEnabled = true;
     })
@@ -377,7 +395,8 @@
         document.getElementById("presidentVetoButton").textContent = "Yes";
         document.getElementById("presidentNoVetoButton").textContent = "No";
       } else {
-        hideAllExcept([]);
+        hideAllExcept(["miscEntryText"]);
+        document.getElementById("miscEntryText").textContent = "The chancellor has decided to veto. Waiting on president response."
       }
     })
 

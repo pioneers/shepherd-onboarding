@@ -195,8 +195,11 @@ def to_chancellor():
     """
     global GAME_STATE
     GAME_STATE = STATE.PICK_CHANCELLOR
-    ineligibles = {player_id(PRESIDENT_INDEX), player_id(
-        PREVIOUS_PRESIDENT_INDEX), player_id(PREVIOUS_CHANCELLOR_INDEX)}
+    if len(PLAYERS) > 5:
+        ineligibles = {player_id(PRESIDENT_INDEX), player_id(
+            PREVIOUS_PRESIDENT_INDEX), player_id(PREVIOUS_CHANCELLOR_INDEX)}
+    else:
+        ineligibles = {player_id(PRESIDENT_INDEX), player_id(PREVIOUS_CHANCELLOR_INDEX)}
     ineligibles_final = [i for i in list(ineligibles) if i is not None]
     eligibles = [d for d in player_ids(PLAYERS) if d not in ineligibles_final]
     lcm_data = {"president": player_id(
@@ -212,7 +215,6 @@ def receive_chancellor_nomination(args):
     global GAME_STATE, NOMINATED_CHANCELLOR_INDEX
     GAME_STATE = STATE.VOTE
     chancellor = args["nominee"]
-    print(type(chancellor))
     NOMINATED_CHANCELLOR_INDEX = player_ids(PLAYERS).index(chancellor)
     lcm_data = {"president": player_id(
         PRESIDENT_INDEX), "chancellor": chancellor}
@@ -285,6 +287,7 @@ def president_veto_answer(args):
     """
     global ELECTION_TRACKER, PRESIDENT_INDEX, PREVIOUS_PRESIDENT_INDEX, PREVIOUS_CHANCELLOR_INDEX, CARD_DECK
     value = args["veto"]
+    cards = args["cards"]
     if value:
         ELECTION_TRACKER += 1
         if chaos():
@@ -301,7 +304,8 @@ def president_veto_answer(args):
         PRESIDENT_INDEX = next_president_index()
         to_chancellor()
     else:
-        president_discarded({"cards": args["cards"]})
+        lcm_data = {"chancellor": player_id(NOMINATED_CHANCELLOR_INDEX), "cards": cards, "can_veto": BOARD.can_veto}
+        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.CHANCELLOR_DISCARD, lcm_data)
 
 
 def chancellor_discarded(args):
@@ -438,6 +442,8 @@ def perform_execution(args):
 
     SPECTATORS.append(player)
     PRESIDENT_INDEX = next_president_index()
+    lcm_data = { 'player': p_id }
+    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.PLAYER_EXECUTED, lcm_data)
     to_chancellor()
 
 
