@@ -71,6 +71,11 @@ class SHEPHERD_HEADERS:
         player - the id of the player to investigate
     """
 
+    END_INVESTIGATE_PLAYER = "end_investigate_player"
+    """
+    Header to tell shepherd to end the player investigation
+    """
+
     SPECIAL_ELECTION_PICK = "special_election_pick"
     """
     Header to tell shepherd who the president picked in the special election
@@ -214,6 +219,13 @@ class SERVER_HEADERS:
         eligibles - players who can be executed (anyone but the president)
     """
 
+    PLAYER_EXECUTED = "player_executed"
+    """
+    Header sent to server to tell a player they are executed
+    contains:
+        player - the id of the executed player
+    """
+
     VETO_ENABLED = "veto_enabled"
     """
     Header sent to server to say veto is allowed
@@ -265,6 +277,7 @@ class ROLES:
     FASCIST = "fascist"
     LIBERAL = "liberal"
     HITLER = "hitler"
+    SPECTATOR = "spectator"
     NONE = "unknown"
 
 

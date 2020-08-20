@@ -1,0 +1,10 @@
+- Game parts to implement
+    - start_game
+        - deck creation/shuffle
+        - role assignment
+        - board initialization 
+    - to_chancellor
+        - determine who is eligible to be selected for chancellor
+        - send chancellor request header
+- Make flowchart of function calls in game flow
+- Tests for game parts?
