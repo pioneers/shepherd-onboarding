@@ -149,13 +149,27 @@ def player_joined_ongoing_game(args):
         print("# Shepherd: Welcome as a spectator", name)
         lcm_data = {"usernames": player_names(PLAYERS), "ids": player_ids(PLAYERS), "recipients": [id], "ongoing_game": True}
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.ON_JOIN, lcm_data)
+        
+        # individual setup
         player_roles = []
         spectator = spectator_for_id(id)
         lcm_data = {"recipients": [spectator.id], "individual_role": spectator.role, "roles": player_roles}
         for other in PLAYERS:
             player_roles.append([other.name, other.id, other.role])
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.INDIVIDUAL_SETUP, lcm_data)
-        # TODO: there is more stuff to send to the spectator probably
+        
+        # policies enacted
+        lcm_data = {"liberal": BOARD.liberal_enacted,
+                    "fascist": BOARD.fascist_enacted,
+                    "recipients": [id]}
+        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
+
+        # veto enabled
+        if BOARD.can_veto:
+            lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.VETO_ENABLED, {})
+
+        # repeat last server message
+        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.REPEAT_MESSAGE, {'recipients' : [id]})
 
 def start_game(args):
     """
