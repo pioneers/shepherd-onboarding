@@ -212,8 +212,6 @@
       const d = JSON.parse(data);
       const president = d["president"];
       const eligibles = d["eligibles"];
-      const eligibleNames = eligibles.map(eligible => idToName[eligible]);
-      const eligiblesString = eligibles.map(eligible => `${idToName[eligible]} ${eligible}`);
       document.getElementById("startGameButton").style.display = "none";
       if (president === id) {
         hideAllExcept(["miscEntryText"]);
@@ -235,7 +233,7 @@
         hideAllExcept(["chancellorVoteText", "chancellorVoteYesButton", "chancellorVoteNoButton"]);
         voteText = `${voteText}. Please vote.`;
       } else {
-        hideAllExcept(["chancellorVoteText"]); 
+        hideAllExcept(["chancellorVoteText"]);
         voteText = `${voteText}. You are a sad boi who cannot vote.`;
       }
       document.getElementById("chancellorVoteText").textContent = voteText;
@@ -342,7 +340,7 @@
       const d = JSON.parse(data);
       const president = d["president"];
       const cards = d["cards"];
-      
+
       cardClickState = 0;
 
       if (president == id) {
