@@ -24,10 +24,6 @@
     Start Game
   </button>
 
-  <!-- general game state -->
-  <h3 id="liberalEnactedText">Liberal: 0</h3>
-  <h3 id="fascistEnactedText">Fascist: 0</h3>
-
   <!-- generic text entry -->
   <h4 id="miscEntryText"></h4>
 
@@ -157,7 +153,7 @@
     let cardClickState = 0; // 0: don't click, 1: president discarding, 2: chancellor discarding
     let currentCards = [];
     let vetoEnabled = false;
-    let allIDs = ["titleText", "playersText", "startGameButton", "liberalEnactedText", "fascistEnactedText",
+    let allIDs = ["titleText", "playersText", "startGameButton", 
       "miscEntryText", "chancellorVoteText", "chancellorVoteYesButton",
       "chancellorVoteNoButton", "card1Button", "card2Button", "card3Button", "endPolicyPeekButton", "chancellorVetoButton", "presidentVetoButton", "presidentNoVetoButton", "startNewGameButton", "endInvestigatePlayerButton"]
     let idToName = {};
@@ -313,12 +309,6 @@
       const liberal = d["liberal"];
       const fascist = d["fascist"];
 
-      // todo: this may be unnecessary
-      show("liberalEnactedText");
-      show("fascistEnactedText");
-      document.getElementById("liberalEnactedText").textContent = "Liberal: " + liberal;
-      document.getElementById("fascistEnactedText").textContent = "Fascist: " + fascist;
-      
       updateCards(liberal, fascist);
     })
 
@@ -327,9 +317,6 @@
       const d = JSON.parse(data);
       const president = d["president"];
       const eligibles = d["eligibles"];
-      // todo: this may be unnecessary
-      const eligiblesInfo = eligibles.map(
-        eligible => `${idToName[eligible]} (${eligible})`)
       
       if (president == id) {
         hideAllExcept(["miscEntryText"]);
