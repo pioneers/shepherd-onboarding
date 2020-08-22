@@ -22,6 +22,7 @@ socketio = SocketIO(app, async_mode="gevent")
 def hello_world():
     return render_template('index.html')
 
+
 @app.route('/test')
 def testy_boi():
     return render_template('testing.html')
@@ -62,18 +63,24 @@ def chancellor_nomination(chancellor_info):
 
 @socketio.on('player_voted')
 def player_voted(vote_info):
+    """
+    BEGIN QUESTION 1
     data = json.loads(vote_info)
     print('Player with id: ', data['id'], ' has voted ', data['vote'])
     lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.PLAYER_VOTED, data)
+    """
 
 
 @socketio.on('president_discarded')
 def president_discarded(policy_info):
+    """
+    BEGIN QUESTION 2
     data = json.loads(policy_info)
     print(data)
     print('after president discarded',
           data['discarded'], ', cards remaining are: ', data['cards'])
     lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.PRESIDENT_DISCARDED, data)
+    """
 
 
 @socketio.on('chancellor_discarded')
@@ -97,7 +104,7 @@ def president_veto_answer(veto_info):
           data['veto'], '. Cards for chancellor are: ', data['cards'])
     lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.PRESIDENT_VETO_ANSWER, data)
 
-    
+
 @socketio.on('end_policy_peek')
 def end_policy_peek(peek_info):
     print('policy peek over.')
@@ -110,10 +117,12 @@ def investigate_player(player_info):
     print('Decided to investigate ', data['player'])
     lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.INVESTIGATE_PLAYER, data)
 
+
 @socketio.on('end_investigate_player')
 def end_investigate_player(player_info):
     print('investigation over.')
     lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.END_INVESTIGATE_PLAYER)
+
 
 @socketio.on('special_election_pick')
 def special_election_pick(player_info):

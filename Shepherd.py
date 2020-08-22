@@ -113,49 +113,58 @@ def player_joined_ongoing_game(args):
     if id in player_ids(PLAYERS):
         # is this someone reconnecting or joining for the first time?
         print("# Shepherd: Welcome back", name)
-        lcm_data = {"usernames": player_names(PLAYERS), "ids": player_ids(PLAYERS), "recipients": [id], "ongoing_game": True}
+        lcm_data = {"usernames": player_names(PLAYERS), "ids": player_ids(
+            PLAYERS), "recipients": [id], "ongoing_game": True}
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.ON_JOIN, lcm_data)
 
         # individual setup
         player_roles = []
         player = player_for_id(id)
-        lcm_data = {"recipients": [player.id], "individual_role": player.role, "roles": player_roles}
+        lcm_data = {"recipients": [
+            player.id], "individual_role": player.role, "roles": player_roles}
         if player.role == ROLES.LIBERAL or (player.role == ROLES.HITLER and len(PLAYERS) > 6):
             for other in PLAYERS:
                 if player == other:
                     player_roles.append([player.name, player.id, player.role])
                 else:
-                    player_roles.append([other.name, other.id , ROLES.NONE])
+                    player_roles.append([other.name, other.id, ROLES.NONE])
         elif player.role == ROLES.FASCIST or (player.role == ROLES.HITLER and len(PLAYERS) <= 6):
             for other in PLAYERS:
                 player_roles.append([other.name, other.id, other.role])
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.INDIVIDUAL_SETUP, lcm_data)
-
-        # policies enacted
-        lcm_data = {"liberal": BOARD.liberal_enacted,
-                    "fascist": BOARD.fascist_enacted,
-                    "recipients": [id]}
-        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
 
         # veto enabled
         if BOARD.can_veto:
             lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.VETO_ENABLED, {})
 
         # repeat last server message
-        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.REPEAT_MESSAGE, {'recipients' : [id]})
+        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.REPEAT_MESSAGE,
+                 {'recipients': [id]})
     else:
         if id not in player_ids(SPECTATORS):
             SPECTATORS.append(Player(id, name))
         print("# Shepherd: Welcome as a spectator", name)
-        lcm_data = {"usernames": player_names(PLAYERS), "ids": player_ids(PLAYERS), "recipients": [id], "ongoing_game": True}
+        lcm_data = {"usernames": player_names(PLAYERS), "ids": player_ids(
+            PLAYERS), "recipients": [id], "ongoing_game": True}
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.ON_JOIN, lcm_data)
         player_roles = []
         spectator = spectator_for_id(id)
-        lcm_data = {"recipients": [spectator.id], "individual_role": spectator.role, "roles": player_roles}
+        lcm_data = {"recipients": [
+            spectator.id], "individual_role": spectator.role, "roles": player_roles}
         for other in PLAYERS:
             player_roles.append([other.name, other.id, other.role])
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.INDIVIDUAL_SETUP, lcm_data)
         # TODO: there is more stuff to send to the spectator probably
+
+    # policies enacted
+    """
+    BEGIN QUESTION 1
+    lcm_data = {"liberal": BOARD.liberal_enacted,
+                "fascist": BOARD.fascist_enacted,
+                "recipients": [id]}
+    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
+    """
+
 
 def start_game(args):
     """
@@ -166,22 +175,30 @@ def start_game(args):
         lcm_data = {"players": len(PLAYERS)}
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.NOT_ENOUGH_PLAYERS, lcm_data)
         return
+    """
+    BEGIN QUESTION 2: initialize deck
     deck = [ROLES.LIBERAL] * (len(PLAYERS) // 2 + 1)
     deck += [ROLES.FASCIST] * ((len(PLAYERS) - 1) // 2 - 1)
     deck += [ROLES.HITLER]
+    END QUESTION 2
+    """
     shuffle_deck(deck)
+    """
+    BEGIN QUESTION 2: Assign roles for each player. Initialize the board."
     for i in range(len(PLAYERS)):
         PLAYERS[i].role = deck[i]
     BOARD = Board(len(PLAYERS))
+    """
     for player in PLAYERS:
         player_roles = []
-        lcm_data = {"recipients": [player.id], "individual_role": player.role, "roles": player_roles}
+        lcm_data = {"recipients": [
+            player.id], "individual_role": player.role, "roles": player_roles}
         if player.role == ROLES.LIBERAL or (player.role == ROLES.HITLER and len(PLAYERS) > 6):
             for other in PLAYERS:
                 if player == other:
                     player_roles.append([player.name, player.id, player.role])
                 else:
-                    player_roles.append([other.name, other.id , ROLES.NONE])
+                    player_roles.append([other.name, other.id, ROLES.NONE])
         elif player.role == ROLES.FASCIST or (player.role == ROLES.HITLER and len(PLAYERS) <= 6):
             for other in PLAYERS:
                 player_roles.append([other.name, other.id, other.role])
@@ -195,16 +212,20 @@ def to_chancellor():
     """
     global GAME_STATE
     GAME_STATE = STATE.PICK_CHANCELLOR
+    """
+    BEGIN QUESTION 3
     if len(PLAYERS) > 5:
         ineligibles = {player_id(PRESIDENT_INDEX), player_id(
             PREVIOUS_PRESIDENT_INDEX), player_id(PREVIOUS_CHANCELLOR_INDEX)}
     else:
-        ineligibles = {player_id(PRESIDENT_INDEX), player_id(PREVIOUS_CHANCELLOR_INDEX)}
+        ineligibles = {player_id(PRESIDENT_INDEX),
+                       player_id(PREVIOUS_CHANCELLOR_INDEX)}
     ineligibles_final = [i for i in list(ineligibles) if i is not None]
     eligibles = [d for d in player_ids(PLAYERS) if d not in ineligibles_final]
     lcm_data = {"president": player_id(
         PRESIDENT_INDEX), "eligibles": eligibles}
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.CHANCELLOR_REQUEST, lcm_data)
+    """
 
 
 def receive_chancellor_nomination(args):
@@ -235,13 +256,17 @@ def receive_vote(args):
         if passed:
             PREVIOUS_PRESIDENT_INDEX = PRESIDENT_INDEX
             PREVIOUS_CHANCELLOR_INDEX = NOMINATED_CHANCELLOR_INDEX
+            """
+            BEGIN QUESTION 4
             if PLAYERS[NOMINATED_CHANCELLOR_INDEX].role == ROLES.HITLER and BOARD.fascist_enacted >= 3:
                 game_over(ROLES.FASCIST)
                 return
+            """
             if len(CARD_DECK) < 3:
                 reshuffle_deck()
             GAME_STATE = STATE.POLICY
-            lcm_data = {"president": player_id(PRESIDENT_INDEX), "cards": draw_cards(3)}
+            lcm_data = {"president": player_id(
+                PRESIDENT_INDEX), "cards": draw_cards(3)}
             lcm_send(LCM_TARGETS.SERVER,
                      SERVER_HEADERS.PRESIDENT_DISCARD, lcm_data)
         else:
@@ -256,7 +281,8 @@ def receive_vote(args):
                 PREVIOUS_CHANCELLOR_INDEX = Player.NONE
                 lcm_data = {"liberal": BOARD.liberal_enacted,
                             "fascist": BOARD.fascist_enacted}
-                lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
+                lcm_send(LCM_TARGETS.SERVER,
+                         SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
             PRESIDENT_INDEX = next_president_index()
             to_chancellor()
 
@@ -266,11 +292,15 @@ def president_discarded(args):
     A function that takes the policies left and passes them to the chancellor.
     """
     global DISCARD_DECK
+    """
+    BEGIN QUESTION 5
     cards = args["cards"]
     discarded = args["discarded"]
     DISCARD_DECK.append(discarded)
-    lcm_data = {"chancellor": player_id(NOMINATED_CHANCELLOR_INDEX), "cards": cards, "can_veto": BOARD.can_veto}
+    lcm_data = {"chancellor": player_id(
+        NOMINATED_CHANCELLOR_INDEX), "cards": cards, "can_veto": BOARD.can_veto}
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.CHANCELLOR_DISCARD, lcm_data)
+    """
 
 
 def chancellor_vetoed(args):
@@ -300,11 +330,13 @@ def president_veto_answer(args):
             PREVIOUS_CHANCELLOR_INDEX = Player.NONE
             lcm_data = {"liberal": BOARD.liberal_enacted,
                         "fascist": BOARD.fascist_enacted}
-            lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
+            lcm_send(LCM_TARGETS.SERVER,
+                     SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
         PRESIDENT_INDEX = next_president_index()
         to_chancellor()
     else:
-        lcm_data = {"chancellor": player_id(NOMINATED_CHANCELLOR_INDEX), "cards": cards, "can_veto": BOARD.can_veto}
+        lcm_data = {"chancellor": player_id(
+            NOMINATED_CHANCELLOR_INDEX), "cards": cards, "can_veto": BOARD.can_veto}
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.CHANCELLOR_DISCARD, lcm_data)
 
 
@@ -360,11 +392,14 @@ def investigate_player(args):
     A function that returns the loyalty (as a role) of the player the president
     has asked to investigate.
     """
+    """
+    BEGIN QUESTION 6
     player = player_for_id(args["player"])
     player.investigated = True
     loyalty = ROLES.LIBERAL if player.role == ROLES.LIBERAL else ROLES.FASCIST
     lcm_data = {"president": player_id(PRESIDENT_INDEX), "loyalty": loyalty}
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.RECEIVE_INVESTIGATION, lcm_data)
+    """
 
 
 def call_special_election():
@@ -372,7 +407,8 @@ def call_special_election():
     A function that begins the special election power.
     """
     president = player_id(PRESIDENT_INDEX)
-    lcm_data = {"president": president, "eligibles": [i for i in player_ids(PLAYERS) if i != president]}
+    lcm_data = {"president": president, "eligibles": [
+        i for i in player_ids(PLAYERS) if i != president]}
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.BEGIN_SPECIAL_ELECTION, lcm_data)
 
 
@@ -401,6 +437,7 @@ def end_policy_peek(args):
     """
     to_chancellor()
 
+
 def end_investigate_player(args):
     """
     A function that ends the investigate player.
@@ -409,12 +446,14 @@ def end_investigate_player(args):
     PRESIDENT_INDEX = next_president_index()
     to_chancellor()
 
+
 def execution():
     """
     A function that begins the execution power.
     """
     president = player_id(PRESIDENT_INDEX)
-    lcm_data = {"president": president, "eligibles": [i for i in player_ids(PLAYERS) if i != president]}
+    lcm_data = {"president": president, "eligibles": [
+        i for i in player_ids(PLAYERS) if i != president]}
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.BEGIN_EXECUTION, lcm_data)
 
 
@@ -442,7 +481,7 @@ def perform_execution(args):
 
     SPECTATORS.append(player)
     PRESIDENT_INDEX = next_president_index()
-    lcm_data = { 'player': p_id }
+    lcm_data = {'player': p_id}
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.PLAYER_EXECUTED, lcm_data)
     to_chancellor()
 
@@ -498,6 +537,7 @@ def player_for_id(p_id):
     Returns the player with a specified ID
     """
     return PLAYERS[player_ids(PLAYERS).index(p_id)]
+
 
 def spectator_for_id(s_id):
     """
