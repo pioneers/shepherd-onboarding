@@ -1,5 +1,11 @@
 <!DOCTYPE html>
 <html>
+  
+<!-- This is the frontend code for the core gameplay. It is roughly organized as follows:
+     1. HTML Elements
+     2. JavaScript functions that read headers sent by Shepherd and update the screen accordingly
+     3. JavaScript functions that respond to user input and send headers back to Shepherd
+-->
 
 <head>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
@@ -34,9 +40,6 @@
   <button id="chancellorVoteNoButton" type="button" class="btn btn-primary" onclick="chancellorVoteNo()"
     style="display: none;">
     No
-  </button>
-  <button id="startNewGameButton" type="button" class="btn btn-primary" onclick="startNewGame()" style="display: none;">
-    Start New Game
   </button>
 
   <!-- cards to select -->
@@ -74,10 +77,16 @@
     style="display: none;">
     No Veto
   </button>
+  
+  <!-- start new game -->
+  <button id="startNewGameButton" type="button" class="btn btn-primary" onclick="startNewGame()" style="display: none;">
+    Start New Game
+  </button>
 
   <div class="container" id="game_canvas">
   </div>
 
+  <!-- Display the board -->
   <div class="board" id="liberal board" style="--n: 5; top: 100px">
     <tile>
       <img src="{{url_for('static', filename='assets/liberal board.png')}}" alt="liberal background"/>
@@ -130,6 +139,7 @@
     <div style="clear:both;">
     </div>
   </div>
+  
   <script>
     // initialize socket
     console.log("loaded");
@@ -180,6 +190,7 @@
       location.href = "/";
     })
 
+    // add a player to the game
     socket.on("on_join", (data) => {
       const { usernames, ids, ongoing_game: ongoingGame } = JSON.parse(data);
       hideAllExcept(["titleText", "playersText"]);
@@ -187,15 +198,22 @@
       console.log("players are: ", usernames);
       console.log("player ids are: ", ids);
       console.log("ongoing game is ", ongoingGame);
+      
+      // store the player's id and name in a dictionary
       ids.forEach((id, index) => {
         idToName[id] = usernames[index];
       })
+      
+      // print the players on the screen
       document.getElementById("playersText").textContent = "Players: " + usernames.toString();
+      
+      // let the player start the game if possible
       if (!ongoingGame && usernames.length >= 5) {
         show("startGameButton");
       }
     });
 
+    // inform the player of their role and display the other players
     socket.on("individual_setup", (data) => {
       const d = JSON.parse(data);
       const individual_role = d["individual_role"];
@@ -208,12 +226,14 @@
       display_players(roles);
     })
 
+    // the president must select a chancellor
     socket.on("chancellor_request", (data) => {
       const d = JSON.parse(data);
       const president = d["president"];
       const eligibles = d["eligibles"];
       document.getElementById("startGameButton").style.display = "none";
       if (president === id) {
+        // if this player is the president, have them select a chancellor nominee
         hideAllExcept(["miscEntryText"]);
         document.getElementById("miscEntryText").textContent = "Select your chancellor nominee";
         display_player_buttons(eligibles, "nominateChancellor");
@@ -222,6 +242,7 @@
       }
     });
 
+    // tell the player they need to vote
     socket.on("await_vote", (data) => {
       const d = JSON.parse(data);
       const president = d["president"];
@@ -230,6 +251,7 @@
       const chancellorName = idToName[chancellor];
       let voteText = `${presidentName} has nominated ${chancellorName}`;
       if (!isSpectator) {
+        // if this player is not a spectator, they can vote
         hideAllExcept(["chancellorVoteText", "chancellorVoteYesButton", "chancellorVoteNoButton"]);
         voteText = `${voteText}. Please vote.`;
       } else {
@@ -239,6 +261,7 @@
       document.getElementById("chancellorVoteText").textContent = voteText;
     });
 
+    // the president must discard a card
     socket.on("president_discard", (data) => {
       const d = JSON.parse(data);
       const president = d["president"];
@@ -259,6 +282,7 @@
       }
     })
 
+    // the chancellor must discard a card
     socket.on("chancellor_discard", (data) => {
       const d = JSON.parse(data);
       const chancellor = d["chancellor"];
@@ -273,6 +297,7 @@
         document.getElementById("chancellorVoteText").textContent = "Discard a policy.";
         document.getElementById("card1Button").textContent = cards[0] == "fascist_card" ? "Fascist" : "Liberal";
         document.getElementById("card2Button").textContent = cards[1] == "fascist_card" ? "Fascist" : "Liberal";
+        // give the chancellor the option to veto if possible
         if (vetoEnabled) {
           show("chancellorVetoButton");
         }
@@ -282,24 +307,30 @@
       }
     })
 
+    // update the board based on the number of policies enacted
     socket.on("policies_enacted", (data) => {
       const d = JSON.parse(data);
       const liberal = d["liberal"];
       const fascist = d["fascist"];
 
+      // todo: this may be unnecessary
       show("liberalEnactedText");
       show("fascistEnactedText");
       document.getElementById("liberalEnactedText").textContent = "Liberal: " + liberal;
       document.getElementById("fascistEnactedText").textContent = "Fascist: " + fascist;
+      
       updateCards(liberal, fascist);
     })
 
+    // ask the president to select a player to be investigated
     socket.on("begin_investigation", (data) => {
       const d = JSON.parse(data);
       const president = d["president"];
       const eligibles = d["eligibles"];
+      // todo: this may be unnecessary
       const eligiblesInfo = eligibles.map(
         eligible => `${idToName[eligible]} (${eligible})`)
+      
       if (president == id) {
         hideAllExcept(["miscEntryText"]);
         document.getElementById("miscEntryText").textContent = "Type who you want to investigate. Options are " + eligibles.toString();
@@ -309,6 +340,7 @@
       }
     })
 
+    // tell the president the role of the player they investigated
     socket.on("receive_investigation", (data) => {
       const d = JSON.parse(data);
       const { loyalty, president } = d;
@@ -322,6 +354,7 @@
       }
     })
 
+    // tell the president to select a player to be the next president
     socket.on("begin_special_election", (data) => {
       const d = JSON.parse(data);
       const president = d["president"];
@@ -336,6 +369,7 @@
       }
     })
 
+    // let the president peek at the top policies
     socket.on("perform_policy_peek", (data) => {
       const d = JSON.parse(data);
       const president = d["president"];
@@ -354,6 +388,7 @@
       }
     })
 
+    // tell the president to execute a player
     socket.on("begin_execution", (data) => {
       const d = JSON.parse(data);
       const president = d["president"];
@@ -368,21 +403,30 @@
       }
     })
 
+    // perform the execution of a player
     socket.on("player_executed", (data) => {
       const d = JSON.parse(data);
       const { player: executedPlayer } = d;
       roles = roles.filter(player => player[1] !== executedPlayer);
+      
+      // make the executed player a spectator
       if (executedPlayer == id) {
         isSpectator = true;
       }
+      
+      // remove the executed player from the display
       allIDs = allIDs.filter(elementID => elementID !== `selectPlayer${executedPlayer}`);
+      
+      // display the remaining players
       display_players(roles)
     })
 
+    // enable veto
     socket.on("veto_enabled", (data) => {
       vetoEnabled = true;
     })
 
+    // after the chancellor has vetoed, ask if the president wants to
     socket.on("ask_president_veto", (data) => {
       const d = JSON.parse(data);
       const president = d["president"];
@@ -398,6 +442,7 @@
       }
     })
 
+    // end the game and show the start new game button
     socket.on("game_over", (data) => {
       const d = JSON.parse(data);
       const winner = d["winner"];
@@ -405,6 +450,7 @@
       document.getElementById("miscEntryText").textContent = winner + " wins!"
     })
 
+    // hide all elements on the screen except for those in idArray
     function hideAllExcept(idArray) {
       allIDs.forEach((elementID, index) => {
         if (idArray.includes(elementID)) {
@@ -415,6 +461,7 @@
       })
     }
 
+    // show a specific element on the screen
     function show(elementID) {
       document.getElementById(elementID).style.display = "block";
     }
