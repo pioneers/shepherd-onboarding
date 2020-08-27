@@ -153,6 +153,7 @@ def player_joined_ongoing_game(args):
         # individual setup
         player_roles = []
         spectator = spectator_for_id(id)
+        spectator.role = ROLES.SPECTATOR
         lcm_data = {"recipients": [spectator.id], "individual_role": spectator.role, "roles": player_roles}
         for other in PLAYERS:
             player_roles.append([other.name, other.id, other.role])
