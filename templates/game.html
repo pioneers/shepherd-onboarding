@@ -215,7 +215,7 @@
       const individual_role = d["individual_role"];
       roles = d["roles"];
 
-      if (individual_role == "spectator") {
+      if (individual_role === "spectator") {
         isSpectator = true;
       }
 
@@ -485,10 +485,12 @@
         const discarded = currentCards[ind];
         currentCards.splice(ind, 1);
         if (cardClickState == 1) {
-          socket.emit("president_discarded", JSON.stringify({ cards: currentCards, discarded }));
+          cardClickState = 0;
+          socket.emit("president_discarded", JSON.stringify({ cards: currentCards, discarded }))
         } else {
           const card = currentCards[0];
-          socket.emit("chancellor_discarded", JSON.stringify({ card, discarded }));
+          cardClickState = 0;
+          socket.emit("chancellor_discarded", JSON.stringify({ card, discarded }))
         }
       }
     }
