@@ -1,11 +1,11 @@
 - Game parts to implement
   - Shepherd.py
-    1. player_joined_ongoing_game
-       - send policies enacted
-    2. start_game
+    1. start_game
        - deck creation/shuffle
        - role assignment
        - board initialization
+    2. player_joined_ongoing_game
+       - send policies enacted
     3. to_chancellor
        - determine who is eligible to be selected for chancellor
        - send chancellor request header

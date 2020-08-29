@@ -152,7 +152,8 @@ def player_joined_ongoing_game(args):
         player_roles = []
         spectator = spectator_for_id(id)
         spectator.role = ROLES.SPECTATOR
-        lcm_data = {"recipients": [spectator.id], "individual_role": spectator.role, "roles": player_roles}
+        lcm_data = {"recipients": [
+            spectator.id], "individual_role": spectator.role, "roles": player_roles}
         for other in PLAYERS:
             player_roles.append([other.name, other.id, other.role])
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.INDIVIDUAL_SETUP, lcm_data)
@@ -168,7 +169,8 @@ def player_joined_ongoing_game(args):
             lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.VETO_ENABLED, {})
 
         # repeat last server message
-        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.REPEAT_MESSAGE, {'recipients' : [id]})
+        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.REPEAT_MESSAGE,
+                 {'recipients': [id]})
 
     # BEGIN QUESTION 1
     # send the number of fascist and liberal policies enacted to the server
@@ -188,13 +190,16 @@ def start_game(args):
         lcm_data = {"players": len(PLAYERS)}
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.NOT_ENOUGH_PLAYERS, lcm_data)
         return
-    # BEGIN QUESTION 2: initialize the deck with 1 hitler, players // 2 + 1 liberals, and (players - 1) // 2 - 1 fascists.
+    # BEGIN QUESTION 2: initialize the list deck with 1 hitler and the relevant number of fascist and liberal cards. Hint: don't use raw strings to represent the roles. Instead, look for a useful class in Utils.py.
+    # see the table on page 2 of the rules: https://secrethitler.com/assets/Secret_Hitler_Rules.pdf#page=2. For a challenge, try coming up with a formula for it.
 
     # END QUESTION 2
     shuffle_deck(deck)
-    # BEGIN QUESTION 2: Assign roles for each player using the deck. Initialize the board."
+    # BEGIN QUESTION 2
+    # Assign roles for each player using the deck.
     for i in range(_______________):
         PLAYERS[i].role = __________________
+    # Initialize the board.
     BOARD = _______________
     # END QUESTION 2
     for player in PLAYERS:
