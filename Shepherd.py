@@ -130,19 +130,6 @@ def player_joined_ongoing_game(args):
             for other in PLAYERS:
                 player_roles.append([other.name, other.id, other.role])
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.INDIVIDUAL_SETUP, lcm_data)
-
-        # policies enacted
-        lcm_data = {"liberal": BOARD.liberal_enacted,
-                    "fascist": BOARD.fascist_enacted,
-                    "recipients": [id]}
-        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
-
-        # veto enabled
-        if BOARD.can_veto:
-            lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.VETO_ENABLED, {})
-
-        # repeat last server message
-        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.REPEAT_MESSAGE, {'recipients' : [id]})
     else:
         if id not in player_ids(SPECTATORS):
             SPECTATORS.append(Player(id, name))
@@ -159,18 +146,18 @@ def player_joined_ongoing_game(args):
             player_roles.append([other.name, other.id, other.role])
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.INDIVIDUAL_SETUP, lcm_data)
         
-        # policies enacted
-        lcm_data = {"liberal": BOARD.liberal_enacted,
-                    "fascist": BOARD.fascist_enacted,
-                    "recipients": [id]}
-        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
+    # policies enacted
+    lcm_data = {"liberal": BOARD.liberal_enacted,
+                "fascist": BOARD.fascist_enacted,
+                "recipients": [id]}
+    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
 
-        # veto enabled
-        if BOARD.can_veto:
-            lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.VETO_ENABLED, {})
+    # veto enabled
+    if BOARD.can_veto:
+        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.VETO_ENABLED, {})
 
-        # repeat last server message
-        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.REPEAT_MESSAGE, {'recipients' : [id]})
+    # repeat last server message
+    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.REPEAT_MESSAGE, {'recipients' : [id]})
 
 def start_game(args):
     """

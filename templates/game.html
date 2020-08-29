@@ -226,6 +226,8 @@
       const { individual_role, roles: all_roles } = JSON.parse(data);
       roles = all_roles
 
+      document.getElementById("startGameButton").style.display = "none";
+
       if (individual_role === "spectator") {
         isSpectator = true;
       }
@@ -237,7 +239,6 @@
     socket.on("chancellor_request", (data) => {
       const { president, eligibles } = JSON.parse(data);
       
-      document.getElementById("startGameButton").style.display = "none";
       if (president === id) {
         // if this player is the president, have them select a chancellor nominee
         hideAllExcept(["miscEntryText"]);
