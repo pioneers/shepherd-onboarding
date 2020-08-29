@@ -132,14 +132,6 @@ def player_joined_ongoing_game(args):
             for other in PLAYERS:
                 player_roles.append([other.name, other.id, other.role])
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.INDIVIDUAL_SETUP, lcm_data)
-
-        # veto enabled
-        if BOARD.can_veto:
-            lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.VETO_ENABLED, {})
-
-        # repeat last server message
-        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.REPEAT_MESSAGE,
-                 {'recipients': [id]})
     else:
         if id not in player_ids(SPECTATORS):
             SPECTATORS.append(Player(id, name))
@@ -158,27 +150,21 @@ def player_joined_ongoing_game(args):
             player_roles.append([other.name, other.id, other.role])
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.INDIVIDUAL_SETUP, lcm_data)
 
-        # policies enacted
-        lcm_data = {"liberal": BOARD.liberal_enacted,
-                    "fascist": BOARD.fascist_enacted,
-                    "recipients": [id]}
-        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
-
-        # veto enabled
-        if BOARD.can_veto:
-            lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.VETO_ENABLED, {})
-
-        # repeat last server message
-        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.REPEAT_MESSAGE,
-                 {'recipients': [id]})
-
-    # BEGIN QUESTION 1
+    # BEGIN QUESTION 2
     # send the number of fascist and liberal policies enacted to the server
-    lcm_data = {"liberal": _____________________,
-                "fascist": _____________________,
+    lcm_data = {_________: _____________________,
+                _________: _____________________,
                 "recipients": [id]}
     lcm_send(_______________, _________________, lcm_data)
-    # END QUESTION 1
+    # END QUESTION 2
+
+    # veto enabled
+    if BOARD.can_veto:
+        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.VETO_ENABLED, {})
+
+    # repeat last server message
+    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.REPEAT_MESSAGE,
+             {'recipients': [id]})
 
 
 def start_game(args):
@@ -190,18 +176,18 @@ def start_game(args):
         lcm_data = {"players": len(PLAYERS)}
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.NOT_ENOUGH_PLAYERS, lcm_data)
         return
-    # BEGIN QUESTION 2: initialize the list deck with 1 hitler and the relevant number of fascist and liberal cards. Hint: don't use raw strings to represent the roles. Instead, look for a useful class in Utils.py.
+    # BEGIN QUESTION 1: initialize the list deck with 1 hitler and the relevant number of fascist and liberal cards. Hint: don't use raw strings to represent the roles. Instead, look for a useful class in Utils.py.
     # see the table on page 2 of the rules: https://secrethitler.com/assets/Secret_Hitler_Rules.pdf#page=2. For a challenge, try coming up with a formula for it.
 
-    # END QUESTION 2
+    # END QUESTION 1
     shuffle_deck(deck)
-    # BEGIN QUESTION 2
+    # BEGIN QUESTION 1
     # Assign roles for each player using the deck.
     for i in range(_______________):
         PLAYERS[i].role = __________________
     # Initialize the board.
     BOARD = _______________
-    # END QUESTION 2
+    # END QUESTION 1
     for player in PLAYERS:
         player_roles = []
         lcm_data = {"recipients": [
