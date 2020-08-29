@@ -147,14 +147,28 @@ def player_joined_ongoing_game(args):
         lcm_data = {"usernames": player_names(PLAYERS), "ids": player_ids(
             PLAYERS), "recipients": [id], "ongoing_game": True}
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.ON_JOIN, lcm_data)
+
+        # individual setup
         player_roles = []
         spectator = spectator_for_id(id)
-        lcm_data = {"recipients": [
-            spectator.id], "individual_role": spectator.role, "roles": player_roles}
+        spectator.role = ROLES.SPECTATOR
+        lcm_data = {"recipients": [spectator.id], "individual_role": spectator.role, "roles": player_roles}
         for other in PLAYERS:
             player_roles.append([other.name, other.id, other.role])
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.INDIVIDUAL_SETUP, lcm_data)
-        # TODO: there is more stuff to send to the spectator probably
+
+        # policies enacted
+        lcm_data = {"liberal": BOARD.liberal_enacted,
+                    "fascist": BOARD.fascist_enacted,
+                    "recipients": [id]}
+        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
+
+        # veto enabled
+        if BOARD.can_veto:
+            lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.VETO_ENABLED, {})
+
+        # repeat last server message
+        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.REPEAT_MESSAGE, {'recipients' : [id]})
 
     # BEGIN QUESTION 1
     # send the number of fascist and liberal policies enacted to the server
@@ -386,7 +400,6 @@ def investigate_player(args):
     player = player_for_id(__________)
     player.investigated = True
     # find out the loyalty and send it to the server.
-    """
 
 
 def call_special_election():
