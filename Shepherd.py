@@ -156,14 +156,13 @@ def player_joined_ongoing_game(args):
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.INDIVIDUAL_SETUP, lcm_data)
         # TODO: there is more stuff to send to the spectator probably
 
-    # policies enacted
-    """
-    BEGIN QUESTION 1
-    lcm_data = {"liberal": BOARD.liberal_enacted,
-                "fascist": BOARD.fascist_enacted,
+    # BEGIN QUESTION 1
+    # send the number of fascist and liberal policies enacted to the server
+    lcm_data = {"liberal": _____________________,
+                "fascist": _____________________,
                 "recipients": [id]}
-    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
-    """
+    lcm_send(_______________, _________________, lcm_data)
+    # END QUESTION 1
 
 
 def start_game(args):
@@ -175,20 +174,15 @@ def start_game(args):
         lcm_data = {"players": len(PLAYERS)}
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.NOT_ENOUGH_PLAYERS, lcm_data)
         return
-    """
-    BEGIN QUESTION 2: initialize deck
-    deck = [ROLES.LIBERAL] * (len(PLAYERS) // 2 + 1)
-    deck += [ROLES.FASCIST] * ((len(PLAYERS) - 1) // 2 - 1)
-    deck += [ROLES.HITLER]
-    END QUESTION 2
-    """
+    # BEGIN QUESTION 2: initialize the deck with 1 hitler, players // 2 + 1 liberals, and (players - 1) // 2 - 1 fascists.
+
+    # END QUESTION 2
     shuffle_deck(deck)
-    """
-    BEGIN QUESTION 2: Assign roles for each player. Initialize the board."
-    for i in range(len(PLAYERS)):
-        PLAYERS[i].role = deck[i]
-    BOARD = Board(len(PLAYERS))
-    """
+    # BEGIN QUESTION 2: Assign roles for each player using the deck. Initialize the board."
+    for i in range(_______________):
+        PLAYERS[i].role = __________________
+    BOARD = _______________
+    # END QUESTION 2
     for player in PLAYERS:
         player_roles = []
         lcm_data = {"recipients": [
@@ -208,24 +202,22 @@ def start_game(args):
 
 def to_chancellor():
     """
-    A function that moves the game into the chancellor phase.
+    A function that moves the game into the chancellor phase. This is done
+    by constructing a list of eligible players and sending the CHANCELLOR_REQUEST header to the server.
+
+    Rules:
+    - if there are > 5 players, the ineligible players are the president,
+    previous president, and previous chancellor.
+    - if <= 5 players, only the president and previous chancellor are ineligible
     """
     global GAME_STATE
     GAME_STATE = STATE.PICK_CHANCELLOR
-    """
-    BEGIN QUESTION 3
-    if len(PLAYERS) > 5:
-        ineligibles = {player_id(PRESIDENT_INDEX), player_id(
-            PREVIOUS_PRESIDENT_INDEX), player_id(PREVIOUS_CHANCELLOR_INDEX)}
-    else:
-        ineligibles = {player_id(PRESIDENT_INDEX),
-                       player_id(PREVIOUS_CHANCELLOR_INDEX)}
-    ineligibles_final = [i for i in list(ineligibles) if i is not None]
-    eligibles = [d for d in player_ids(PLAYERS) if d not in ineligibles_final]
+    # BEGIN QUESTION 3
+
     lcm_data = {"president": player_id(
         PRESIDENT_INDEX), "eligibles": eligibles}
-    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.CHANCELLOR_REQUEST, lcm_data)
-    """
+    lcm_send(______________, ________________, _______________)
+    # END QUESTION 3
 
 
 def receive_chancellor_nomination(args):
@@ -256,12 +248,9 @@ def receive_vote(args):
         if passed:
             PREVIOUS_PRESIDENT_INDEX = PRESIDENT_INDEX
             PREVIOUS_CHANCELLOR_INDEX = NOMINATED_CHANCELLOR_INDEX
-            """
-            BEGIN QUESTION 4
-            if PLAYERS[NOMINATED_CHANCELLOR_INDEX].role == ROLES.HITLER and BOARD.fascist_enacted >= 3:
-                game_over(ROLES.FASCIST)
-                return
-            """
+            # BEGIN QUESTION 4: if chancellor is hitler, game_over is called and the function is terminated
+
+            # END QUESTION 4
             if len(CARD_DECK) < 3:
                 reshuffle_deck()
             GAME_STATE = STATE.POLICY
@@ -289,18 +278,18 @@ def receive_vote(args):
 
 def president_discarded(args):
     """
-    A function that takes the policies left and passes them to the chancellor.
+    A function that takes the cards left and passes them to the chancellor.
+    `cards` contains the remaining two cards.
     """
     global DISCARD_DECK
-    """
-    BEGIN QUESTION 5
-    cards = args["cards"]
-    discarded = args["discarded"]
-    DISCARD_DECK.append(discarded)
-    lcm_data = {"chancellor": player_id(
-        NOMINATED_CHANCELLOR_INDEX), "cards": cards, "can_veto": BOARD.can_veto}
-    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.CHANCELLOR_DISCARD, lcm_data)
-    """
+    # BEGIN QUESTION 5
+    cards = ______________
+    discarded = ______________
+    DISCARD_DECK.append(_____________)
+    lcm_data = {"chancellor": _______________,
+                "cards": ___________, "can_veto": BOARD.can_veto}
+    lcm_send(_________________________)
+    # END QUESTION 5
 
 
 def chancellor_vetoed(args):
@@ -390,15 +379,13 @@ def investigate_loyalty():
 def investigate_player(args):
     """
     A function that returns the loyalty (as a role) of the player the president
-    has asked to investigate.
+    has asked to investigate using the RECEIVE_INVESTIGATION header. Hitler
+    is treated as a fascist.
     """
-    """
-    BEGIN QUESTION 6
-    player = player_for_id(args["player"])
+    # BEGIN QUESTION 6
+    player = player_for_id(__________)
     player.investigated = True
-    loyalty = ROLES.LIBERAL if player.role == ROLES.LIBERAL else ROLES.FASCIST
-    lcm_data = {"president": player_id(PRESIDENT_INDEX), "loyalty": loyalty}
-    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.RECEIVE_INVESTIGATION, lcm_data)
+    # find out the loyalty and send it to the server.
     """
 
 

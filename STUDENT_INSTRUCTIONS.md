@@ -18,7 +18,6 @@
     6. investigate_player
        - all of the function
   - Utils.py
-    1. BOARDS enum
   - server.py
     1. player_voted
     2. president_discarded

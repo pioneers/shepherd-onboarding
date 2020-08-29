@@ -63,24 +63,22 @@ def chancellor_nomination(chancellor_info):
 
 @socketio.on('player_voted')
 def player_voted(vote_info):
-    """
-    BEGIN QUESTION 1
+    # BEGIN QUESTION 1
     data = json.loads(vote_info)
     print('Player with id: ', data['id'], ' has voted ', data['vote'])
-    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.PLAYER_VOTED, data)
-    """
+    lcm_send(_____________, _________________, _______________)
+    # END QUESTION 1
 
 
 @socketio.on('president_discarded')
 def president_discarded(policy_info):
-    """
-    BEGIN QUESTION 2
+    # BEGIN QUESTION 2
     data = json.loads(policy_info)
     print(data)
     print('after president discarded',
           data['discarded'], ', cards remaining are: ', data['cards'])
-    lcm_send(LCM_TARGETS.SHEPHERD, SHEPHERD_HEADERS.PRESIDENT_DISCARDED, data)
-    """
+    lcm_send(_______________, _________________, _______________)
+    # END QUESTION 2
 
 
 @socketio.on('chancellor_discarded')

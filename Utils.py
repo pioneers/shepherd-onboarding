@@ -297,12 +297,11 @@ class POWERS:
 
 
 class BOARDS:
-    """
-    BEGIN QUESTION 1
+    # BEGIN QUESTION 1: each arrangement contains a list of 6 lists. List i contains each power that occurs after the (i + 1)th fascist policy is passed.
     FIVE_SIX = [[], [], [POWERS.POLICY_PEEK], [
         POWERS.EXECUTION], [POWERS.EXECUTION, POWERS.VETO], []]
     SEVEN_EIGHT = [[], [POWERS.INVESTIGATE_LOYALTY], [POWERS.SPECIAL_ELECTION], [
         POWERS.EXECUTION], [POWERS.EXECUTION, POWERS.VETO], []]
     NINE_TEN = [[POWERS.INVESTIGATE_LOYALTY], [POWERS.INVESTIGATE_LOYALTY], [
         POWERS.SPECIAL_ELECTION], [POWERS.EXECUTION], [POWERS.EXECUTION, POWERS.VETO], []]
-    """
+    # END QUESTION 1
