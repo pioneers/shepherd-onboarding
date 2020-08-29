@@ -1,569 +1,842 @@
 <!DOCTYPE html>
 <html>
+  <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+    <script src="{{url_for('static', filename='utils/cookies.js')}}"></script>
+    <link
+      rel="stylesheet"
+      href="{{url_for('static', filename='bootstrap.min.css')}}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{url_for('static', filename='gamestyle.css')}}"
+    />
+    <link
+      rel="shortcut icon"
+      href="{{url_for('static', filename='favicon.ico')}}"
+    />
+    <title>Game</title>
+  </head>
 
-<head>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
-  <script src="{{url_for('static', filename='utils/cookies.js')}}"></script>
-  <link rel="stylesheet" href="{{url_for('static', filename='bootstrap.min.css')}}" />
-  <link rel="stylesheet" href="{{url_for('static', filename='gamestyle.css')}}" />
-  <link rel="shortcut icon" href="{{url_for('static', filename='favicon.ico')}}" />
-  <title>Game</title>
-</head>
+  <body>
+    <!-- waiting room -->
+    <h1 id="titleText">BAAA play here</h1>
+    <a id="playersText"></a>
+    <button
+      id="startGameButton"
+      type="button"
+      class="btn btn-primary"
+      onclick="startGame()"
+      style="display: none"
+    >
+      Start Game
+    </button>
 
-<body>
-  <!-- waiting room -->
-  <h1 id="titleText">BAAA play here</h1>
-  <a id="playersText"></a>
-  <button id="startGameButton" type="button" class="btn btn-primary" onclick="startGame()" style="display: none;">
-    Start Game
-  </button>
+    <!-- general game state -->
+    <h3 id="liberalEnactedText">Liberal: 0</h3>
+    <h3 id="fascistEnactedText">Fascist: 0</h3>
 
-  <!-- general game state -->
-  <h3 id="liberalEnactedText">Liberal: 0</h3>
-  <h3 id="fascistEnactedText">Fascist: 0</h3>
+    <!-- generic text entry -->
+    <h4 id="miscEntryText"></h4>
 
-  <!-- generic text entry -->
-  <h4 id="miscEntryText"></h4>
+    <!-- vote on chancellor -->
+    <h4 id="chancellorVoteText"></h4>
+    <button
+      id="chancellorVoteYesButton"
+      type="button"
+      class="btn btn-primary"
+      onclick="chancellorVoteYes()"
+      style="display: none"
+    >
+      Yes
+    </button>
+    <button
+      id="chancellorVoteNoButton"
+      type="button"
+      class="btn btn-primary"
+      onclick="chancellorVoteNo()"
+      style="display: none"
+    >
+      No
+    </button>
+    <button
+      id="startNewGameButton"
+      type="button"
+      class="btn btn-primary"
+      onclick="startNewGame()"
+      style="display: none"
+    >
+      Start New Game
+    </button>
 
-  <!-- vote on chancellor -->
-  <h4 id="chancellorVoteText"></h4>
-  <button id="chancellorVoteYesButton" type="button" class="btn btn-primary" onclick="chancellorVoteYes()"
-    style="display: none;">
-    Yes
-  </button>
-  <button id="chancellorVoteNoButton" type="button" class="btn btn-primary" onclick="chancellorVoteNo()"
-    style="display: none;">
-    No
-  </button>
-  <button id="startNewGameButton" type="button" class="btn btn-primary" onclick="startNewGame()" style="display: none;">
-    Start New Game
-  </button>
+    <!-- cards to select -->
+    <button
+      id="card1Button"
+      type="button"
+      class="btn btn-primary"
+      onclick="pressedCard(0)"
+      style="display: none"
+    ></button>
 
-  <!-- cards to select -->
-  <button id="card1Button" type="button" class="btn btn-primary" onclick="pressedCard(0)" style="display: none;">
-  </button>
+    <button
+      id="card2Button"
+      type="button"
+      class="btn btn-primary"
+      onclick="pressedCard(1)"
+      style="display: none"
+    ></button>
 
-  <button id="card2Button" type="button" class="btn btn-primary" onclick="pressedCard(1)" style="display: none;">
-  </button>
+    <button
+      id="card3Button"
+      type="button"
+      class="btn btn-primary"
+      onclick="pressedCard(2)"
+      style="display: none"
+    ></button>
 
-  <button id="card3Button" type="button" class="btn btn-primary" onclick="pressedCard(2)" style="display: none;">
-  </button>
+    <!-- policy peek -->
+    <button
+      id="endPolicyPeekButton"
+      type="button"
+      class="btn btn-primary"
+      onclick="endPolicyPeek()"
+      style="display: none"
+    >
+      Done
+    </button>
 
-  <!-- policy peek -->
-  <button id="endPolicyPeekButton" type="button" class="btn btn-primary" onclick="endPolicyPeek()" style="display: none;">
-    Done
-  </button>
+    <!-- investigate player -->
+    <button
+      id="endInvestigatePlayerButton"
+      type="button"
+      class="btn btn-primary"
+      onclick="endInvestigatePlayer()"
+      style="display: none"
+    >
+      Done
+    </button>
 
-  <!-- investigate player -->
-  <button id="endInvestigatePlayerButton" type="button" class="btn btn-primary" onclick="endInvestigatePlayer()" style="display: none;">
-    Done
-  </button>
+    <!-- veto -->
+    <button
+      id="chancellorVetoButton"
+      type="button"
+      class="btn btn-primary"
+      onclick="chancellorVeto()"
+      style="display: none"
+    >
+      Veto
+    </button>
 
-  <!-- veto -->
-  <button id="chancellorVetoButton" type="button" class="btn btn-primary" onclick="chancellorVeto()"
-    style="display: none;">
-    Veto
-  </button>
+    <button
+      id="presidentVetoButton"
+      type="button"
+      class="btn btn-primary"
+      onclick="presidentVeto()"
+      style="display: none"
+    >
+      Veto
+    </button>
 
-  <button id="presidentVetoButton" type="button" class="btn btn-primary" onclick="presidentVeto()"
-    style="display: none;">
-    Veto
-  </button>
+    <button
+      id="presidentNoVetoButton"
+      type="button"
+      class="btn btn-primary"
+      onclick="presidentNoVeto()"
+      style="display: none"
+    >
+      No Veto
+    </button>
 
-  <button id="presidentNoVetoButton" type="button" class="btn btn-primary" onclick="presidentNoVeto()"
-    style="display: none;">
-    No Veto
-  </button>
+    <div class="container" id="game_canvas"></div>
 
-  <div class="container" id="game_canvas">
-  </div>
-
-  <div class="board" id="liberal board" style="--n: 5; top: 100px">
-    <tile>
-      <img src="{{url_for('static', filename='assets/liberal board.png')}}" alt="liberal background"/>
-      <img class="card" id="liberal card 1" src="{{url_for('static', filename='assets/liberal Card.png')}}" alt="liberal Card" style="display: none"/>
-    </tile>
-    <tile>
-      <img src="{{url_for('static', filename='assets/liberal board.png')}}" alt="liberal background" />
-      <img class="card" id="liberal card 2" src="{{url_for('static', filename='assets/liberal Card.png')}}" alt="liberal Card" style="display: none"/>
-    </tile>
-    <tile>
-      <img src="{{url_for('static', filename='assets/liberal board.png')}}" alt="liberal background" />
-      <img class="card" id="liberal card 3" src="{{url_for('static', filename='assets/liberal Card.png')}}" alt="liberal Card" style="display: none"/>
-    </tile>
-    <tile>
-      <img src="{{url_for('static', filename='assets/liberal board.png')}}" alt="liberal background" />
-      <img class="card" id="liberal card 4" src="{{url_for('static', filename='assets/liberal Card.png')}}" alt="liberal Card" style="display: none"/>
-    </tile>
-    <tile>
-      <img src="{{url_for('static', filename='assets/liberal board dark.png')}}" alt="liberal background" />
-      <img class="card" id="liberal card 5" src="{{url_for('static', filename='assets/liberal Card.png')}}" alt="liberal Card" style="display: none"/>
-    </tile>
-    <div style="clear:both;">
+    <div class="board" id="liberal board" style="--n: 5; top: 100px">
+      <tile>
+        <img
+          src="{{url_for('static', filename='assets/liberal board.png')}}"
+          alt="liberal background"
+        />
+        <img
+          class="card"
+          id="liberal card 1"
+          src="{{url_for('static', filename='assets/liberal Card.png')}}"
+          alt="liberal Card"
+          style="display: none"
+        />
+      </tile>
+      <tile>
+        <img
+          src="{{url_for('static', filename='assets/liberal board.png')}}"
+          alt="liberal background"
+        />
+        <img
+          class="card"
+          id="liberal card 2"
+          src="{{url_for('static', filename='assets/liberal Card.png')}}"
+          alt="liberal Card"
+          style="display: none"
+        />
+      </tile>
+      <tile>
+        <img
+          src="{{url_for('static', filename='assets/liberal board.png')}}"
+          alt="liberal background"
+        />
+        <img
+          class="card"
+          id="liberal card 3"
+          src="{{url_for('static', filename='assets/liberal Card.png')}}"
+          alt="liberal Card"
+          style="display: none"
+        />
+      </tile>
+      <tile>
+        <img
+          src="{{url_for('static', filename='assets/liberal board.png')}}"
+          alt="liberal background"
+        />
+        <img
+          class="card"
+          id="liberal card 4"
+          src="{{url_for('static', filename='assets/liberal Card.png')}}"
+          alt="liberal Card"
+          style="display: none"
+        />
+      </tile>
+      <tile>
+        <img
+          src="{{url_for('static', filename='assets/liberal board dark.png')}}"
+          alt="liberal background"
+        />
+        <img
+          class="card"
+          id="liberal card 5"
+          src="{{url_for('static', filename='assets/liberal Card.png')}}"
+          alt="liberal Card"
+          style="display: none"
+        />
+      </tile>
+      <div style="clear: both"></div>
     </div>
-  </div>
-  <div class="board" id="fascist board" style="--n: 6; top: 50px">
-    <tile>
-      <img src="{{url_for('static', filename='assets/fascist board.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
-      <img class="card" id="fascist card 1" src="{{url_for('static', filename='assets/fascist Card.png')}}" alt="fascist Card" style="margin-top: 50px; display: none"/>
-    </tile>
-    <tile>
-      <img src="{{url_for('static', filename='assets/fascist board.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
-      <img class="card" id="fascist card 2" src="{{url_for('static', filename='assets/fascist Card.png')}}" alt="fascist Card" style="margin-top: 50px; display: none"/>
-    </tile>
-    <tile>
-      <img src="{{url_for('static', filename='assets/fascist board.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
-      <img class="card" id="fascist card 3" src="{{url_for('static', filename='assets/fascist Card.png')}}" alt="fascist Card" style="margin-top: 50px; display: none"/>
-    </tile>
-    <tile>
-      <img src="{{url_for('static', filename='assets/fascist board dark.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
-      <img class="card" id="fascist card 4" src="{{url_for('static', filename='assets/fascist Card.png')}}" alt="fascist Card" style="margin-top: 50px; display: none"/>
-    </tile>
-    <tile>
-      <img src="{{url_for('static', filename='assets/fascist board dark.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
-      <img class="card" id="fascist card 5" src="{{url_for('static', filename='assets/fascist Card.png')}}" alt="fascist Card" style="margin-top: 50px; display: none"/>
-    </tile>
-    <tile>
-      <img src="{{url_for('static', filename='assets/fascist board dark.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
-      <img class="card" id="fascist card 6" src="{{url_for('static', filename='assets/fascist Card.png')}}" alt="fascist Card" style="margin-top: 50px; display: none"/>
-    </tile>
-    <div style="clear:both;">
+    <div class="board" id="fascist board" style="--n: 6; top: 50px">
+      <tile>
+        <img
+          src="{{url_for('static', filename='assets/fascist board.png')}}"
+          alt="fascist background"
+          style="margin-top: 50px"
+        />
+        <img
+          class="card"
+          id="fascist card 1"
+          src="{{url_for('static', filename='assets/fascist Card.png')}}"
+          alt="fascist Card"
+          style="margin-top: 50px; display: none"
+        />
+      </tile>
+      <tile>
+        <img
+          src="{{url_for('static', filename='assets/fascist board.png')}}"
+          alt="fascist background"
+          style="margin-top: 50px"
+        />
+        <img
+          class="card"
+          id="fascist card 2"
+          src="{{url_for('static', filename='assets/fascist Card.png')}}"
+          alt="fascist Card"
+          style="margin-top: 50px; display: none"
+        />
+      </tile>
+      <tile>
+        <img
+          src="{{url_for('static', filename='assets/fascist board.png')}}"
+          alt="fascist background"
+          style="margin-top: 50px"
+        />
+        <img
+          class="card"
+          id="fascist card 3"
+          src="{{url_for('static', filename='assets/fascist Card.png')}}"
+          alt="fascist Card"
+          style="margin-top: 50px; display: none"
+        />
+      </tile>
+      <tile>
+        <img
+          src="{{url_for('static', filename='assets/fascist board dark.png')}}"
+          alt="fascist background"
+          style="margin-top: 50px"
+        />
+        <img
+          class="card"
+          id="fascist card 4"
+          src="{{url_for('static', filename='assets/fascist Card.png')}}"
+          alt="fascist Card"
+          style="margin-top: 50px; display: none"
+        />
+      </tile>
+      <tile>
+        <img
+          src="{{url_for('static', filename='assets/fascist board dark.png')}}"
+          alt="fascist background"
+          style="margin-top: 50px"
+        />
+        <img
+          class="card"
+          id="fascist card 5"
+          src="{{url_for('static', filename='assets/fascist Card.png')}}"
+          alt="fascist Card"
+          style="margin-top: 50px; display: none"
+        />
+      </tile>
+      <tile>
+        <img
+          src="{{url_for('static', filename='assets/fascist board dark.png')}}"
+          alt="fascist background"
+          style="margin-top: 50px"
+        />
+        <img
+          class="card"
+          id="fascist card 6"
+          src="{{url_for('static', filename='assets/fascist Card.png')}}"
+          alt="fascist Card"
+          style="margin-top: 50px; display: none"
+        />
+      </tile>
+      <div style="clear: both"></div>
     </div>
-  </div>
-  <script>
-    // initialize socket
-    console.log("loaded");
-    let socket;
-    try {
-      socket = io();
-    } catch (error) {
+    <script>
+      // initialize socket
+      console.log("loaded");
+      let socket;
+      try {
+        socket = io();
+      } catch (error) {
+        document.getElementById(
+          "titleText"
+        ).textContent = `Looks like you don't have a full connection to the server! Try checking your internet connection!`;
+        throw error;
+      }
+
+      // global variables
+      let cardClickState = 0; // 0: don't click, 1: president discarding, 2: chancellor discarding
+      let currentCards = [];
+      let vetoEnabled = false;
+      let allIDs = [
+        "titleText",
+        "playersText",
+        "startGameButton",
+        "liberalEnactedText",
+        "fascistEnactedText",
+        "miscEntryText",
+        "chancellorVoteText",
+        "chancellorVoteYesButton",
+        "chancellorVoteNoButton",
+        "card1Button",
+        "card2Button",
+        "card3Button",
+        "endPolicyPeekButton",
+        "chancellorVetoButton",
+        "presidentVetoButton",
+        "presidentNoVetoButton",
+        "startNewGameButton",
+        "endInvestigatePlayerButton",
+      ];
+      let idToName = {};
+      let isSpectator = false;
+      let roles = [];
+
+      // get player information and display waiting room
+      const name = getCookie("name");
+      const id = getCookie("id");
       document.getElementById(
         "titleText"
-      ).textContent = `Looks like you don't have a full connection to the server! Try checking your internet connection!`;
-      throw error;
-    }
-
-    // global variables
-    let cardClickState = 0; // 0: don't click, 1: president discarding, 2: chancellor discarding
-    let currentCards = [];
-    let vetoEnabled = false;
-    let allIDs = ["titleText", "playersText", "startGameButton", "liberalEnactedText", "fascistEnactedText",
-      "miscEntryText", "chancellorVoteText", "chancellorVoteYesButton",
-      "chancellorVoteNoButton", "card1Button", "card2Button", "card3Button", "endPolicyPeekButton", "chancellorVetoButton", "presidentVetoButton", "presidentNoVetoButton", "startNewGameButton", "endInvestigatePlayerButton"]
-    let idToName = {};
-    let isSpectator = false;
-    let roles = [];
-
-    // get player information and display waiting room
-    const name = getCookie("name");
-    const id = getCookie("id");
-    document.getElementById(
-      "titleText"
-    ).textContent = `BAA play here, you are ${name}`;
-    console.log(name);
-    if (!id && !name) {
-      location.href = "/";
-    }
-    socket.emit(
-      "join",
-      JSON.stringify({
-        name,
-        id,
-      })
-    );
-
-    // receive information from shepherd
-
-    socket.on("event", () => console.log("baa "));
-
-    socket.on("force_reconnect", () => {
-      location.href = "/";
-    })
-
-    socket.on("on_join", (data) => {
-      const { usernames, ids, ongoing_game: ongoingGame } = JSON.parse(data);
-      hideAllExcept(["titleText", "playersText"]);
-
-      console.log("players are: ", usernames);
-      console.log("player ids are: ", ids);
-      console.log("ongoing game is ", ongoingGame);
-      ids.forEach((id, index) => {
-        idToName[id] = usernames[index];
-      })
-      document.getElementById("playersText").textContent = "Players: " + usernames.toString();
-      if (!ongoingGame && usernames.length >= 5) {
-        show("startGameButton");
+      ).textContent = `BAA play here, you are ${name}`;
+      console.log(name);
+      if (!id && !name) {
+        location.href = "/";
       }
-    });
+      socket.emit(
+        "join",
+        JSON.stringify({
+          name,
+          id,
+        })
+      );
 
-    socket.on("individual_setup", (data) => {
-      const d = JSON.parse(data);
-      const individual_role = d["individual_role"];
-      roles = d["roles"];
+      // receive information from shepherd
 
-      if (individual_role == "spectator") {
-        isSpectator = true;
-      }
+      socket.on("event", () => console.log("baa "));
 
-      display_players(roles);
-    })
-
-    socket.on("chancellor_request", (data) => {
-      const d = JSON.parse(data);
-      const president = d["president"];
-      const eligibles = d["eligibles"];
-      document.getElementById("startGameButton").style.display = "none";
-      if (president === id) {
-        hideAllExcept(["miscEntryText"]);
-        document.getElementById("miscEntryText").textContent = "Select your chancellor nominee";
-        display_player_buttons(eligibles, "nominateChancellor");
-      } else {
-        hideAllExcept([])
-      }
-    });
-
-    socket.on("await_vote", (data) => {
-      const d = JSON.parse(data);
-      const president = d["president"];
-      const chancellor = d["chancellor"];
-      const presidentName = idToName[president];
-      const chancellorName = idToName[chancellor];
-      let voteText = `${presidentName} has nominated ${chancellorName}`;
-      if (!isSpectator) {
-        hideAllExcept(["chancellorVoteText", "chancellorVoteYesButton", "chancellorVoteNoButton"]);
-        voteText = `${voteText}. Please vote.`;
-      } else {
-        hideAllExcept(["chancellorVoteText"]);
-        voteText = `${voteText}. You are a sad boi who cannot vote.`;
-      }
-      document.getElementById("chancellorVoteText").textContent = voteText;
-    });
-
-    socket.on("president_discard", (data) => {
-      const d = JSON.parse(data);
-      const president = d["president"];
-      const cards = d["cards"];
-
-      cardClickState = 1;
-      currentCards = cards;
-
-      if (president == id) {
-        hideAllExcept(["chancellorVoteText", "card1Button", "card2Button", "card3Button"]);
-        document.getElementById("chancellorVoteText").textContent = "The vote has passed. Discard a policy.";
-        document.getElementById("card1Button").textContent = cards[0] == "fascist_card" ? "Fascist" : "Liberal";
-        document.getElementById("card2Button").textContent = cards[1] == "fascist_card" ? "Fascist" : "Liberal";
-        document.getElementById("card3Button").textContent = cards[2] == "fascist_card" ? "Fascist" : "Liberal";
-      } else {
-        hideAllExcept(["chancellorVoteText"]);
-        document.getElementById("chancellorVoteText").textContent = "The vote has passed. The president is discarding a policy."
-      }
-    })
-
-    socket.on("chancellor_discard", (data) => {
-      const d = JSON.parse(data);
-      const chancellor = d["chancellor"];
-      const cards = d["cards"];
-      const can_veto = d["can_veto"];
-
-      cardClickState = 2;
-      currentCards = cards;
-
-      if (chancellor == id) {
-        hideAllExcept(["chancellorVoteText", "card1Button", "card2Button"]);
-        document.getElementById("chancellorVoteText").textContent = "Discard a policy.";
-        document.getElementById("card1Button").textContent = cards[0] == "fascist_card" ? "Fascist" : "Liberal";
-        document.getElementById("card2Button").textContent = cards[1] == "fascist_card" ? "Fascist" : "Liberal";
-        if (vetoEnabled) {
-          show("chancellorVetoButton");
-        }
-      } else {
-        hideAllExcept(["chancellorVoteText"]);
-        document.getElementById("chancellorVoteText").textContent = "The chancellor is discarding a policy."
-      }
-    })
-
-    socket.on("policies_enacted", (data) => {
-      const d = JSON.parse(data);
-      const liberal = d["liberal"];
-      const fascist = d["fascist"];
-
-      show("liberalEnactedText");
-      show("fascistEnactedText");
-      document.getElementById("liberalEnactedText").textContent = "Liberal: " + liberal;
-      document.getElementById("fascistEnactedText").textContent = "Fascist: " + fascist;
-      updateCards(liberal, fascist);
-    })
-
-    socket.on("begin_investigation", (data) => {
-      const d = JSON.parse(data);
-      const president = d["president"];
-      const eligibles = d["eligibles"];
-      const eligiblesInfo = eligibles.map(
-        eligible => `${idToName[eligible]} (${eligible})`)
-      if (president == id) {
-        hideAllExcept(["miscEntryText"]);
-        document.getElementById("miscEntryText").textContent = "Type who you want to investigate. Options are " + eligibles.toString();
-        display_player_buttons(eligibles, "investigatePlayer");
-      } else {
-        hideAllExcept([])
-      }
-    })
-
-    socket.on("receive_investigation", (data) => {
-      const d = JSON.parse(data);
-      const { loyalty, president } = d;
-
-      if (president === id) {
-        hideAllExcept(["miscEntryText", "endInvestigatePlayerButton"]);
-        document.getElementById("miscEntryText").textContent =
-          `That player's role is ${loyalty}`;
-      } else {
-        hideAllExcept([]);
-      }
-    })
-
-    socket.on("begin_special_election", (data) => {
-      const d = JSON.parse(data);
-      const president = d["president"];
-      const eligibles = d["eligibles"];
-
-      if (president == id) {
-        hideAllExcept(["miscEntryText"]);
-        document.getElementById("miscEntryText").textContent = "Special election. Select a player to be the next president.";
-        display_player_buttons(eligibles, "specialElection");
-      } else {
-        hideAllExcept([]);
-      }
-    })
-
-    socket.on("perform_policy_peek", (data) => {
-      const d = JSON.parse(data);
-      const president = d["president"];
-      const cards = d["cards"];
-
-      cardClickState = 0;
-
-      if (president == id) {
-        hideAllExcept(["miscEntryText", "card1Button", "card2Button", "card3Button", "endPolicyPeekButton"]);
-        document.getElementById("miscEntryText").textContent = "These are the top 3 cards in the pile."
-        document.getElementById("card1Button").textContent = cards[0];
-        document.getElementById("card2Button").textContent = cards[1];
-        document.getElementById("card3Button").textContent = cards[2];
-      } else {
-        hideAllExcept([]);
-      }
-    })
-
-    socket.on("begin_execution", (data) => {
-      const d = JSON.parse(data);
-      const president = d["president"];
-      const eligibles = d["eligibles"];
-
-      if (president == id) {
-        hideAllExcept(["miscEntryText"]);
-        document.getElementById("miscEntryText").textContent = "Enter a player to execute.";
-        display_player_buttons(eligibles, "performExecution");
-      } else {
-        hideAllExcept([]);
-      }
-    })
-
-    socket.on("player_executed", (data) => {
-      const d = JSON.parse(data);
-      const { player: executedPlayer } = d;
-      roles = roles.filter(player => player[1] !== executedPlayer);
-      if (executedPlayer == id) {
-        isSpectator = true;
-      }
-      allIDs = allIDs.filter(elementID => elementID !== `selectPlayer${executedPlayer}`);
-      display_players(roles)
-    })
-
-    socket.on("veto_enabled", (data) => {
-      vetoEnabled = true;
-    })
-
-    socket.on("ask_president_veto", (data) => {
-      const d = JSON.parse(data);
-      const president = d["president"];
-
-      if (president == id) {
-        hideAllExcept(["miscEntryText", "presidentVetoButton", "presidentNoVetoButton"]);
-        document.getElementById("miscEntryText").textContent = "The chancellor has decided to veto. Do you?";
-        document.getElementById("presidentVetoButton").textContent = "Yes";
-        document.getElementById("presidentNoVetoButton").textContent = "No";
-      } else {
-        hideAllExcept(["miscEntryText"]);
-        document.getElementById("miscEntryText").textContent = "The chancellor has decided to veto. Waiting on president response."
-      }
-    })
-
-    socket.on("game_over", (data) => {
-      const d = JSON.parse(data);
-      const winner = d["winner"];
-      hideAllExcept(["miscEntryText", "startNewGameButton"]);
-      document.getElementById("miscEntryText").textContent = winner + " wins!"
-    })
-
-    function hideAllExcept(idArray) {
-      allIDs.forEach((elementID, index) => {
-        if (idArray.includes(elementID)) {
-          document.getElementById(elementID).style.display = "block";
-        } else {
-          document.getElementById(elementID).style.display = "none";
-        }
-      })
-    }
-
-    function show(elementID) {
-      document.getElementById(elementID).style.display = "block";
-    }
-
-    // functions that send information to shepherd
-
-    function startGame() {
-      // hide start game button
-      socket.emit("next_stage");
-    }
-
-    function nominateChancellor(id) {
-      console.log(`chancellor is being nominated to ${id}`)
-      // nominate chancellor
-      socket.emit("chancellor_nomination", JSON.stringify({ nominee : id }));
-    }
-
-    function chancellorVoteYes() {
-      // vote yes on chancellor
-      hideAllExcept([]);
-      const vote = "ja";
-      socket.emit("player_voted", JSON.stringify({ id, vote }));
-    }
-
-    function chancellorVoteNo() {
-      // vote no on chancellor
-      hideAllExcept([]);
-      const vote = "nein";
-      socket.emit("player_voted", JSON.stringify({ id, vote }));
-    }
-
-    function pressedCard(ind) {
-      if (cardClickState != 0) {
-        const discarded = currentCards[ind];
-        currentCards.splice(ind, 1);
-        if (cardClickState == 1) {
-          socket.emit("president_discarded", JSON.stringify({ cards: currentCards, discarded }));
-        } else {
-          const card = currentCards[0];
-          socket.emit("chancellor_discarded", JSON.stringify({ card, discarded }));
-        }
-      }
-    }
-
-    function endPolicyPeek() {
-      socket.emit("end_policy_peek", JSON.stringify({}));
-    }
-
-    function investigatePlayer(id) {
-      socket.emit("investigate_player", JSON.stringify({ player: id }));
-    }
-
-    function endInvestigatePlayer() {
-      socket.emit("end_investigate_player", JSON.stringify({}));
-    }
-
-    function specialElection(id) {
-      socket.emit("special_election_pick", JSON.stringify({ player: id }));
-    }
-
-    function performExecution(id) {
-      console.log(`${id} is being executed`)
-      socket.emit("perform_execution", JSON.stringify({ player: id }));
-    }
-
-    function chancellorVeto() {
-      socket.emit("chancellor_vetoed", JSON.stringify({}));
-    }
-
-    function presidentVeto() {
-      const veto = true;
-      const cards = currentCards;
-      socket.emit("president_veto_answer", JSON.stringify({ veto, cards }));
-    }
-
-    function presidentNoVeto() {
-      const veto = false;
-      const cards = currentCards;
-      socket.emit("president_veto_answer", JSON.stringify({ "veto": veto, "cards": cards }));
-    }
-
-    var image_url_mappings = {
-      "unknown": "{{url_for('static', filename='assets/Mystery Sheep.png')}}",
-      "liberal": "{{url_for('static', filename='assets/Liberal Sheep.png')}}",
-      "fascist": "{{url_for('static', filename='assets/Fascist Sheep.png')}}",
-      "hitler": "{{url_for('static', filename='assets/Hitler Sheep.png')}}",
-    };
-
-    function display_players(players) {
-      /*players is a list of [player names, followed by player identites {liberal, fascist, hitler, unknown}]
-      the player list should appear in the order that the game is being played.*/
-      //remove all elements on the game_canvas
-      let game_canvas = document.getElementById("game_canvas");
-      while (game_canvas.firstChild) {
-        game_canvas.removeChild(game_canvas.firstChild);
-      }
-      //add all new elements!
-      for (i = 1; i < players.length + 1; i++) {
-        //set the class
-        var newElement = document.createElement("portrait");
-        //set the style
-        newElement.setAttribute("style", "--i: " + i);
-        //get the correct image
-        var url = image_url_mappings[players[i - 1][2]];
-        var buttonID = "selectPlayer" + players[i - 1][1];
-        //set the rest of the HTML tag
-        newElement.innerHTML = '<img src="' + url + '" alt="' + players[i - 1][0] + '"/> ' +
-          '<div class="name_card" style="--i: ' + i + '">' + players[i - 1][0] + '</div>' +
-          '<button id="' + buttonID + '" type="button" class="btn btn-primary" style="display: none; margin: auto">Select</button>';
-        //finally append!
-        game_canvas.appendChild(newElement);
-        if (!allIDs.includes(buttonID)) {
-          allIDs.push(buttonID);
-        }
-      }
-      //adjust the style for the overarching game_canvas div
-      game_canvas.setAttribute("style", "--m: " + players.length + "; --tan: " + Math.tan(Math.PI / players.length).toFixed(2));
-    };
-
-    function display_player_buttons(players, method) {
-      /*Will set the display style of the buttons to be block
-        - players, an array of player ids to show the buttons for
-        - method, a string to be called on click of the button
-      */
-      players.forEach((player, index) => {
-        var button = document.getElementById(`selectPlayer${player}`);
-        button.style.display = "block";
-        button.setAttribute("onclick", `${method}('${player}')`);
+      socket.on("force_reconnect", () => {
+        location.href = "/";
       });
-    };
 
-    function updateCards(liberal, fascist) {
-      /*Will make this many of each type of card appear as played on the field!
+      socket.on("on_join", (data) => {
+        const { usernames, ids, ongoing_game: ongoingGame } = JSON.parse(data);
+        hideAllExcept(["titleText", "playersText"]);
+
+        console.log("players are: ", usernames);
+        console.log("player ids are: ", ids);
+        console.log("ongoing game is ", ongoingGame);
+        ids.forEach((id, index) => {
+          idToName[id] = usernames[index];
+        });
+        document.getElementById("playersText").textContent =
+          "Players: " + usernames.toString();
+        if (!ongoingGame && usernames.length >= 5) {
+          show("startGameButton");
+        }
+      });
+
+      socket.on("individual_setup", (data) => {
+        const d = JSON.parse(data);
+        const individual_role = d["individual_role"];
+        roles = d["roles"];
+        document.getElementById("startGameButton").style.display = "none";
+        if (individual_role == "spectator") {
+          isSpectator = true;
+        }
+
+        display_players(roles);
+      });
+
+      /*
+        This request occurs when the president is asked to select their
+        chancellor nominee. It does the following:
+        1) parse the data into JSON.
+        2) hide everything except the miscEntryText
+        3) If the player is the president (hint: use the global `id` variable),
+           ask them to select their nominee and display the select buttons
+           Otherwise, just make the player aware that the president is choosing their chancellor.
       */
-      for(i = 0; i < liberal; i++){
-        document.getElementById("liberal card " + (i + 1)).style.display = "block";
+      socket.on("chancellor_request", (data) => {
+        /*
+          BEGIN QUESTION 1
+        */
+      });
+
+      socket.on("await_vote", (data) => {
+        const d = JSON.parse(data);
+        const president = d["president"];
+        const chancellor = d["chancellor"];
+        const presidentName = idToName[president];
+        const chancellorName = idToName[chancellor];
+        let voteText = `${presidentName} has nominated ${chancellorName}`;
+        if (!isSpectator) {
+          hideAllExcept([
+            "chancellorVoteText",
+            "chancellorVoteYesButton",
+            "chancellorVoteNoButton",
+          ]);
+          voteText = `${voteText}. Please vote.`;
+        } else {
+          hideAllExcept(["chancellorVoteText"]);
+          voteText = `${voteText}. You are a sad boi who cannot vote.`;
+        }
+        document.getElementById("chancellorVoteText").textContent = voteText;
+      });
+
+      socket.on("president_discard", (data) => {
+        const d = JSON.parse(data);
+        const president = d["president"];
+        const cards = d["cards"];
+
+        cardClickState = 1;
+        currentCards = cards;
+
+        if (president == id) {
+          hideAllExcept([
+            "chancellorVoteText",
+            "card1Button",
+            "card2Button",
+            "card3Button",
+          ]);
+          document.getElementById("chancellorVoteText").textContent =
+            "The vote has passed. Discard a policy.";
+          document.getElementById("card1Button").textContent =
+            cards[0] == "fascist_card" ? "Fascist" : "Liberal";
+          document.getElementById("card2Button").textContent =
+            cards[1] == "fascist_card" ? "Fascist" : "Liberal";
+          document.getElementById("card3Button").textContent =
+            cards[2] == "fascist_card" ? "Fascist" : "Liberal";
+        } else {
+          hideAllExcept(["chancellorVoteText"]);
+          document.getElementById("chancellorVoteText").textContent =
+            "The vote has passed. The president is discarding a policy.";
+        }
+      });
+
+      socket.on("chancellor_discard", (data) => {
+        const d = JSON.parse(data);
+        const chancellor = d["chancellor"];
+        const cards = d["cards"];
+        const can_veto = d["can_veto"];
+
+        cardClickState = 2;
+        currentCards = cards;
+
+        if (chancellor == id) {
+          hideAllExcept(["chancellorVoteText", "card1Button", "card2Button"]);
+          document.getElementById("chancellorVoteText").textContent =
+            "Discard a policy.";
+          document.getElementById("card1Button").textContent =
+            cards[0] == "fascist_card" ? "Fascist" : "Liberal";
+          document.getElementById("card2Button").textContent =
+            cards[1] == "fascist_card" ? "Fascist" : "Liberal";
+          if (vetoEnabled) {
+            show("chancellorVetoButton");
+          }
+        } else {
+          hideAllExcept(["chancellorVoteText"]);
+          document.getElementById("chancellorVoteText").textContent =
+            "The chancellor is discarding a policy.";
+        }
+      });
+
+      socket.on("policies_enacted", (data) => {
+        const d = JSON.parse(data);
+        const liberal = d["liberal"];
+        const fascist = d["fascist"];
+
+        show("liberalEnactedText");
+        show("fascistEnactedText");
+        document.getElementById("liberalEnactedText").textContent =
+          "Liberal: " + liberal;
+        document.getElementById("fascistEnactedText").textContent =
+          "Fascist: " + fascist;
+        updateCards(liberal, fascist);
+      });
+
+      socket.on("begin_investigation", (data) => {
+        const d = JSON.parse(data);
+        const president = d["president"];
+        const eligibles = d["eligibles"];
+        const eligiblesInfo = eligibles.map(
+          (eligible) => `${idToName[eligible]} (${eligible})`
+        );
+        if (president == id) {
+          hideAllExcept(["miscEntryText"]);
+          document.getElementById("miscEntryText").textContent =
+            "Type who you want to investigate. Options are " +
+            eligibles.toString();
+          display_player_buttons(eligibles, "investigatePlayer");
+        } else {
+          hideAllExcept([]);
+        }
+      });
+
+      socket.on("receive_investigation", (data) => {
+        const d = JSON.parse(data);
+        const { loyalty, president } = d;
+
+        if (president === id) {
+          hideAllExcept(["miscEntryText", "endInvestigatePlayerButton"]);
+          document.getElementById(
+            "miscEntryText"
+          ).textContent = `That player's role is ${loyalty}`;
+        } else {
+          hideAllExcept([]);
+        }
+      });
+
+      socket.on("begin_special_election", (data) => {
+        const d = JSON.parse(data);
+        const president = d["president"];
+        const eligibles = d["eligibles"];
+
+        if (president == id) {
+          hideAllExcept(["miscEntryText"]);
+          document.getElementById("miscEntryText").textContent =
+            "Special election. Select a player to be the next president.";
+          display_player_buttons(eligibles, "specialElection");
+        } else {
+          hideAllExcept([]);
+        }
+      });
+
+      socket.on("perform_policy_peek", (data) => {
+        const d = JSON.parse(data);
+        const president = d["president"];
+        const cards = d["cards"];
+
+        cardClickState = 0;
+
+        if (president == id) {
+          hideAllExcept([
+            "miscEntryText",
+            "card1Button",
+            "card2Button",
+            "card3Button",
+            "endPolicyPeekButton",
+          ]);
+          document.getElementById("miscEntryText").textContent =
+            "These are the top 3 cards in the pile.";
+          document.getElementById("card1Button").textContent = cards[0];
+          document.getElementById("card2Button").textContent = cards[1];
+          document.getElementById("card3Button").textContent = cards[2];
+        } else {
+          hideAllExcept([]);
+        }
+      });
+
+      socket.on("begin_execution", (data) => {
+        const d = JSON.parse(data);
+        const president = d["president"];
+        const eligibles = d["eligibles"];
+
+        if (president == id) {
+          hideAllExcept(["miscEntryText"]);
+          document.getElementById("miscEntryText").textContent =
+            "Enter a player to execute.";
+          display_player_buttons(eligibles, "performExecution");
+        } else {
+          hideAllExcept([]);
+        }
+      });
+
+      socket.on("player_executed", (data) => {
+        const d = JSON.parse(data);
+        const { player: executedPlayer } = d;
+        roles = roles.filter((player) => player[1] !== executedPlayer);
+        if (executedPlayer == id) {
+          isSpectator = true;
+        }
+        allIDs = allIDs.filter(
+          (elementID) => elementID !== `selectPlayer${executedPlayer}`
+        );
+        display_players(roles);
+      });
+
+      socket.on("veto_enabled", (data) => {
+        vetoEnabled = true;
+      });
+
+      socket.on("ask_president_veto", (data) => {
+        const d = JSON.parse(data);
+        const president = d["president"];
+
+        if (president == id) {
+          hideAllExcept([
+            "miscEntryText",
+            "presidentVetoButton",
+            "presidentNoVetoButton",
+          ]);
+          document.getElementById("miscEntryText").textContent =
+            "The chancellor has decided to veto. Do you?";
+          document.getElementById("presidentVetoButton").textContent = "Yes";
+          document.getElementById("presidentNoVetoButton").textContent = "No";
+        } else {
+          hideAllExcept(["miscEntryText"]);
+          document.getElementById("miscEntryText").textContent =
+            "The chancellor has decided to veto. Waiting on president response.";
+        }
+      });
+
+      socket.on("game_over", (data) => {
+        const d = JSON.parse(data);
+        const winner = d["winner"];
+        hideAllExcept(["miscEntryText", "startNewGameButton"]);
+        document.getElementById("miscEntryText").textContent =
+          winner + " wins!";
+      });
+
+      function hideAllExcept(idArray) {
+        allIDs.forEach((elementID, index) => {
+          if (idArray.includes(elementID)) {
+            document.getElementById(elementID).style.display = "block";
+          } else {
+            document.getElementById(elementID).style.display = "none";
+          }
+        });
       }
-      for(i = 0; i < fascist; i++){
-        document.getElementById("fascist card " + (i + 1)).style.display = "block";
+
+      function show(elementID) {
+        document.getElementById(elementID).style.display = "block";
       }
-    };
 
-    function startNewGame() {
-      // call shepherd to_setup
-      socket.emit('next_stage');
-      // redirect
-    }
+      // functions that send information to shepherd
 
-  </script>
-</body>
+      function startGame() {
+        // hide start game button
+        socket.emit("next_stage");
+      }
 
+      function nominateChancellor(id) {
+        console.log(`chancellor is being nominated to ${id}`);
+        // nominate chancellor
+        socket.emit("chancellor_nomination", JSON.stringify({ nominee: id }));
+      }
+
+      /*
+        This function votes yes by emitting a player_voted event to the server.
+        You are responsible for finding the relevant header in Utils.py.
+      */
+      function chancellorVoteYes() {
+        // vote yes on chancellor
+        hideAllExcept([]);
+        /*
+          BEGIN QUESTION 2
+        */
+      }
+      /*
+        This function votes no by emitting a player_voted event to the server.
+        You are responsible for finding the relevant header in Utils.py.
+      */
+      function chancellorVoteNo() {
+        // vote no on chancellor
+        hideAllExcept([]);
+        /*
+          BEGIN QUESTION 2
+        */
+      }
+
+      function pressedCard(ind) {
+        if (cardClickState != 0) {
+          const discarded = currentCards[ind];
+          currentCards.splice(ind, 1);
+          if (cardClickState == 1) {
+            socket.emit(
+              "president_discarded",
+              JSON.stringify({ cards: currentCards, discarded })
+            );
+          } else {
+            const card = currentCards[0];
+            socket.emit(
+              "chancellor_discarded",
+              JSON.stringify({ card, discarded })
+            );
+          }
+        }
+      }
+
+      function endPolicyPeek() {
+        socket.emit("end_policy_peek", JSON.stringify({}));
+      }
+
+      function investigatePlayer(id) {
+        socket.emit("investigate_player", JSON.stringify({ player: id }));
+      }
+
+      function endInvestigatePlayer() {
+        socket.emit("end_investigate_player", JSON.stringify({}));
+      }
+
+      function specialElection(id) {
+        socket.emit("special_election_pick", JSON.stringify({ player: id }));
+      }
+
+      function performExecution(id) {
+        console.log(`${id} is being executed`);
+        socket.emit("perform_execution", JSON.stringify({ player: id }));
+      }
+
+      function chancellorVeto() {
+        socket.emit("chancellor_vetoed", JSON.stringify({}));
+      }
+
+      function presidentVeto() {
+        const veto = true;
+        const cards = currentCards;
+        socket.emit("president_veto_answer", JSON.stringify({ veto, cards }));
+      }
+
+      function presidentNoVeto() {
+        const veto = false;
+        const cards = currentCards;
+        socket.emit(
+          "president_veto_answer",
+          JSON.stringify({ veto: veto, cards: cards })
+        );
+      }
+
+      var image_url_mappings = {
+        unknown: "{{url_for('static', filename='assets/Mystery Sheep.png')}}",
+        liberal: "{{url_for('static', filename='assets/Liberal Sheep.png')}}",
+        fascist: "{{url_for('static', filename='assets/Fascist Sheep.png')}}",
+        hitler: "{{url_for('static', filename='assets/Hitler Sheep.png')}}",
+      };
+
+      function display_players(players) {
+        /*players is a list of [player names, followed by player identites {liberal, fascist, hitler, unknown}]
+      the player list should appear in the order that the game is being played.*/
+        //remove all elements on the game_canvas
+        let game_canvas = document.getElementById("game_canvas");
+        while (game_canvas.firstChild) {
+          game_canvas.removeChild(game_canvas.firstChild);
+        }
+        //add all new elements!
+        for (i = 1; i < players.length + 1; i++) {
+          //set the class
+          var newElement = document.createElement("portrait");
+          //set the style
+          newElement.setAttribute("style", "--i: " + i);
+          //get the correct image
+          var url = image_url_mappings[players[i - 1][2]];
+          var buttonID = "selectPlayer" + players[i - 1][1];
+          //set the rest of the HTML tag
+          newElement.innerHTML =
+            '<img src="' +
+            url +
+            '" alt="' +
+            players[i - 1][0] +
+            '"/> ' +
+            '<div class="name_card" style="--i: ' +
+            i +
+            '">' +
+            players[i - 1][0] +
+            "</div>" +
+            '<button id="' +
+            buttonID +
+            '" type="button" class="btn btn-primary" style="display: none; margin: auto">Select</button>';
+          //finally append!
+          game_canvas.appendChild(newElement);
+          if (!allIDs.includes(buttonID)) {
+            allIDs.push(buttonID);
+          }
+        }
+        //adjust the style for the overarching game_canvas div
+        game_canvas.setAttribute(
+          "style",
+          "--m: " +
+            players.length +
+            "; --tan: " +
+            Math.tan(Math.PI / players.length).toFixed(2)
+        );
+      }
+      /*
+        Makes select buttons on top of a player visible for all players
+        in `players`, a list of ids. On click of these buttons, performs `method`. Each button has an id of the format: `selectPlayer<id>`
+        where <id> can be replaced by a player id. Each method takes in a
+        single argument, the player id.
+
+        This function can be used, for example, when a president needs to
+        choose the chancellor and can only select certain players.
+        */
+      function display_player_buttons(players, method) {
+        /*
+          BEGIN QUESTION 3
+        */
+      }
+
+      /*
+          Will make this many of each type of card appear as played on the field!
+      */
+      function updateCards(liberal, fascist) {
+        for (i = 0; i < liberal; i++) {
+          document.getElementById("liberal card " + (i + 1)).style.display =
+            "block";
+        }
+        for (i = 0; i < fascist; i++) {
+          document.getElementById("fascist card " + (i + 1)).style.display =
+            "block";
+        }
+      }
+
+      function startNewGame() {
+        // call shepherd to_setup
+        socket.emit("next_stage");
+        // redirect
+      }
+    </script>
+  </body>
 </html>

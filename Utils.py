@@ -27,7 +27,7 @@ class SHEPHERD_HEADERS:
     Header to tell shepherd the player's vote on the chancellor
     contains:
         id   - the id of the voter
-        vote - true if the vote was yes
+        vote - ja if the vote was yes.
     """
 
     PRESIDENT_DISCARDED = "president_discarded"
