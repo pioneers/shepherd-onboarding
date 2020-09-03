@@ -395,12 +395,11 @@ def investigate_player(args):
 
 def call_special_election():
     """
-    A function that begins the special election power.
+    A function that begins the special election power. 
+    Send the appropriate header to the server with the correct data.
+    Anyone except the current president is eligible to be the next president.
     """
-    president = player_id(PRESIDENT_INDEX)
-    lcm_data = {"president": president, "eligibles": [
-        i for i in player_ids(PLAYERS) if i != president]}
-    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.BEGIN_SPECIAL_ELECTION, lcm_data)
+    # BEGIN QUESTION 7
 
 
 def perform_special_election(args):
