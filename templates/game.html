@@ -542,8 +542,7 @@
         if (president == id) {
           hideAllExcept(["miscEntryText"]);
           document.getElementById("miscEntryText").textContent =
-            "Type who you want to investigate. Options are " +
-            eligibles.toString();
+            "Select you want to investigate.";
           display_player_buttons(eligibles, "investigatePlayer");
         } else {
           hideAllExcept([]);
@@ -607,7 +606,7 @@
         if (president == id) {
           hideAllExcept(["miscEntryText"]);
           document.getElementById("miscEntryText").textContent =
-            "Enter a player to execute.";
+            "Select a player to execute.";
           display_player_buttons(eligibles, "performExecution");
         } else {
           hideAllExcept([]);
