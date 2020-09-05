@@ -1,12 +1,72 @@
 <img align="right" src="https://github.com/pioneers/shepherd-onboarding/blob/master/readmefigures/PiE%20Sheep.png" alt="PiE Sheep" width="86" height="135">
 
 # Shepherd Secret Hitler Onboarding
-
-Right now this is just the PM solution, there will probably be a new skeleton code branch here in the future and a branch for all the onboarding groups
-
 Join the liberals and discover the wolves in sheep's clothing, or help the fascists pull the wool over everyone's eyes!
 
-## Shepherd
+## About the Project
+Welcome to Sheep-ret (Secret?) Hitler! You will be implementing a web version of the party game Secret Hitler that mimics Shepherd's infrastructure.
+
+If you haven't already played IRL, you should first acquaint yourself with the [rules](https://secrethitler.com/assets/Secret_Hitler_Rules.pdf) of the game.
+
+You will be writing code in three files:  Shepherd.py, server.py and templates/game.html. In order for the game to fully operate, you will have to implement parts of the following functions. We have broken these down into three phases and recommend completing each phase separately, but you are free to move around.
+
+1. Shepherd.py
+    1. `start_game`
+    2. `player_joined_ongoing_game`
+    3. `to_chancellor`
+    4. `receive_vote`
+    5. `president_discarded`
+    6. `investigate_player`
+    7. `call_special_election`
+2. server.py
+    1. `player_voted`
+    2. `president_discarded`
+3. game.html
+    1. `chancellor_request`
+    2. `chancellorVoteYes` and `chancellorVoteNo`
+
+### Phase 1
+**Shepherd.py**
+1. `start_game`
+2. `player_joined_ongoing_game`
+3. `to_chancellor`
+
+**game.html**
+1. `socket.on chancellor_request`
+2. `chancellorVoteYes and chancellorVoteNo`
+
+After you have completed this phase, you should be able to start a game and the chancellor should be able to vote!
+
+### Phase 2
+**server.py**
+1. `player_voted`
+2. `president_discarded`
+
+**game.html**
+
+3. `display_player_buttons`
+
+**Shepherd.py**
+
+4. `receive_vote`
+5. `president_discarded`
+6. `investigate_player`
+
+### Phase 3
+7. `call_special_election`
+
+You may write the functions in whatever order you like, but we would recommend that you work in order for each file (e.g. solve 1.1 before 1.2).
+
+To run the game, enter `python3 server.py` in the terminal. You should see the messages
+```
+# Pseudo-LCM: channel lcm_target_server registered
+# Pseudo-LCM: channel lcm_target_shepherd registered
+```
+which mean that the Pseudo-LCM is up and running!
+
+To debug your code, use `print` statements in `.py` files, which display in the terminal, or `console.log` statements in `.html` files, which you can view in your browser using `right click -> Inspect`. `Shepherd.py` also prints information about the game state in the terminal whenever it receives a header, which you can change in the `diagnostics` function.
+
+## About Shepherd
 ### Welcome to Shepherd
 You probably know the gist of what you've gotten into, so now we are going to talk some specifics.
 
@@ -140,13 +200,6 @@ Lastly, you will need to clone the new repo onto your computer. Copy the link at
 ![Download button](https://github.com/pioneers/shepherd-onboarding/blob/master/readmefigures/Download%20button.png)
 
  and run `git clone <link>`. You can also optionally run `TODO`
-
-Git issues is a very helpful tool for organizing the workflow of a project. We will be using them for shepherd, and we have set up issues to guide you through the creation of this game as well. Git issues can be assigned to specific people, discussed, linked to certain pull requests, and finally when an issue is completed, closing the issues lets you track what still needs to be done. I recommend that you create and close issues as you work on the project to help you get used to using them.
-
-TODO
-
-### Your Task
-TODO
 
 ### Credit
 
