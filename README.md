@@ -1,6 +1,7 @@
 <img align="right" src="https://github.com/pioneers/shepherd-onboarding/blob/master/readmefigures/PiE%20Sheep.png" alt="PiE Sheep" width="86" height="135">
 
 # Shepherd Secret Hitler Onboarding
+Join the liberals and discover the wolves in sheep's clothing, or help the fascists pull the wool over everyone's eyes!
 
 Join the liberals and discover the wolves in sheep's clothing, or help the fascists pull the wool over everyone's eyes!
 
@@ -77,7 +78,6 @@ which mean that the Pseudo-LCM is up and running! Go to localhost:5000 in the br
 To debug your code, use `print` statements in `.py` files, which display in the terminal, or `console.log` statements in `.html` files, which you can view in your browser using `right click -> Inspect`. `Shepherd.py` also prints information about the game state in the terminal whenever it receives a header, which you can change in the `diagnostics` function.
 
 ## About Shepherd
-
 ### Welcome to Shepherd
 
 You probably know the gist of what you've gotten into, so now we are going to talk some specifics.

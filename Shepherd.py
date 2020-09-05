@@ -120,8 +120,7 @@ def player_joined_ongoing_game(args):
         # individual setup
         player_roles = []
         player = player_for_id(id)
-        lcm_data = {"recipients": [
-            player.id], "individual_role": player.role, "roles": player_roles}
+        lcm_data = {"recipients": [player.id], "individual_role": player.role, "roles": player_roles, "powers": BOARD.board}
         if player.role == ROLES.LIBERAL or (player.role == ROLES.HITLER and len(PLAYERS) > 6):
             for other in PLAYERS:
                 if player == other:
@@ -144,8 +143,7 @@ def player_joined_ongoing_game(args):
         player_roles = []
         spectator = spectator_for_id(id)
         spectator.role = ROLES.SPECTATOR
-        lcm_data = {"recipients": [
-            spectator.id], "individual_role": spectator.role, "roles": player_roles}
+        lcm_data = {"recipients": [spectator.id], "individual_role": spectator.role, "roles": player_roles, "powers": BOARD.board}
         for other in PLAYERS:
             player_roles.append([other.name, other.id, other.role])
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.INDIVIDUAL_SETUP, lcm_data)
@@ -190,8 +188,7 @@ def start_game(args):
     # END QUESTION 1
     for player in PLAYERS:
         player_roles = []
-        lcm_data = {"recipients": [
-            player.id], "individual_role": player.role, "roles": player_roles}
+        lcm_data = {"recipients": [player.id], "individual_role": player.role, "roles": player_roles, "powers": BOARD.board}
         if player.role == ROLES.LIBERAL or (player.role == ROLES.HITLER and len(PLAYERS) > 6):
             for other in PLAYERS:
                 if player == other:

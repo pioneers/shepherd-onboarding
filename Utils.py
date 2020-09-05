@@ -101,9 +101,6 @@ class SERVER_HEADERS:
     contains:
         usernames    - an ordered list of usernames
         ids          - an ordered list of ids
-        recipients   - a list of players by id who should receive this update. A
-                       server may choose not to implement this, at the cost of
-                       some extra network usage.
         ongoing_game - a boolean value that is True iff a game has been started.
     """
 
@@ -123,9 +120,9 @@ class SERVER_HEADERS:
     INDIVIDUAL_SETUP = "individual_setup"
     """
     Header sent to server to tell each individual client information necessary to render the ui and have the appropriate game state
-        recipients - player ids to send this message to (this is a list, but should only have a single entry)
         roles - a list of player names and their associated roles... [[player, id, role],[player, id, role],...]
         individual_role - the role of the player this is given to
+        powers - the list of powers for the current game board (from the BOARDS class)
     """
 
     CHANCELLOR_REQUEST = "chancellor_request"
