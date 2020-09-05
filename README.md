@@ -72,7 +72,7 @@ To run the game, enter `python3 server.py` in the terminal. You should see the m
 # Pseudo-LCM: channel lcm_target_shepherd registered
 ```
 
-which mean that the Pseudo-LCM is up and running!
+which mean that the Pseudo-LCM is up and running! Go to localhost:5000 in the browser to play your game!
 
 To debug your code, use `print` statements in `.py` files, which display in the terminal, or `console.log` statements in `.html` files, which you can view in your browser using `right click -> Inspect`. `Shepherd.py` also prints information about the game state in the terminal whenever it receives a header, which you can change in the `diagnostics` function.
 
