@@ -119,7 +119,7 @@ def player_joined_ongoing_game(args):
         # individual setup
         player_roles = []
         player = player_for_id(id)
-        lcm_data = {"recipients": [player.id], "individual_role": player.role, "roles": player_roles}
+        lcm_data = {"recipients": [player.id], "individual_role": player.role, "roles": player_roles, "powers": BOARD.board}
         if player.role == ROLES.LIBERAL or (player.role == ROLES.HITLER and len(PLAYERS) > 6):
             for other in PLAYERS:
                 if player == other:
@@ -136,16 +136,16 @@ def player_joined_ongoing_game(args):
         print("# Shepherd: Welcome as a spectator", name)
         lcm_data = {"usernames": player_names(PLAYERS), "ids": player_ids(PLAYERS), "recipients": [id], "ongoing_game": True}
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.ON_JOIN, lcm_data)
-        
+
         # individual setup
         player_roles = []
         spectator = spectator_for_id(id)
         spectator.role = ROLES.SPECTATOR
-        lcm_data = {"recipients": [spectator.id], "individual_role": spectator.role, "roles": player_roles}
+        lcm_data = {"recipients": [spectator.id], "individual_role": spectator.role, "roles": player_roles, "powers": BOARD.board}
         for other in PLAYERS:
             player_roles.append([other.name, other.id, other.role])
         lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.INDIVIDUAL_SETUP, lcm_data)
-        
+
     # policies enacted
     lcm_data = {"liberal": BOARD.liberal_enacted,
                 "fascist": BOARD.fascist_enacted,
@@ -177,7 +177,7 @@ def start_game(args):
     BOARD = Board(len(PLAYERS))
     for player in PLAYERS:
         player_roles = []
-        lcm_data = {"recipients": [player.id], "individual_role": player.role, "roles": player_roles}
+        lcm_data = {"recipients": [player.id], "individual_role": player.role, "roles": player_roles, "powers": BOARD.board}
         if player.role == ROLES.LIBERAL or (player.role == ROLES.HITLER and len(PLAYERS) > 6):
             for other in PLAYERS:
                 if player == other:
@@ -202,8 +202,7 @@ def to_chancellor():
             PREVIOUS_PRESIDENT_INDEX), player_id(PREVIOUS_CHANCELLOR_INDEX)}
     else:
         ineligibles = {player_id(PRESIDENT_INDEX), player_id(PREVIOUS_CHANCELLOR_INDEX)}
-    ineligibles_final = [i for i in list(ineligibles) if i is not None]
-    eligibles = [d for d in player_ids(PLAYERS) if d not in ineligibles_final]
+    eligibles = [d for d in player_ids(PLAYERS) if d not in ineligibles]
     lcm_data = {"president": player_id(
         PRESIDENT_INDEX), "eligibles": eligibles}
     lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.CHANCELLOR_REQUEST, lcm_data)

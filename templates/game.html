@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-  
+
 <!-- This is the frontend code for the core gameplay. It is roughly organized as follows:
      1. HTML Elements
      2. JavaScript functions that read headers sent by Shepherd and update the screen accordingly
@@ -50,7 +50,7 @@
 
     <button id="card3Button" type="button" class="btn btn-primary" onclick="pressedCard(2)" style="display: none; float: left; z-index: 1000; position: relative; margin-left: 10px;">
     </button>
-    
+
     <!-- veto -->
     <button id="chancellorVetoButton" type="button" class="btn btn-primary" onclick="chancellorVeto()"
       style="display: none; float: left; z-index: 1000; position: relative; margin-left: 10px;">
@@ -80,7 +80,7 @@
       No Veto
     </button>
   </div>
-  
+
   <!-- start new game -->
   <button id="startNewGameButton" type="button" class="btn btn-primary" onclick="startNewGame()" style="display: none;">
     Start New Game
@@ -109,6 +109,7 @@
     </tile>
     <tile>
       <img src="{{url_for('static', filename='assets/liberal board dark.png')}}" alt="liberal background" />
+      <img class="power" src="{{url_for('static', filename='assets/liberal win.png')}}" id="liberal win" alt="liberal win"/>
       <img class="card" id="liberal card 5" src="{{url_for('static', filename='assets/liberal Card.png')}}" alt="liberal Card" style="display: none"/>
     </tile>
     <div style="clear:both;">
@@ -117,32 +118,38 @@
   <div class="board" id="fascist board" style="--n: 6; top: 50px">
     <tile>
       <img src="{{url_for('static', filename='assets/fascist board.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
+      <img class="power" id="fascist power 1" alt="fascist power 1" style="margin-top: 50px; display: none"/>
       <img class="card" id="fascist card 1" src="{{url_for('static', filename='assets/fascist Card.png')}}" alt="fascist Card" style="margin-top: 50px; display: none"/>
     </tile>
     <tile>
       <img src="{{url_for('static', filename='assets/fascist board.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
+      <img class="power" id="fascist power 2" alt="fascist power 2" style="margin-top: 50px; display: none"/>
       <img class="card" id="fascist card 2" src="{{url_for('static', filename='assets/fascist Card.png')}}" alt="fascist Card" style="margin-top: 50px; display: none"/>
     </tile>
     <tile>
       <img src="{{url_for('static', filename='assets/fascist board.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
+      <img class="power" id="fascist power 3" alt="fascist power 3" style="margin-top: 50px; display: none"/>
       <img class="card" id="fascist card 3" src="{{url_for('static', filename='assets/fascist Card.png')}}" alt="fascist Card" style="margin-top: 50px; display: none"/>
     </tile>
     <tile>
       <img src="{{url_for('static', filename='assets/fascist board dark.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
+      <img class="power" id="fascist power 4" alt="fascist power 4" style="margin-top: 50px; display: none"/>
       <img class="card" id="fascist card 4" src="{{url_for('static', filename='assets/fascist Card.png')}}" alt="fascist Card" style="margin-top: 50px; display: none"/>
     </tile>
     <tile>
       <img src="{{url_for('static', filename='assets/fascist board dark.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
+      <img class="power" id="fascist power 5" alt="fascist power 5" style="margin-top: 50px; display: none"/>
       <img class="card" id="fascist card 5" src="{{url_for('static', filename='assets/fascist Card.png')}}" alt="fascist Card" style="margin-top: 50px; display: none"/>
     </tile>
     <tile>
       <img src="{{url_for('static', filename='assets/fascist board dark.png')}}" alt="fascist background"  style="margin-top: 50px;"/>
+      <img class="power" src="{{url_for('static', filename='assets/fascist win.png')}}" id="fascist win" alt="fascist win" style="margin-top: 50px"/>
       <img class="card" id="fascist card 6" src="{{url_for('static', filename='assets/fascist Card.png')}}" alt="fascist Card" style="margin-top: 50px; display: none"/>
     </tile>
     <div style="clear:both;">
     </div>
   </div>
-  
+
   <script>
     // initialize socket
     console.log("loaded");
@@ -161,10 +168,10 @@
     let currentCards = []; // the cards from which the president/chancellor must discard a card
     let vetoEnabled = false; // whether the chancellor can ask for a veto
     // the ids of all elements on the screen, used to easily show/hide elements
-    let allIDs = ["titleText", "playersText", "startGameButton", 
+    let allIDs = ["titleText", "playersText", "startGameButton",
       "miscEntryText", "chancellorVoteText", "chancellorVoteYesButton",
-      "chancellorVoteNoButton", "card1Button", "card2Button", "card3Button", 
-      "endPolicyPeekButton", "chancellorVetoButton", "presidentVetoButton", 
+      "chancellorVoteNoButton", "card1Button", "card2Button", "card3Button",
+      "endPolicyPeekButton", "chancellorVetoButton", "presidentVetoButton",
       "presidentNoVetoButton", "startNewGameButton", "endInvestigatePlayerButton"]
     let idToName = {}; // map from player id to name
     let isSpectator = false; // true if this client is a spectator
@@ -204,15 +211,15 @@
       console.log("players are: ", usernames);
       console.log("player ids are: ", ids);
       console.log("ongoing game is ", ongoingGame);
-      
+
       // store the player's id and name in a dictionary
       ids.forEach((id, index) => {
         idToName[id] = usernames[index];
       })
-      
+
       // print the players on the screen
       document.getElementById("playersText").textContent = "Players: " + usernames.toString();
-      
+
       // let the player start the game if possible
       if (!ongoingGame && usernames.length >= 5) {
         show("startGameButton");
@@ -221,7 +228,7 @@
 
     // inform the player of their role and display the other players
     socket.on("individual_setup", (data) => {
-      const { individual_role, roles: all_roles } = JSON.parse(data);
+      const { individual_role, roles: all_roles, powers } = JSON.parse(data);
       roles = all_roles
 
       document.getElementById("startGameButton").style.display = "none";
@@ -231,12 +238,13 @@
       }
 
       display_players(roles);
+      display_powers(powers);
     })
 
     // the president must select a chancellor
     socket.on("chancellor_request", (data) => {
       const { president, eligibles } = JSON.parse(data);
-      
+
       if (president === id) {
         // if this player is the president, have them select a chancellor nominee
         hideAllExcept(["miscEntryText"]);
@@ -313,7 +321,7 @@
     // ask the president to select a player to be investigated
     socket.on("begin_investigation", (data) => {
       const { president, eligibles } = JSON.parse(data);
-      
+
       if (president == id) {
         hideAllExcept(["miscEntryText"]);
         document.getElementById("miscEntryText").textContent = "Select who you want to investigate.";
@@ -384,15 +392,15 @@
 
       // only keep players who are not the executed player
       roles = roles.filter(player => player[1] !== executedPlayer);
-      
+
       // make the executed player a spectator
       if (executedPlayer == id) {
         isSpectator = true;
       }
-      
+
       // remove the executed player from the display
       allIDs = allIDs.filter(elementID => elementID !== `selectPlayer${executedPlayer}`);
-      
+
       // display the remaining players
       display_players(roles)
     })
@@ -560,7 +568,15 @@
     // mapping from card to image
     var card_url_mappings = {
       "fascist_card": "{{url_for('static', filename='assets/fascist Card.png')}}",
-      "liberal_card": "{{url_for('static', filename='assets/liberal Card.png')}}" 
+      "liberal_card": "{{url_for('static', filename='assets/liberal Card.png')}}"
+    }
+
+    var power_url_mappings = {
+      "investigate_loyalty": "{{url_for('static', filename='assets/investigation.png')}}",
+      "special_election": "{{url_for('static', filename='assets/specialelection.png')}}",
+      "policy_peek": "{{url_for('static', filename='assets/policypeek.png')}}",
+      "execution": "{{url_for('static', filename='assets/assassination.png')}}",
+      "execution+veto": "{{url_for('static', filename='assets/veto.png')}}"
     }
 
     function display_players(players) {
@@ -605,6 +621,24 @@
         button.setAttribute("onclick", `${method}('${player}')`);
       });
     };
+
+    function display_powers(powers) {
+      /*Will add the presidential powers to the game board
+        - powers, a 2d array of the powers on each tile
+      */
+      for (i = 1; i < 6; i++) {
+        var mapping;
+        if (powers[i - 1].length == 2) {
+          mapping = "execution+veto";
+          document.getElementById("fascist power " + i).src = power_url_mappings[mapping];
+          document.getElementById("fascist power " + i).style.display = "block";
+        } else if (powers[i - 1].length == 1) {
+          mapping = powers[i - 1][0];
+          document.getElementById("fascist power " + i).src = power_url_mappings[mapping];
+          document.getElementById("fascist power " + i).style.display = "block";
+        }
+      }
+    }
 
     function updateCards(liberal, fascist) {
       /*Will make this many of each type of card appear as played on the field!

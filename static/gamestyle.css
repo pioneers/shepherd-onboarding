@@ -71,4 +71,20 @@
     border-color: transparent;
 }
 
+.board .power{
+    --scale: 1.2;
+    max-width: calc(var(--w) / var(--scale)); max-height: calc(var(--h) / var(--scale));
+    width: auto; height: auto;
+    position: absolute;
+    margin: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: calc(var(--h)/(2.0/(1.0 - 1.0 / var(--scale))));
+    background: transparent;
+    border-color: transparent;
+    text-align: center;
+
+}
+
 img { max-width: 100% }
