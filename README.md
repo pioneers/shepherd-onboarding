@@ -24,7 +24,7 @@ You will be writing code in three files: Shepherd.py, server.py and templates/ga
 2. server.py
    1. `player_voted`
    2. `president_discarded`
-3. game.html
+3. templates/game.html
    1. `chancellor_request`
    2. `chancellorVoteYes` and `chancellorVoteNo`
 
@@ -36,7 +36,7 @@ You will be writing code in three files: Shepherd.py, server.py and templates/ga
 2. `player_joined_ongoing_game`
 3. `to_chancellor`
 
-**game.html**
+**templates/game.html**
 
 1. `socket.on chancellor_request`
 2. `chancellorVoteYes and chancellorVoteNo`
@@ -50,7 +50,7 @@ After you have completed this phase, you should be able to start a game and the 
 1. `player_voted`
 2. `president_discarded`
 
-**game.html**
+**templates/game.html**
 
 3. `display_player_buttons`
 
