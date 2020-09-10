@@ -251,7 +251,8 @@
         document.getElementById("miscEntryText").textContent = "Select your chancellor nominee";
         display_player_buttons(eligibles, "nominateChancellor");
       } else {
-        hideAllExcept([])
+        hideAllExcept(["miscEntryText"]);
+        document.getElementById("miscEntryText").textContent = "The president is selecting a chancellor nominee"; 
       }
     });
 
@@ -327,7 +328,8 @@
         document.getElementById("miscEntryText").textContent = "Select who you want to investigate.";
         display_player_buttons(eligibles, "investigatePlayer");
       } else {
-        hideAllExcept([])
+        hideAllExcept(["miscEntryText"]);
+        document.getElementById("miscEntryText").textContent = "The president is selecting someone to investigate.";
       }
     })
 
@@ -340,7 +342,8 @@
         document.getElementById("miscEntryText").textContent =
           `That player's role is ${loyalty}`;
       } else {
-        hideAllExcept([]);
+        hideAllExcept(["miscEntryText"]);
+        document.getElementById("miscEntryText").textContent = "The president is receiving the results of the investigation.";
       }
     })
 
@@ -353,7 +356,8 @@
         document.getElementById("miscEntryText").textContent = "Special election. Select a player to be the next president.";
         display_player_buttons(eligibles, "specialElection");
       } else {
-        hideAllExcept([]);
+        hideAllExcept(["miscEntryText"]);
+        document.getElementById("miscEntryText").textContent = "Special election. The president is selecting the next president.";
       }
     })
 
@@ -368,7 +372,8 @@
         document.getElementById("miscEntryText").textContent = "These are the top 3 cards in the pile."
         show_cards(cards[0], cards[1], cards[2]);
       } else {
-        hideAllExcept([]);
+        hideAllExcept(["miscEntryText"]);
+        document.getElementById("miscEntryText").textContent = "The president is reading the top 3 cards in the pile."
       }
     })
 
@@ -381,7 +386,8 @@
         document.getElementById("miscEntryText").textContent = "Select a player to execute.";
         display_player_buttons(eligibles, "performExecution");
       } else {
-        hideAllExcept([]);
+        hideAllExcept(["miscEntryText"]);
+        document.getElementById("miscEntryText").textContent = "The president is selecting a player to execute.";
       }
     })
 
