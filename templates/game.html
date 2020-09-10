@@ -801,17 +801,19 @@
         );
       }
 
-      function display_player_buttons(players, method) {
-        /*Will set the display style of the buttons to be block
-        - players, an array of player ids to show the buttons for
-        - method, a string to be called on click of the button
-      */
-        players.forEach((player, index) => {
-          var button = document.getElementById(`selectPlayer${player}`);
-          button.style.display = "block";
-          button.setAttribute("onclick", `${method}('${player}')`);
-        });
-      }
+/*
+       Makes select buttons on top of a player visible for all players
+       in `players`, a list of ids. On click of these buttons, performs `method`. Each button has an id of the format: `selectPlayer<id>`
+       where <id> can be replaced by a player id. Each method takes in a
+       single argument, the player id.
+       This function can be used, for example, when a president needs to
+       choose the chancellor and can only select certain players.
+       */
+       function display_player_buttons(players, method) {
+       /*
+         BEGIN QUESTION 3
+       */
+     }
 
       function display_powers(powers) {
         /*Will add the presidential powers to the game board
