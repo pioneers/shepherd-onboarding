@@ -3,8 +3,6 @@
 # Shepherd Secret Hitler Onboarding
 Join the liberals and discover the wolves in sheep's clothing, or help the fascists pull the wool over everyone's eyes!
 
-Join the liberals and discover the wolves in sheep's clothing, or help the fascists pull the wool over everyone's eyes!
-
 ### Getting Started
 
 Hopefully you have been to the git tutorial by now. If you haven't, please talk to Alex or Akshit!
