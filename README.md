@@ -3,6 +3,24 @@
 # Shepherd Secret Hitler Onboarding
 Join the liberals and discover the wolves in sheep's clothing, or help the fascists pull the wool over everyone's eyes!
 
+### Getting Started
+Hopefully you have been to the git tutorial by now. If you haven't, please talk to Alex or Akshit!
+
+First you need to fork this repository. You will do this by clicking on fork in the upper right corner of github.
+
+![Fork button](https://github.com/pioneers/shepherd-onboarding/blob/master/readmefigures/Fork%20button.png)
+
+This will give you a copy of this repo for your own use. Only one person per group needs to fork this repo. Next you will need to add your partner(s) to your repo, which you can do by clicking on settings at the top bar of your newly created repo, going to manage access, and adding collaborators.
+
+![Fork button](https://github.com/pioneers/shepherd-onboarding/blob/master/readmefigures/Settings%20button.png)
+
+Lastly, you will need to clone the new repo onto your computer. Copy the link at the top right of the page:
+
+![Download button](https://github.com/pioneers/shepherd-onboarding/blob/master/readmefigures/Download%20button.png)
+
+ and run `git clone <link>`. You can also optionally run `TODO`
+
+
 ## About the Project
 Welcome to Sheep-ret (Secret?) Hitler! You will be implementing a web version of the party game Secret Hitler that mimics Shepherd's infrastructure.
 
@@ -183,23 +201,6 @@ LCM changes:
  * LCM is really hard to install (maybe impossible on Windows?) and since we are creating such a simple game which does not require asynchronous pieces, we dropped the LCM communication altogether. That being said, since we want you to get used to communication via LCM, we have instead included a pseudo LCM implementation in LCM.py. This exposes almost the same functionality to the user, with the notable exception that it's just a glorified function call.
  * Using our pseudo LCM for communication between the server and the state machine will teach you how the real LCM is used. In order to follow that abstraction, you should refrain from ever calling a function in the state machine from the server, or vice versa.
  * Lastly, normal LCM is asynchronous, which means once you send an LCM message, your code will immediately move on to the next line. Because our pseudo LCM is nothing more than a glorified function call, the code will instead pause and process whatever your LCM message was intended to do. Therefore, you should take care not to get stuck in a recursive loop of LCM calls.
-
-### Using Github
-Hopefully you have been to the git tutorial by now. If you haven't, please talk to Alex or Akshit!
-
-First you need to fork this repository. You will do this by clicking on fork in the upper right corner of github.
-
-![Fork button](https://github.com/pioneers/shepherd-onboarding/blob/master/readmefigures/Fork%20button.png)
-
-This will give you a copy of this repo for your own use. Only one person per group needs to fork this repo. Next you will need to add your partner(s) to your repo, which you can do by clicking on settings at the top bar of your newly created repo, going to manage access, and adding collaborators.
-
-![Fork button](https://github.com/pioneers/shepherd-onboarding/blob/master/readmefigures/Settings%20button.png)
-
-Lastly, you will need to clone the new repo onto your computer. Copy the link at the top right of the page:
-
-![Download button](https://github.com/pioneers/shepherd-onboarding/blob/master/readmefigures/Download%20button.png)
-
- and run `git clone <link>`. You can also optionally run `TODO`
 
 ### Credit
 
