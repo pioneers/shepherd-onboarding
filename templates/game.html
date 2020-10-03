@@ -290,12 +290,10 @@
       // get player information and display waiting room
       const name = getCookie("name");
       const id = getCookie("id");
-
       document.getElementById(
-          "titleText"
-        ).textContent = `BAA play here, you are ${name}`;
-        console.log(name);
-
+        "titleText"
+      ).textContent = `BAA play here, you are ${name}`;
+      console.log(name);
       if (id && name){
         socket.emit(
           "join",
