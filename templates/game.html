@@ -186,16 +186,17 @@
       "titleText"
     ).textContent = `BAA play here, you are ${name}`;
     console.log(name);
-    if (!id && !name) {
+    if (id && name){
+      socket.emit(
+        "join",
+        JSON.stringify({
+          name,
+          id,
+        })
+      );
+    } else {
       location.href = "/";
     }
-    socket.emit(
-      "join",
-      JSON.stringify({
-        name,
-        id,
-      })
-    );
 
     // receive information from shepherd
 
