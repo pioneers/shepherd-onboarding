@@ -1,4 +1,4 @@
-from Utils import VOTES, ROLES
+from utils import VOTES, ROLES
 
 
 class Player:

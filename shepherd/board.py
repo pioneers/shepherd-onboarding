@@ -1,4 +1,4 @@
-from Utils import BOARDS, CARDS
+from utils import BOARDS, CARDS
 
 class Board:
     """Tracks the current board and the number of policies enacted.

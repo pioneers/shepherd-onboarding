@@ -1,60 +1,40 @@
-from Player import Player
-from typing import List, Set, Dict, Tuple, Optional
-from Utils import *
-from LCM import lcm_send, lcm_register
-from Board import Board
+
+import queue
 import random
+from player import Player
+from typing import List, Set, Dict, Tuple, Optional
+from utils import *
+from ydl import ydl_send, ydl_start_read
+from board import Board
 
 
-def LCM_receive(header, dic={}):
-    """
-    this dispatches LCM requests from the server in a way that mimics the
-    asynchronous dispatching that normally happens in shepherd
-    """
-    global GAME_STATE
-    print("GAME STATE OUTSIDE: ", GAME_STATE)
-    print(header, dic)
 
-    if GAME_STATE == STATE.SETUP:
-        func = SETUP_FUNCTIONS.get(header)
-        if func:
-            func(dic)
-        else:
-            print("Invalid Event in Setup")
-    elif GAME_STATE == STATE.END:
-        func = END_FUNCTIONS.get(header)
-        if func:
-            func(dic)
-        else:
-            print("Invalid Event in End")
-    elif GAME_STATE == STATE.PICK_CHANCELLOR:
-        func = CHANCELLOR_FUNCTIONS.get(header)
-        if func:
-            func(dic)
-        else:
-            print("Invalid Event in Pick Chancellor")
-    elif GAME_STATE == STATE.VOTE:
-        func = VOTE_FUNCTIONS.get(header)
-        if func:
-            func(dic)
-        else:
-            print("Invalid Event in Vote")
-    elif GAME_STATE == STATE.POLICY:
-        func = POLICY_FUNCTIONS.get(header)
-        if func:
-            func(dic)
-        else:
-            print("Invalid Event in Policy")
-    elif GAME_STATE == STATE.ACTION:
-        func = ACTION_FUNCTIONS.get(header)
-        if func:
-            func(dic)
-        else:
-            print("Invalid Event in Action")
-    else:
-        print("Invalid State")
 
-    print(diagnostics())
+def start():
+    '''
+    Main loop which processes the event queue and calls the appropriate function
+    based on game state and the dictionary of available functions
+    '''
+    events = queue.Queue()
+    ydl_start_read(YDL_TARGETS.SHEPHERD, events)
+    while True:
+        print("GAME STATE OUTSIDE: ", GAME_STATE)
+        payload = events.get(True)
+        print(payload)
+
+        if GAME_STATE in FUNCTION_MAPPINGS:
+            func_list = FUNCTION_MAPPINGS.get(GAME_STATE)
+            func = func_list.get(payload[0]) or EVERYWHERE_FUNCTIONS.get(payload[0])
+            if func is not None:
+                func(**payload[1]) #deconstructs dictionary into arguments
+            else:
+                print(f"Invalid Event in {GAME_STATE}")
+        else:
+            print(f"Invalid State: {GAME_STATE}")
+        
+        print(diagnostics())
+
+
 
 # ===================================
 # game functions
@@ -72,7 +52,7 @@ def to_setup(args):
     # this needs to be the last thing that happens, since due to how this
     # pseudo-LCM actually works, this will do a significant amount of work on
     # the server's side, and may spawn more LCM messages.
-    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.FORCE_RECONNECT, {})
+    ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.FORCE_RECONNECT, {})
 
 
 def player_joined_new_game(args):
@@ -100,7 +80,7 @@ def player_joined_new_game(args):
     lcm_data["usernames"] = player_names(PLAYERS)
     lcm_data["ids"] = player_ids(PLAYERS)
     lcm_data["ongoing_game"] = False
-    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.ON_JOIN, lcm_data)
+    ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.ON_JOIN, lcm_data)
 
 
 def player_joined_ongoing_game(args):
@@ -115,7 +95,7 @@ def player_joined_ongoing_game(args):
         print("# Shepherd: Welcome back", name)
         lcm_data = {"usernames": player_names(PLAYERS), "ids": player_ids(
             PLAYERS), "recipients": [id], "ongoing_game": True}
-        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.ON_JOIN, lcm_data)
+        ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.ON_JOIN, lcm_data)
 
         # individual setup
         player_roles = []
@@ -130,14 +110,14 @@ def player_joined_ongoing_game(args):
         elif player.role == ROLES.FASCIST or (player.role == ROLES.HITLER and len(PLAYERS) <= 6):
             for other in PLAYERS:
                 player_roles.append([other.name, other.id, other.role])
-        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.INDIVIDUAL_SETUP, lcm_data)
+        ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.INDIVIDUAL_SETUP, lcm_data)
     else:
         if id not in player_ids(SPECTATORS):
             SPECTATORS.append(Player(id, name))
         print("# Shepherd: Welcome as a spectator", name)
         lcm_data = {"usernames": player_names(PLAYERS), "ids": player_ids(
             PLAYERS), "recipients": [id], "ongoing_game": True}
-        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.ON_JOIN, lcm_data)
+        ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.ON_JOIN, lcm_data)
 
         # individual setup
         player_roles = []
@@ -146,23 +126,25 @@ def player_joined_ongoing_game(args):
         lcm_data = {"recipients": [spectator.id], "individual_role": spectator.role, "roles": player_roles, "powers": BOARD.board}
         for other in PLAYERS:
             player_roles.append([other.name, other.id, other.role])
-        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.INDIVIDUAL_SETUP, lcm_data)
+        ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.INDIVIDUAL_SETUP, lcm_data)
 
     # BEGIN QUESTION 2
     # send the number of fascist and liberal policies enacted to the server
     lcm_data = {_________: _____________________,
                 _________: _____________________,
                 "recipients": [id]}
-    lcm_send(_______________, _________________, lcm_data)
+    ydl_send(_______________, _________________, lcm_data)
     # END QUESTION 2
 
     # veto enabled
     if BOARD.can_veto:
-        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.VETO_ENABLED, {})
+        ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.VETO_ENABLED, {})
 
     # repeat last server message
-    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.REPEAT_MESSAGE,
+    ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.REPEAT_MESSAGE,
              {'recipients': [id]})
+    
+
 
 
 def start_game(args):
@@ -172,7 +154,7 @@ def start_game(args):
     global PLAYERS, BOARD
     if len(PLAYERS) < 5:
         lcm_data = {"players": len(PLAYERS)}
-        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.NOT_ENOUGH_PLAYERS, lcm_data)
+        ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.NOT_ENOUGH_PLAYERS, lcm_data)
         return
     # BEGIN QUESTION 1: initialize the list deck with 1 hitler and the relevant number of fascist and liberal cards. Hint: don't use raw strings to represent the roles. Instead, look for a useful class in Utils.py.
     # see the table on page 2 of the rules: https://secrethitler.com/assets/Secret_Hitler_Rules.pdf#page=2. For a challenge, try coming up with a formula for it.
@@ -198,7 +180,7 @@ def start_game(args):
         elif player.role == ROLES.FASCIST or (player.role == ROLES.HITLER and len(PLAYERS) <= 6):
             for other in PLAYERS:
                 player_roles.append([other.name, other.id, other.role])
-        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.INDIVIDUAL_SETUP, lcm_data)
+        ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.INDIVIDUAL_SETUP, lcm_data)
     to_chancellor()
 
 
@@ -218,7 +200,7 @@ def to_chancellor():
 
     lcm_data = {"president": player_id(
         PRESIDENT_INDEX), "eligibles": eligibles}
-    lcm_send(______________, ________________, _______________)
+    ydl_send(______________, ________________, _______________)
     # END QUESTION 3
 
 
@@ -233,7 +215,7 @@ def receive_chancellor_nomination(args):
     NOMINATED_CHANCELLOR_INDEX = player_ids(PLAYERS).index(chancellor)
     lcm_data = {"president": player_id(
         PRESIDENT_INDEX), "chancellor": chancellor}
-    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.AWAIT_VOTE, lcm_data)
+    ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.AWAIT_VOTE, lcm_data)
 
 
 def receive_vote(args):
@@ -258,7 +240,7 @@ def receive_vote(args):
             GAME_STATE = STATE.POLICY
             lcm_data = {"president": player_id(
                 PRESIDENT_INDEX), "cards": draw_cards(3)}
-            lcm_send(LCM_TARGETS.SERVER,
+            ydl_send(YDL_TARGETS.UI,
                      SERVER_HEADERS.PRESIDENT_DISCARD, lcm_data)
         else:
             ELECTION_TRACKER += 1
@@ -272,7 +254,7 @@ def receive_vote(args):
                 PREVIOUS_CHANCELLOR_INDEX = Player.NONE
                 lcm_data = {"liberal": BOARD.liberal_enacted,
                             "fascist": BOARD.fascist_enacted}
-                lcm_send(LCM_TARGETS.SERVER,
+                ydl_send(YDL_TARGETS.UI,
                          SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
             PRESIDENT_INDEX = next_president_index()
             to_chancellor()
@@ -290,7 +272,7 @@ def president_discarded(args):
     DISCARD_DECK.append(_____________)
     lcm_data = {"chancellor": _______________,
                 "cards": ___________, "can_veto": BOARD.can_veto}
-    lcm_send(_________________________)
+    ydl_send(_________________________)
     # END QUESTION 5
 
 
@@ -299,7 +281,7 @@ def chancellor_vetoed(args):
     A function that asks for the president's response after a chancellor veto.
     """
     lcm_data = {"president": player_id(PRESIDENT_INDEX)}
-    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.ASK_PRESIDENT_VETO, lcm_data)
+    ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.ASK_PRESIDENT_VETO, lcm_data)
 
 
 def president_veto_answer(args):
@@ -321,14 +303,14 @@ def president_veto_answer(args):
             PREVIOUS_CHANCELLOR_INDEX = Player.NONE
             lcm_data = {"liberal": BOARD.liberal_enacted,
                         "fascist": BOARD.fascist_enacted}
-            lcm_send(LCM_TARGETS.SERVER,
+            ydl_send(YDL_TARGETS.UI,
                      SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
         PRESIDENT_INDEX = next_president_index()
         to_chancellor()
     else:
         lcm_data = {"chancellor": player_id(
             NOMINATED_CHANCELLOR_INDEX), "cards": cards, "can_veto": BOARD.can_veto}
-        lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.CHANCELLOR_DISCARD, lcm_data)
+        ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.CHANCELLOR_DISCARD, lcm_data)
 
 
 def chancellor_discarded(args):
@@ -343,7 +325,7 @@ def chancellor_discarded(args):
     DISCARD_DECK.append(card)
     lcm_data = {"liberal": BOARD.liberal_enacted,
                 "fascist": BOARD.fascist_enacted}
-    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
+    ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
     if BOARD.fascist_enacted >= 6:
         game_over(ROLES.FASCIST)
         return
@@ -375,7 +357,7 @@ def investigate_loyalty():
         len(PLAYERS)) if not PLAYERS[i].investigated]
     lcm_data = {"president": player_id(
         PRESIDENT_INDEX), "eligibles": investigated}
-    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.BEGIN_INVESTIGATION, lcm_data)
+    ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.BEGIN_INVESTIGATION, lcm_data)
 
 
 def investigate_player(args):
@@ -415,7 +397,7 @@ def policy_peek():
     """
     cards = [CARD_DECK[i] for i in range(min(len(CARD_DECK), 3))]
     lcm_data = {"president": player_id(PRESIDENT_INDEX), "cards": cards}
-    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.PERFORM_POLICY_PEEK, lcm_data)
+    ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.PERFORM_POLICY_PEEK, lcm_data)
 
 
 def end_policy_peek(args):
@@ -441,7 +423,7 @@ def execution():
     president = player_id(PRESIDENT_INDEX)
     lcm_data = {"president": president, "eligibles": [
         i for i in player_ids(PLAYERS) if i != president]}
-    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.BEGIN_EXECUTION, lcm_data)
+    ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.BEGIN_EXECUTION, lcm_data)
 
 
 def perform_execution(args):
@@ -469,7 +451,7 @@ def perform_execution(args):
     SPECTATORS.append(player)
     PRESIDENT_INDEX = next_president_index()
     lcm_data = {'player': p_id}
-    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.PLAYER_EXECUTED, lcm_data)
+    ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.PLAYER_EXECUTED, lcm_data)
     to_chancellor()
 
 
@@ -479,7 +461,7 @@ def veto():
     """
     global BOARD
     BOARD.can_veto = True
-    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.VETO_ENABLED, {})
+    ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.VETO_ENABLED, {})
 
 
 def game_over(winner):
@@ -489,7 +471,7 @@ def game_over(winner):
     global GAME_STATE
     GAME_STATE = STATE.END
     lcm_data = {"winner": winner}
-    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.GAME_OVER, lcm_data)
+    ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.GAME_OVER, lcm_data)
 
 # ===================================
 # helper functions
@@ -682,27 +664,52 @@ AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX = Player.NONE
 ELECTION_TRACKER = 0  # for tracking failed elections
 BOARD = Board(5)  # the game board
 
-# ===================================
-# header to function map
-# ===================================
 
-SETUP_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED: player_joined_new_game,
-                   SHEPHERD_HEADERS.NEXT_STAGE: start_game}
-CHANCELLOR_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED: player_joined_ongoing_game,
-                        SHEPHERD_HEADERS.CHANCELLOR_NOMINATION: receive_chancellor_nomination}
-VOTE_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED: player_joined_ongoing_game,
-                  SHEPHERD_HEADERS.PLAYER_VOTED: receive_vote}
-POLICY_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED: player_joined_ongoing_game,
-                    SHEPHERD_HEADERS.PRESIDENT_DISCARDED: president_discarded,
-                    SHEPHERD_HEADERS.CHANCELLOR_DISCARDED: chancellor_discarded,
-                    SHEPHERD_HEADERS.CHANCELLOR_VETOED: chancellor_vetoed,
-                    SHEPHERD_HEADERS.PRESIDENT_VETO_ANSWER: president_veto_answer}
-ACTION_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED: player_joined_ongoing_game,
-                    SHEPHERD_HEADERS.INVESTIGATE_PLAYER: investigate_player,
-                    SHEPHERD_HEADERS.SPECIAL_ELECTION_PICK: perform_special_election,
-                    SHEPHERD_HEADERS.PERFORM_EXECUTION: perform_execution,
-                    SHEPHERD_HEADERS.END_POLICY_PEEK: end_policy_peek,
-                    SHEPHERD_HEADERS.END_INVESTIGATE_PLAYER: end_investigate_player
-                    }
-END_FUNCTIONS = {SHEPHERD_HEADERS.PLAYER_JOINED: player_joined_ongoing_game,
-                 SHEPHERD_HEADERS.NEXT_STAGE: to_setup}
+###########################################
+# Event to Function Mappings for each Stage
+###########################################
+
+FUNCTION_MAPPINGS = {
+    STATE.SETUP: {
+        SHEPHERD_HEADERS.PLAYER_JOINED: player_joined_new_game,
+        SHEPHERD_HEADERS.NEXT_STAGE: start_game
+    },
+    STATE.VOTE: {
+        SHEPHERD_HEADERS.PLAYER_VOTED: receive_vote
+    },
+    STATE.PICK_CHANCELLOR: {
+        SHEPHERD_HEADERS.CHANCELLOR_NOMINATION: receive_chancellor_nomination
+    },
+    STATE.PRESIDENT_DISCARD: {
+        SHEPHERD_HEADERS.PRESIDENT_DISCARDED: president_discarded
+    },
+    STATE.CHANCELLOR_DISCARD: {
+        SHEPHERD_HEADERS.CHANCELLOR_DISCARDED: chancellor_discarded,
+        SHEPHERD_HEADERS.CHANCELLOR_VETOED: chancellor_vetoed,
+    },
+    STATE.CHANCELLOR_VETO: {
+        SHEPHERD_HEADERS.PRESIDENT_VETO_ANSWER: president_veto_answer,
+    },
+    STATE.ACTION: {
+        SHEPHERD_HEADERS.INVESTIGATE_PLAYER: investigate_player,
+        SHEPHERD_HEADERS.SPECIAL_ELECTION_PICK: perform_special_election,
+        SHEPHERD_HEADERS.PERFORM_EXECUTION: perform_execution,
+        SHEPHERD_HEADERS.END_POLICY_PEEK: end_policy_peek,
+        SHEPHERD_HEADERS.END_INVESTIGATE_PLAYER: end_investigate_player
+    },
+    STATE.END: {
+        SHEPHERD_HEADERS.NEXT_STAGE: to_setup
+    }
+}
+
+EVERYWHERE_FUNCTIONS = {
+    SHEPHERD_HEADERS.PLAYER_JOINED: player_joined_ongoing_game,
+}
+
+if __name__ == '__main__':
+    start()
+
+
+
+
+

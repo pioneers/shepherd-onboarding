@@ -1,4 +1,10 @@
 # pylint: disable=invalid-name
+
+class YDL_TARGETS:
+    SHEPHERD = "ydl_target_shepherd"
+    UI = "ydl_target_server"
+
+
 class SHEPHERD_HEADERS:
     PLAYER_JOINED = "player_joined"
     """
@@ -240,13 +246,25 @@ class SERVER_HEADERS:
     Header used to syncronize an re-connecting client that will send the previous header a second time (but only to that recipient)
     """
 
-# pylint: disable=invalid-name
+# A dictionary of pages -> whether page is password protected
+# password.html should not be included in this list, since
+# server.py will just route to that automatically
+# add additional pages here
+
+UI_PAGES = {
+    "index.html": False,
+    "game.html": False
+}
+
+
 
 
 class LCM_UTILS:
     PRIVILEGED_HEADERS = [SERVER_HEADERS.CHANCELLOR_REQUEST, SERVER_HEADERS.AWAIT_VOTE, SERVER_HEADERS.PRESIDENT_DISCARD, SERVER_HEADERS.CHANCELLOR_DISCARD, SERVER_HEADERS.ASK_PRESIDENT_VETO,
                           SERVER_HEADERS.BEGIN_INVESTIGATION, SERVER_HEADERS.RECEIVE_INVESTIGATION, SERVER_HEADERS.BEGIN_SPECIAL_ELECTION, SERVER_HEADERS.PERFORM_POLICY_PEEK, SERVER_HEADERS.BEGIN_EXECUTION, SERVER_HEADERS.GAME_OVER]
-
+    """
+    headers that the server saves
+    """
 # pylint: disable=invalid-name
 
 
@@ -256,14 +274,12 @@ class STATE:
     PICK_CHANCELLOR = "pick_chancellor"
     VOTE = "vote"
     POLICY = "policy"
+    PRESIDENT_DISCARD = "president_discard"
+    CHANCELLOR_DISCARD = "chancellor_discard"
+    CHANCELLOR_VETO = "chancellor_veto"
     ACTION = "action"
 
 # pylint: disable=invalid-name
-
-
-class LCM_TARGETS:
-    SHEPHERD = "lcm_target_shepherd"
-    SERVER = "lcm_target_server"
 
 
 class VOTES:

@@ -7,7 +7,7 @@
 -->
 
   <head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.2/socket.io.js"></script>
     <script src="{{url_for('static', filename='utils/cookies.js')}}"></script>
     <link
       rel="stylesheet"
@@ -533,6 +533,7 @@
               if (vetoEnabled) {
                 show("chancellorVetoButton");
               }
+            }
             });
 
             // inform the player of their role and display the other players
@@ -587,13 +588,7 @@
               const { winner } = JSON.parse(data);
 
               hideAllExcept(["miscEntryText", "startNewGameButton"]);
-              document.getElementById("miscEntryText").textContent =
-                `That player's role is ${loyalty}`;
-            } else {
-              hideAllExcept(["miscEntryText"]);
-              document.getElementById("miscEntryText").textContent = "The president is receiving the results of the investigation.";
-            }
-          })
+            });
 
             // hide all elements on the screen except for those in idArray
             function hideAllExcept(idArray) {
