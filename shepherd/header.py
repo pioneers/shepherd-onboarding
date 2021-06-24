@@ -1,6 +1,5 @@
-# global list of header names, used to check for collisions
 from typeguard import check_type
-
+# global list of header names, used to check for collisions
 global_header_names = []
 def header(target, name):
     """
