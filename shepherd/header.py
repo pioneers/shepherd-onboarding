@@ -1,4 +1,6 @@
 # global list of header names, used to check for collisions
+from typeguard import check_type
+
 global_header_names = []
 def header(target, name):
     """
@@ -63,10 +65,14 @@ class HeaderPrimitive():
         # check the typing for each arg in kwargs against the annotation.
         annots = self.typing_function.__annotations__
         for arg in kwargs:
-            # skips unannotated arguments, typechecks annotated arguments
-            if arg in annots and not isinstance(kwargs[arg], annots[arg]):
-                raise TypeError(f"argument {arg} is of type "
-                    + f"{annots[arg]}, but was given type {type(kwargs[arg])}")
+            # skips unannotated arguments, typechecks annotated arguments.
+            # skips nonetype args, those will get handled later if they are an issue.
+            if arg in annots and not kwargs[arg] == None:
+                try:
+                    check_type(arg, kwargs[arg], annots[arg])
+                except TypeError:
+                    raise TypeError(f"argument {arg} is of type {annots[arg]}, "
+                        + f"but was given type {type(kwargs[arg])}")
         # call the typing_function and ignore any return value.
         # the typing_function must raise an error to have an effect.
         self.typing_function(**kwargs)
@@ -97,4 +103,3 @@ class HeaderPrimitive():
         Do not allow deletion of members of this class in order to make it immutable
         """
         raise NotImplementedError
-
