@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Want to finish this once the game is in a working state -->
+
+
+
+
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
+
+
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.2/socket.io.js"></script>
+    <script src="../static/utils/cookies.js"></script>
+    <link rel="stylesheet" href="../static/bootstrap.min.css" />
+    <link rel="stylesheet" href="../static/gamestyle.css" />
+    <link rel="shortcut icon" href="../static/favicon.ico" />
+    <title>Game</title>
+
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+            font-family: "Comic Sans MS", "Comic Sans", cursive;
+        }
+
+        #root {
+            background-color: rgb(209, 233, 253);        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding-top: 20vh;
+        }
+    </style>
+</head>
+
+<body id="root">
+
+    <div class="container">
+        <!-- waiting room -->
+        <!-- <h1 id="titleText">BAAA play here</h1>
+    <a id="playersText"></a>
+    <button id="startGameButton" type="button" class="btn btn-primary" onclick="startGame()">
+        Start Game
+    </button> -->
+
+
+
+        <!-- vote on chancellor -->
+        <h4 id="chancellorVoteText"></h4>
+        <div>
+            <button id="chancellorVoteYesButton" type="button" class="btn btn-primary" onclick="chancellorVoteYes()"
+                style="float: left">
+                Yes
+            </button>
+            <button id="chancellorVoteNoButton" type="button" class="btn btn-primary" onclick="chancellorVoteNo()"
+                style="float: left; margin-left: 10px">
+                No
+            </button>
+        </div>
+
+
+        <!-- generic text entry -->
+        <h4 id="miscEntryText">This is where changing text will go</h4>
+
+
+
+
+        <!-- Display the board -->
+        <div class="board" id="liberal board" style="--n: 5; top: 100px">
+            <tile>
+                <img src="../static/assets/liberal_board.png" alt="liberal background" />
+                <img class="card" id="liberal card 1" src="../static/assets/liberal_card.png" alt="liberal Card"
+                    style="" />
+            </tile>
+            <tile>
+                <img src="../static/assets/liberal_board.png" alt="liberal background" />
+                <img class="card" id="liberal card 2" src="../static/assets/liberal_card.png" alt="liberal Card"
+                    style="" />
+            </tile>
+            <tile>
+                <img src="../static/assets/liberal_board.png" alt="liberal background" />
+                <img class="card" id="liberal card 3" src="../static/assets/liberal_card.png" alt="liberal Card"
+                    style="" />
+            </tile>
+            <tile>
+                <img src="../static/assets/liberal_board.png" alt="liberal background" />
+                <img class="card" id="liberal card 4" src="../static/assets/liberal_card.png" alt="liberal Card"
+                    style="" />
+            </tile>
+            <tile>
+                <img src="../static/assets/liberal_board.png" alt="liberal background" />
+                <img class="power" src="../static/assets/liberal_win.png" id="liberal win" alt="liberal win" />
+                <img class="card" id="liberal card 5" src="../static/assets/liberal_card.png" alt="liberal Card"
+                    style="" />
+            </tile>
+            <div style="clear: both"></div>
+        </div>
+        <div class="board" id="fascist board" style="--n: 6; top: 50px">
+            <tile>
+                <img src="../static/assets/fascist_board.png" alt="fascist background" style="margin-top: 50px" />
+                <img class="power" id="fascist power 1" alt="fascist power 1" style="margin-top: 50px; " />
+                <img class="card" id="fascist card 1" src="../static/assets/fascist_card.png" alt="fascist Card"
+                    style="margin-top: 50px; " />
+            </tile>
+            <tile>
+                <img src="../static/assets/fascist_board.png" alt="fascist background" style="margin-top: 50px" />
+                <img class="power" id="fascist power 2" alt="fascist power 2" style="margin-top: 50px; " />
+                <img class="card" id="fascist card 2" src="../static/assets/fascist_card.png" alt="fascist Card"
+                    style="margin-top: 50px; " />
+            </tile>
+            <tile>
+                <img src="../static/assets/fascist_board.png" alt="fascist background" style="margin-top: 50px" />
+                <img class="power" id="fascist power 3" alt="fascist power 3" style="margin-top: 50px; " />
+                <img class="card" id="fascist card 3" src="../static/assets/fascist_card.png" alt="fascist Card"
+                    style="margin-top: 50px; " />
+            </tile>
+            <tile>
+                <img src="../static/assets/fascist_board_dark.png" alt="fascist background" style="margin-top: 50px" />
+                <img class="power" id="fascist power 4" alt="fascist power 4" style="margin-top: 50px; " />
+                <img class="card" id="fascist card 4" src="../static/assets/fascist_card.png" alt="fascist Card"
+                    style="margin-top: 50px; " />
+            </tile>
+            <tile>
+                <img src="../static/assets/fascist_board_dark.png" alt="fascist background" style="margin-top: 50px" />
+                <img class="power" id="fascist power 5" alt="fascist power 5" style="margin-top: 50px; " />
+                <img class="card" id="fascist card 5" src="../static/assets/fascist_card.png" alt="fascist Card"
+                    style="margin-top: 50px; " />
+            </tile>
+            <tile>
+                <img src="../static/assets/fascist_board_dark.png" alt="fascist background" style="margin-top: 50px" />
+                <img class="power" src="../static/assets/fascist_win.png" id="fascist win" alt="fascist win"
+                    style="margin-top: 50px" />
+                <img class="card" id="fascist card 6" src="../static/assets/fascist_card.png" alt="fascist Card"
+                    style="margin-top: 50px; " />
+            </tile>
+            <div style="clear: both"></div>
+        </div>
+    </div>
+
+
+
+</body>
+
+</html>
