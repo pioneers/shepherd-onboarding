@@ -1,4 +1,4 @@
-##### Protobuf for Runtime stuff #####  
+##### Protobuf for Runtime stuff #####
 protobuf
 
 ##### Google Sheets #####
@@ -10,3 +10,5 @@ google-auth-oauthlib
 flask-socketio
 gevent-websocket
 
+##### Shepherd things #####
+typeguard
