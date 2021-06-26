@@ -25,5 +25,6 @@ threading.Thread(target=listen_for_input, daemon=True).start()
 while True:
     header, message = events.get(block=True)
     print(f"RECEIVED: {message['text']}")
+    ###### YOUR CODE HERE ######
 
 

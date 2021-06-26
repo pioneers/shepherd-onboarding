@@ -26,6 +26,10 @@ def respond_to_notify(text):
 
     ###### YOUR CODE HERE ######
 
+    else:
+        ydl_send(*PING_HEADERS.RESPOND(text=text, time=time.time()))
+        LAST_MESSAGE = text
+
 
 def respond_to_repeat():
 

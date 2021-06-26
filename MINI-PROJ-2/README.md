@@ -33,7 +33,7 @@ Terminal 3: `python3 ping.py`
 
 Now, `ping.py` should prompt you for a message. Send the message `shepherd` and see what happens!
 
-__Question 2__: What are other messages you can send to get a response back? Which file stores the dictionary of possible responses?
+__Question 2__: What are other messages you can send to get a canned response back? Which file stores the dictionary of possible responses?
 
 __Task 3__: Add a custom message-response pair.
 
