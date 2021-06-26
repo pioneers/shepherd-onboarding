@@ -4,72 +4,9 @@
     box-sizing: border-box;
 }
 
-:root {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    font-family: "Comic Sans MS", "Comic Sans", cursive;
-}
+/* 
+Todo:
+- Add styling here 
+*/
 
-.container-light {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    background-color: white;
-    color: black;
-    border: 3px solid black;
-    padding: 40px;
-    margin-top: 30px;
-}
-
-.container-dark {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    background-color: black;
-    color: white;
-    border: 3px solid grey;
-    padding: 40px;
-    margin-top: 30px;
-}
-
-h1 {
-    border: black solid 2px;
-    padding: 20px;
-    margin: 20px;
-}
-
-h3 {
-    border: black solid 2px;
-    padding: 10px;
-    margin: 10px
-}
-
-button {
-    background-color: rgb(92, 92, 243);
-    color: white;
-    padding: 5px;
-    border: 1px solid white;
-    border-radius: 5px;
-}
-
-button:hover {
-    opacity: .9;
-}
-
-.content-light {
-    background-color: white;
-    padding: 50px;
-    border: 2px black solid;
-    margin: 10px;
-}
-
-.content-dark {
-    background-color: rgb(53, 52, 52);
-    padding: 50px;
-    border: 2px white solid;
-    margin: 10px;
-}
+/* Your code here */
