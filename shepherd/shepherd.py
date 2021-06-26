@@ -55,6 +55,24 @@ def to_setup(args):
     ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.FORCE_RECONNECT, {})
 
 
+
+def player_joined(id: str, name: str):
+    global PLAYERS
+
+    if id not in player_ids(PLAYERS + SPECTATORS):
+        if len(PLAYERS) >= 10 or GAME_STATE != STATE.SETUP: #TODO: remove hardcoding
+            SPECTATORS.append(Player(id, name))
+        else:
+            PLAYERS.append(Player(id, name))
+
+    
+
+
+
+     
+
+
+
 def player_joined_new_game(args):
     """
     A function that creates a new player instance for a player who has joined,
@@ -652,7 +670,7 @@ SPECTATORS = []  # a list of Player objects representing the spectators
 CARD_DECK = new_deck()  # the cards in the deck (not including discarded cards)
 DISCARD_DECK = []  # the discarded cards
 # the index of the president — this changes before the government is elected
-PRESIDENT_INDEX = 0
+PRESIDENT_INDEX = None
 # the previous elected president (for remembering who is ineligible)
 PREVIOUS_PRESIDENT_INDEX = Player.NONE
 # the previous elected chancellor (for remembering who is ineligible)
@@ -671,7 +689,7 @@ BOARD = Board(5)  # the game board
 
 FUNCTION_MAPPINGS = {
     STATE.SETUP: {
-        SHEPHERD_HEADERS.PLAYER_JOINED: player_joined_new_game,
+        SHEPHERD_HEADERS.PLAYER_JOINED: player_joined,
         SHEPHERD_HEADERS.NEXT_STAGE: start_game
     },
     STATE.VOTE: {
@@ -703,7 +721,7 @@ FUNCTION_MAPPINGS = {
 }
 
 EVERYWHERE_FUNCTIONS = {
-    SHEPHERD_HEADERS.PLAYER_JOINED: player_joined_ongoing_game,
+    SHEPHERD_HEADERS.PLAYER_JOINED: player_joined,
 }
 
 if __name__ == '__main__':
