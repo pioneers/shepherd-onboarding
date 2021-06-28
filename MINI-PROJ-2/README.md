@@ -35,7 +35,7 @@ Now, `ping.py` should prompt you for a message. Send the message `shepherd` and 
 
 __Question 2__: What are other messages you can send to get a canned response back? Which file stores the dictionary of possible responses?
 
-__Task 3__: Add a custom message-response pair.
+__Task 3__: Add a custom message + canned response pair.
 
 __Task 4__: Right now, all `pong.py` does is sometimes send responses back. However, `ping.py` is hard of hearing, so sometimes we would like `pong.py` to repeat what it last said, which is what the repeat header is for. Fill in `respond_to_repeat()` such that `pong.py` can repeat the last response sent.
 

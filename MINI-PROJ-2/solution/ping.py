@@ -3,7 +3,6 @@ The sending half of the ping / pong mini project. This file will take inputs fro
 the terminal and send them to pong. It will also print out messages received from
 pong.
 """
-# all of our imports
 import queue
 import threading
 import time
@@ -23,10 +22,9 @@ def listen_for_input():
     """
     # an infinite while loop. This program only ends when the user presses ctrl+c.
     while True:
-        # get a value from the terminal via stdin. This will print the given
-        # promt and then wait for a response.
-        # input is blocking, so python execution will go to the next line until
-        # the user puts an input in the terminal.
+        # get a value from the terminal via stdin. This will print the given 
+        # prompt and then wait for a response. input is blocking, so python 
+        # execution will stop until the user inputs something.
         val = input("Enter a message: ")
         # check if the user wrote 'repeat'.
         if val == "repeat":
@@ -34,27 +32,20 @@ def listen_for_input():
             # a tuple returned by PONG_HEADERS.REPEAT(), which looks like:
             # (ydl_target, header_name, data).
             wrapped_header = PONG_HEADERS.REPEAT()
-            # print out the wrapped header so you can see what is in it.
-            print(wrapped_header)
-            # send the header via ydl_send. The * operator breaks the tuple into
-            # 3 arguments (since the tuple is length 3) and sets them in the
-            # function call. This is just a short and simple way to write:
-            # ydl_send(wrapped_header[0], wrapped_header[1], wrapped_header[2])
-            ydl_send(*wrapped_header)
         # otherwise we want to pass along the message to pong.
         else:
             # create a header to be passed into ydl_send. This wrapped header is
             # a tuple returned by PONG_HEADERS.REPEAT(), which looks like:
             # (ydl_target, header_name, data).
             wrapped_header = PONG_HEADERS.NOTIFY(text=val)
-            # print out the wrapped header so you can see what is in it.
-            print(wrapped_header)
-            # send the header via ydl_send. The * operator breaks the tuple into
-            # 3 arguments (since the tuple is length 3) and sets them in the
-            # function call. This is just a short and simple way to write:
-            # ydl_send(wrapped_header[0], wrapped_header[1], wrapped_header[2])
-            ydl_send(*wrapped_header)
-        # wait for a response from pong. This is nessesary to make the terminal
+        # print out the wrapped header so you can see what is in it.
+        print(wrapped_header)
+        # send the header via ydl_send. The * operator breaks the tuple into
+        # 3 arguments (since the tuple is length 3) and sets them in the
+        # function call. This is just a short and simple way to write:
+        # ydl_send(wrapped_header[0], wrapped_header[1], wrapped_header[2])
+        ydl_send(*wrapped_header)
+        # wait for a response from pong. This is necessary to make the terminal
         # look nice.
         time.sleep(0.5)
 
@@ -78,5 +69,7 @@ while True:
     header, message = events.get(block=True)
     # print out the received message
     print(f"RECEIVED: {message['text']}")
+    # since message['time'] stores the time that the message was sent, the 
+    # elapsed time is how long it took to send through YDL.
     print(f"time taken: {time.time() - message['time']} seconds")
 

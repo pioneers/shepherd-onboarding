@@ -4,7 +4,6 @@ ping and process them. It will then send the processed message along with a time
 stamp back to ping. If ping sends a banned message, pong will refuse to send anything
 back ever again.
 """
-# all of our imports
 import queue
 import time
 from ydl import ydl_start_read, ydl_send
@@ -49,9 +48,10 @@ def start():
             # ** turns a dictionary into keyword arguments, allowing us to call
             # the function easily. This is the same as writing:
             # HEADER_MAPPINGS.get(header)(arg = message[arg]) for every arg in
-            # the function. We do it this way, because each function has differnt
+            # the function. We do it this way, because each function has different
             # args, so writing it all out would by next to impossible.
             HEADER_MAPPINGS.get(header)(**message)
+
 
 def respond_to_notify(text):
     """
@@ -61,12 +61,12 @@ def respond_to_notify(text):
     and if BANNED is set to true, no more messages will be sent back to ping.
     Lastly, this function sends the message back to ping along with a time stamp.
     """
-    # import varaibles from the global scope.
+    # import variables from the global scope.
     global BANNED, LAST_MESSAGE
     # if banned, we want to do nothing
     if BANNED:
         return
-    # if we get a canned response, lets swap it with our answer.
+    # if we get something we have a canned response for, send the canned response
     if text in RESPONSES.CANNED_RESPONSES:
         # get the anwer from the utils file.
         response = RESPONSES.CANNED_RESPONSES[text]
@@ -77,9 +77,9 @@ def respond_to_notify(text):
         # contains (ydl_target, header_name, data). The * operator breaks the tuple
         # into 3 arguments (since the tuple is length 3) and sets them in the
         # function call. This is just a short and simple way to write:
-        # wrapped_header = PING_HEADERS.RESPOND(text=LAST_MESSAGE, time=time.time())
+        # wrapped_header = PING_HEADERS.RESPOND(text=response, time=time.time())
         # ydl_send(wrapped_header[0], wrapped_header[1], wrapped_header[2])
-        ydl_send(*PING_HEADERS.RESPOND(text=LAST_MESSAGE, time=time.time()))
+        ydl_send(*PING_HEADERS.RESPOND(text=response, time=time.time()))
     # if we get a banned message, ban the user.
     elif text in RESPONSES.BANNED_RESPONSES:
         BANNED = True
@@ -113,6 +113,6 @@ HEADER_MAPPINGS = {
     PONG_HEADERS.REPEAT.name: respond_to_repeat
 }
 
-# run start() when this program us run.
+# run start() when this program is run.
 if __name__ == '__main__':
     start()
