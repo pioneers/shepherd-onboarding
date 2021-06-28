@@ -38,7 +38,7 @@ def listen_for_input():
             # (ydl_target, header_name, data).
             wrapped_header = PONG_HEADERS.NOTIFY(text=val)
         # print out the wrapped header so you can see what is in it.
-        print(wrapped_header)
+        print(f"sent: {wrapped_header}")
         # send the header via ydl_send. The * operator breaks the tuple into
         # 3 arguments (since the tuple is length 3) and sets them in the
         # function call. This is just a short and simple way to write:
@@ -67,7 +67,7 @@ while True:
     # queue empty again.
     header, message = events.get(block=True)
     # print out the received message
-    print(f"RECEIVED: {message['text']}")
+    print(f"received message: {message['text']}")
     ###### YOUR CODE HERE ######
 
 
