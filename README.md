@@ -1,4 +1,4 @@
-<img align="right" src="https://github.com/pioneers/shepherd-onboarding/blob/master/readmefigures/PiE%20Sheep.png" alt="PiE Sheep" width="86" height="135">
+<img align="right" src="readmefigures/PiE%20Sheep.png" alt="PiE Sheep" width="86" height="135">
 
 # Shepherd Secret Hitler Onboarding
 
@@ -10,15 +10,15 @@ Hopefully you have been to the git tutorial by now. If you haven't, please talk 
 
 First you need to fork this repository. You will do this by clicking on fork in the upper right corner of github.
 
-![Fork button](https://github.com/pioneers/shepherd-onboarding/blob/master/readmefigures/Fork%20button.png)
+![Fork button](readmefigures/Fork%20button.png)
 
 This will give you a copy of this repo for your own use. Only one person per group needs to fork this repo. Next you will need to add your partner(s) to your repo, which you can do by clicking on settings at the top bar of your newly created repo, going to manage access, and adding collaborators.
 
-![Fork button](https://github.com/pioneers/shepherd-onboarding/blob/master/readmefigures/Settings%20button.png)
+![Fork button](readmefigures/Settings%20button.png)
 
 Lastly, you will need to clone the new repo onto your computer. Copy the link at the top right of the page:
 
-![Download button](https://github.com/pioneers/shepherd-onboarding/blob/master/readmefigures/Download%20button.png)
+![Download button](readmefigures/Download%20button.png)
 
 and run `git clone <link>`. You can also optionally run `TODO`
 
@@ -106,7 +106,7 @@ Shepherd is the field control software that PiE uses / maintains to get the game
 
 A typical year's Shepherd system might look like the following block diagram (don't worry, we are going to break it down):
 
-![Typical Shepherd Block Diagram](https://github.com/pioneers/shepherd-onboarding/blob/master/readmefigures/Typical%20Shepherd%20Block%20Diagram.png)
+![Typical Shepherd Block Diagram](readmefigures/Typical%20Shepherd%20Block%20Diagram.png)
 
 So really all of Shepherd's parts fall into a few categories:
 
@@ -121,7 +121,7 @@ Shepherd is designed to run asynchronously. That means that each part of Shepher
 
 Here we have the same diagram as before, colored to show the form of communication used:
 
-![Shepherd Communication](https://github.com/pioneers/shepherd-onboarding/blob/master/readmefigures/Shepherd%20Communication.png)
+![Shepherd Communication](readmefigures/Shepherd%20Communication.png)
 
 Here each of the greyed out blocks is initialized in its own thread.
 
@@ -184,7 +184,7 @@ LCM is used to send messages asynchronously throughout the shepherd backend. We 
 
 - in Shepherd.py, this dispatching code uses dictionaries to map the LCM message to a function, which is then called. This method is not needed for the other smaller and simpler server files.
 
-![LCM Diagram](https://github.com/pioneers/shepherd-onboarding/blob/master/readmefigures/LCM%20Diagram.png)
+![LCM Diagram](readmefigures/YDL%20Diagram.png)
 
 A LCM message is structured as a target, then a header, and then a body of arguments, which is typically a dictionary. LCM message:
 
@@ -212,7 +212,7 @@ That was a ton of information to handle, so in order to bring you up to speed, w
 
 To begin with, the version of Shepherd we will be using for this project has been stripped down to just the bare essentials:
 
-![Shepherd Onboarding Block Diagram](https://github.com/pioneers/shepherd-onboarding/blob/master/readmefigures/Shepherd%20Onboarding%20Block%20Diagram.png)
+![Shepherd Onboarding Block Diagram](readmefigures/Shepherd%20Onboarding%20Block%20Diagram.png)
 
 Phew! That's a lot easier to look at. Here we have just a state machine, a single server, and a single front-end webpage.
 
