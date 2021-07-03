@@ -138,34 +138,34 @@ Now, we are going to dive a little into the nitty gritty of how the state machin
 
 As you've probably noticed, the main part of the state machine is Shepherd.py, however this file doesn't exist in a vacuum. Lets look at the helper files first:
 
-- [Utils.py](https://github.com/pioneers/shepherd/blob/master/Utils.py) is perhaps the most important periphery. This file first and foremost defines the targets and headers that YDL uses to tie shepherd together (more on that below). This file also defines constants that are widely used in the code, and should be easy to find / change. There are also quite a few ENUMs that are defined in Utils.py, however these are not really python enums, just unique strings that serve the same purpose. Lastly, Utils.py defines the various timers that shepherd uses.
+- [utils.py](https://github.com/pioneers/shepherd/blob/master/utils.py) is perhaps the most important periphery. This file first and foremost defines the targets and headers that YDL uses to tie shepherd together (more on that below). This file also defines constants that are widely used in the code, and should be easy to find / change. There are also quite a few ENUMs that are defined in Utils.py, however these are not really python enums, just unique strings that serve the same purpose. Lastly, Utils.py defines the various timers that shepherd uses.
 
-- On the subject of timers, we come to [Timer.py](https://github.com/pioneers/shepherd/blob/master/Timer.py). This file contains a class Timer, which takes a `timer_type` enum from Utils.py, and creates a new timer object that can be later initialized with a duration using `timer.start_timer(durration)`. You can check if these timers are still running using the `timer.is_running()` function, as well as reset them with `timer.reset()` or `Timer.reset_all()`. Each of these timer instances will spawn a new thread, so that they can run un-interrupted, and if specified they will send an YDL message when they finish.
+- On the subject of timers, we come to [timer.py](https://github.com/pioneers/shepherd/blob/master/timer.py). This file contains a class Timer, which takes a `timer_type` enum from Utils.py, and creates a new timer object that can be later initialized with a duration using `timer.start_timer(durration)`. You can check if these timers are still running using the `timer.is_running()` function, as well as reset them with `timer.reset()` or `Timer.reset_all()`. Each of these timer instances will spawn a new thread, so that they can run un-interrupted, and if specified they will send an YDL message when they finish.
 
   The timer type enum in Utils.py is a dictionary with the following arguments:
 
   - TYPE, a unique string used to identify the timer_type.
   - FUNCTION, the empty YDL header to be sent to Shepherd.py when the timer runs out. Leave unset to not send a YDL message at all.
 
-- [Alliance.py](https://github.com/pioneers/shepherd/blob/master/Alliance.py) defines the Alliance class, which is responsible for holding information about an alliance such as the teams in the alliance, and the color of the alliance, as well as game-specific data for the alliance such as a score variable, which is subject to change each year.
+- [alliance.py](https://github.com/pioneers/shepherd/blob/master/alliance.py) defines the Alliance class, which is responsible for holding information about an alliance such as the teams in the alliance, and the color of the alliance, as well as game-specific data for the alliance such as a score variable, which is subject to change each year.
 
-- [Sheet.py](https://github.com/pioneers/shepherd/blob/master/Sheet.py) handles communication with a google sheet used for recording match scores and is populated with that day's match data. If no internet connection can be established, it will discard the scored rather than write them and it will pull match data from a downloaded CSV, the path to which is defined in Utils.py
+- [sheet.py](https://github.com/pioneers/shepherd/blob/master/sheet.py) handles communication with a google sheet used for recording match scores and is populated with that day's match data. If no internet connection can be established, it will discard the scored rather than write them and it will pull match data from a downloaded CSV, the path to which is defined in Utils.py
 
-- [Code.py](https://github.com/pioneers/shepherd/blob/master/Code.py) is a file that is subject to frequent change, however it will always be used to generally handle the auto-grading of student coding challenges.
+- [coding_challenge_problems.py](https://github.com/pioneers/shepherd/blob/master/coding_challenge_problems.py) is a file that is subject to frequent change, however it will always be used to generally handle the auto-grading of student coding challenges.
 
-- [YDL.py](https://github.com/pioneers/shepherd/blob/master/YDL.py) is a that handles the YDL communication in shepherd. YDL.py must be run in order to launch the YDL server, and then YDL communication is possible. YDL is written by shepherd, and is the successor to a difficult library called LCM. If you see the name 'LCM' in any shepherd documentation, know that it has been replaced by YDL.
+- [ydl.py](https://github.com/pioneers/shepherd/blob/master/ydl.py) is a that handles the YDL communication in shepherd. YDL.py must be run in order to launch the YDL server, and then YDL communication is possible. YDL is written by shepherd, and is the successor to a difficult library called LCM. If you see the name 'LCM' in any shepherd documentation, know that it has been replaced by YDL.
 
 - Audio.py, bot.py, and runtime_manager.py all have important uses, but are not finalized enough to be worth mentioning here.
 
 Lastly, lets talk about Shepherd.py. It might be useful to read the section on YDL before reading this, or you might want to read this section twice.
 
-[Shepherd.py](https://github.com/pioneers/shepherd/blob/master/Shepherd.py) is structured as follows:
+[shepherd.py](https://github.com/pioneers/shepherd/blob/master/shepherd.py) is structured as follows:
 
 - YDL queue and dispatch loop, which translates YDL requests to function calls, taking into account the GAME_STATE global variable as well as the given header. This uses the set of dictionaries found at the bottom of the file.
 
   YDL queues can be started via `ydl_start_read(target, queue)`, where target is the YDL target that this queue will receive messages from, and queue is a python Queue where those events will be stored. The event object is structured as `[header, args]`.
 
-  YDL events may be sent using `ydl_send(target, header, args)`, where args is a dictionary of argument names and values. Explicitly filling in the values for this function is considered bad coding practice in shepherd, and you should instead use the syntax `ydl_send(*HEADER(**kwargs))` where `HEADER` is a header that you can call in `utils.py` and `**kwargs` is the keyword arguments to that header (ie. `SEND_SCORE("blue"=1, "gold"=2)`).
+  YDL events may be sent using `ydl_send(target, header, args)`, where args is a dictionary of argument names and values. Explicitly filling in the values for this function is considered bad coding practice in shepherd, and you should instead use the syntax `ydl_send(*HEADER(**kwargs))` where `HEADER` is a header that you can call in `utils.py` and `**kwargs` is the keyword arguments to that header (ie. `SEND_SCORE(blue=1, gold=2)`).
 
 - Evergreen functions, which are functions often invoked via YDL that are needed every year. These include the functions such as to_auto, which helps advance the game state, score keeping functions, information sharing functions, and a reset function.
 
