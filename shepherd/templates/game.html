@@ -676,7 +676,10 @@
         newElement.setAttribute("style", "--i: " + i);
         //get the correct image
         var url = image_url_mappings[players[i - 1][2]];
+        var img_url = "{{url_for('static', filename='assets/i_voted_sticker.png')}}"
         var buttonID = "selectPlayer" + players[i - 1][1];
+        var placardID = "placardPlayerID" + players[i - 1][1];
+        var iVotedID = "votePlayerID" + players[i - 1][1];
         //set the rest of the HTML tag
         newElement.innerHTML =
           '<img src="' +
@@ -684,11 +687,18 @@
           '" alt="' +
           players[i - 1][0] +
           '"/> ' +
-          '<div class="name_card" style="--i: ' +
-          i +
-          '">' +
+          '<img src="' +
+          img_url +
+          'id=' +
+          iVotedID +
+          '" alt="i voted" class="i_voted" style="display: none"/> ' +
+          '<div class="name_card">' +
           players[i - 1][0] +
-          "</div>" +
+          '</div> ' +
+          '<div id=' +
+          placardID +
+          ' class="placard" style="display: none">' +
+          '</div> ' +
           '<button id="' +
           buttonID +
           '" type="button" class="btn btn-primary" style="display: none; margin: auto">Select</button>';
@@ -696,6 +706,12 @@
         game_canvas.appendChild(newElement);
         if (!allIDs.includes(buttonID)) {
           allIDs.push(buttonID);
+        }
+        if (!allIDs.includes(placardID)) {
+          allIDs.push(placardID);
+        }
+        if (!allIDs.includes(iVotedID)) {
+          allIDs.push(iVotedID);
         }
       }
       //adjust the style for the overarching game_canvas div
@@ -720,6 +736,45 @@
       /*
         BEGIN QUESTION 3
       */
+      players.forEach((player, index) => {
+          var button = document.getElementById(`selectPlayer${player}`);
+          button.style.display = "block";
+          button.setAttribute("onclick", `${method}('${player}')`);
+        });
+    }
+
+    function set_placards(president, chancellor=undefined) {
+      clear_placards();
+      var p_placard = document.getElementById(`placardPlayerID${president}`);
+      p_placard.innerText = "President";
+      p_placard.style.display = "block";
+      if(chancellor != undefined) {
+        var c_placard = document.getElementById(`placardPlayerID${chancellor}`);
+        c_placard.innerText = "Chancellor";
+        c_placard.style.display = "block";
+      }
+    }
+
+    function clear_placards() {
+      Object.keys(idToName).forEach((id) => {
+        var placard = document.getElementById(`placardPlayer${id}`);
+        placard.style.display = "none";
+      });
+    }
+
+    function show_votes(players) {
+      clear_votes();
+      players.forEach(player => {
+          var vote_sticker = document.getElementById(`votePlayerID${player}`);
+          vote_sticker.style.display = "block";
+        });
+    }
+
+    function clear_votes() {
+      Object.keys(idToName).forEach((id) => {
+        var vote = document.getElementById(`votePlayerID${id}`);
+        vote.style.display = "none";
+      });
     }
 
     function display_powers(powers) {
