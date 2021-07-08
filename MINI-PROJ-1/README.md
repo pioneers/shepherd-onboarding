@@ -1,6 +1,7 @@
 # Mini Project 1
 
-In this first mini project you will be creating a flask application.
+In this first mini project you will be creating a flask application. 
+Feel free to refer to the [HTML/CSS Tutorial](https://www.notion.so/HTML-CSS-Tutorial-20560bbefecb4016bbdd28c74b72c290) notebook for help.
 
 If you have not already followed the instructions in the [README.md](https://github.com/pioneers/shepherd-onboarding/blob/solution-su2021/README.md) do so.
 But if you still refuse to follow the [README.md](https://github.com/pioneers/shepherd-onboarding/blob/solution-su2021/README.md) all you will need to do is run 
