@@ -264,13 +264,27 @@
     if (!id && !name) {
       location.href = "/";
     }
-    socket.emit(
-      "join",
-      JSON.stringify({
-        name,
-        id,
-      })
-    );
+
+    function logg() {
+      //as of now, do nothing
+      //add logging later?
+    }
+
+    function send() {
+      socket.emit("ui-to-server", "no password lul", ...arguments);
+      let logstr = ""
+      try {
+          for(let a=0;a<arguments.length;a++)
+              logstr += arguments[a];
+      } catch (err){
+          console.log(err);
+          logstr = "[logging error]";
+      }
+      logg(logstr);
+    }
+
+    socket.emit("join",name,id);
+    send("player_joined", JSON.stringify({name:name, id:id}));
 
     // receive information from shepherd
 

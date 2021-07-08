@@ -65,8 +65,7 @@ class HeaderPrimitive():
         annots = self.typing_function.__annotations__
         for arg in kwargs:
             # skips unannotated arguments, typechecks annotated arguments.
-            # skips nonetype args, those will get handled later if they are an issue.
-            if arg in annots and not kwargs[arg] == None:
+            if arg in annots:
                 try:
                     check_type(arg, kwargs[arg], annots[arg])
                 except TypeError:

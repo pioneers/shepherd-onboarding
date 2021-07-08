@@ -10,6 +10,37 @@ from board import Board
 
 
 
+
+# ===================================
+# game variables
+# ===================================
+
+
+# the current game state (setup, pick chancellor, vote, policy, action, end)
+GAME_STATE = STATE.SETUP
+
+PLAYERS = {}  # a dictionary of ids -> Player objects representing the players in the game
+SPECTATORS = {}  # a dictionary of ids -> Player objects representing the spectators
+CARD_DECK = []  # the cards in the deck (not including discarded cards)
+DISCARD_DECK = []  # the discarded cards
+# the index of the president — this changes before the government is elected
+PRESIDENT_ID = None
+# the previous elected president (for remembering who is ineligible)
+PREVIOUS_PRESIDENT_ID = None
+# the previous elected chancellor (for remembering who is ineligible)
+PREVIOUS_CHANCELLOR_ID = None
+# the player who is nominated for chancellor
+NOMINATED_CHANCELLOR_ID = None
+# for remembering the president after a special election cycle, Player.NONE if not a special election cycle
+AFTER_SPECIAL_ELECTION_PRESIDENT_ID = None
+ELECTION_TRACKER = 0  # for tracking failed elections
+BOARD = Board(5)  # the game board
+
+DRAWN_CARDS = [] # only valid in president_discard and chancellor discard states,
+                 # cards that are up for discarding
+WINNER = None # only valid in end state; who the winner of the game is
+
+
 def start():
     '''
     Main loop which processes the event queue and calls the appropriate function
@@ -43,221 +74,213 @@ def start():
 
 def to_setup(args):
     """
-    A function that moves the game into setup phase.
+    A function that resets everything and moves the game into setup phase.
     """
-    global CARD_DECK, GAME_STATE
-    reset()
-    CARD_DECK = new_deck()
-    GAME_STATE = STATE.SETUP
-    # this needs to be the last thing that happens, since due to how this
-    # pseudo-LCM actually works, this will do a significant amount of work on
-    # the server's side, and may spawn more LCM messages.
-    ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.FORCE_RECONNECT, {})
+    global PLAYERS; PLAYERS = []
+    global SPECTATORS; SPECTATORS = []
+    global CARD_DECK; CARD_DECK = []
+    global DISCARD_DECK; DISCARD_DECK = []
+    global PRESIDENT_ID; PRESIDENT_ID = 0
+    global PREVIOUS_PRESIDENT_ID; PREVIOUS_PRESIDENT_ID = None
+    global PREVIOUS_CHANCELLOR_ID; PREVIOUS_CHANCELLOR_ID = None
+    global NOMINATED_CHANCELLOR_ID; NOMINATED_CHANCELLOR_ID = None
+    global AFTER_SPECIAL_ELECTION_PRESIDENT_ID; AFTER_SPECIAL_ELECTION_PRESIDENT_ID = None
+    global ELECTION_TRACKER; ELECTION_TRACKER = 0
+    global GAME_STATE; GAME_STATE = STATE.SETUP
+    ydl_send(*UI_HEADERS.FORCE_RECONNECT())
 
 
 
 def player_joined(id: str, name: str):
     global PLAYERS
 
-    if id not in player_ids(PLAYERS + SPECTATORS):
+    if id not in PLAYERS and id not in SPECTATORS:
         if len(PLAYERS) >= 10 or GAME_STATE != STATE.SETUP: #TODO: remove hardcoding
-            SPECTATORS.append(Player(id, name))
+            SPECTATORS[id] = Player(id, name)
+            SPECTATORS[id].role = ROLES.SPECTATOR
         else:
-            PLAYERS.append(Player(id, name))
+            PLAYERS[id] = Player(id, name)
 
-    
+    all_players = list(PLAYERS.values()) + list(SPECTATORS.values())
+    ydl_send(*UI_HEADERS.ON_JOIN(
+        usernames= [p.name for p in all_players],
+        ids= [p.id for p in all_players],
+        ongoing_game= GAME_STATE != STATE.SETUP,
+    ))
 
+    if GAME_STATE != STATE.SETUP:
+        send_individual_setup(id)
+        ydl_send(*UI_HEADERS.POLICIES_ENACTED(
+            liberal=BOARD.liberal_enacted, 
+            fascist=BOARD.fascist_enacted,
+            recipients=[id]
+        ))
 
+        # veto enabled
+        if BOARD.can_veto:
+            ydl_send(*UI_HEADERS.VETO_ENABLED(recipients=[id]))
 
-     
-
-
-
-def player_joined_new_game(args):
-    """
-    A function that creates a new player instance for a player who has joined,
-    or will allow a player to reconnect if they have joined before.
-    """
-    global PLAYERS
-    id = args["id"]
-    print("id is of type", type(id), "and is ")
-    name = args["name"]
-    lcm_data = {}
-    if len(PLAYERS) >= 10:
-        # this will need to be a spectator
-        SPECTATORS.append(Player(id, name))
-        return
-    if not id in player_ids(PLAYERS):
-        # is this someone reconnecting or joining for the first time?
-        print("# Shepherd: Welcome", name)
-        PLAYERS += [Player(id, name)]
-        lcm_data["recipients"] = player_ids(PLAYERS)
-    else:
-        lcm_data["recipients"] = [id]
-        print("# Shepherd: Welcome back", name)
-    lcm_data["usernames"] = player_names(PLAYERS)
-    lcm_data["ids"] = player_ids(PLAYERS)
-    lcm_data["ongoing_game"] = False
-    ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.ON_JOIN, lcm_data)
-
-
-def player_joined_ongoing_game(args):
-    """
-    A function that allows players to reconnect to the game.
-    """
-    global PLAYERS, SPECTATORS
-    id = args["id"]
-    name = args["name"]
-    if id in player_ids(PLAYERS):
-        # is this someone reconnecting or joining for the first time?
-        print("# Shepherd: Welcome back", name)
-        lcm_data = {"usernames": player_names(PLAYERS), "ids": player_ids(
-            PLAYERS), "recipients": [id], "ongoing_game": True}
-        ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.ON_JOIN, lcm_data)
-
-        # individual setup
-        player_roles = []
-        player = player_for_id(id)
-        lcm_data = {"recipients": [player.id], "individual_role": player.role, "roles": player_roles, "powers": BOARD.board}
-        if player.role == ROLES.LIBERAL or (player.role == ROLES.HITLER and len(PLAYERS) > 6):
-            for other in PLAYERS:
-                if player == other:
-                    player_roles.append([player.name, player.id, player.role])
-                else:
-                    player_roles.append([other.name, other.id, ROLES.NONE])
-        elif player.role == ROLES.FASCIST or (player.role == ROLES.HITLER and len(PLAYERS) <= 6):
-            for other in PLAYERS:
-                player_roles.append([other.name, other.id, other.role])
-        ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.INDIVIDUAL_SETUP, lcm_data)
-    else:
-        if id not in player_ids(SPECTATORS):
-            SPECTATORS.append(Player(id, name))
-        print("# Shepherd: Welcome as a spectator", name)
-        lcm_data = {"usernames": player_names(PLAYERS), "ids": player_ids(
-            PLAYERS), "recipients": [id], "ongoing_game": True}
-        ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.ON_JOIN, lcm_data)
-
-        # individual setup
-        player_roles = []
-        spectator = spectator_for_id(id)
-        spectator.role = ROLES.SPECTATOR
-        lcm_data = {"recipients": [spectator.id], "individual_role": spectator.role, "roles": player_roles, "powers": BOARD.board}
-        for other in PLAYERS:
-            player_roles.append([other.name, other.id, other.role])
-        ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.INDIVIDUAL_SETUP, lcm_data)
-
-    # BEGIN QUESTION 2
-    # send the number of fascist and liberal policies enacted to the server
-    lcm_data = {_________: _____________________,
-                _________: _____________________,
-                "recipients": [id]}
-    ydl_send(_______________, _________________, lcm_data)
-    # END QUESTION 2
-
-    # veto enabled
-    if BOARD.can_veto:
-        ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.VETO_ENABLED, {})
-
-    # repeat last server message
-    ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.REPEAT_MESSAGE,
-             {'recipients': [id]})
-    
+        # send state message
+        send_state = {
+            STATE.SETUP: None,
+            STATE.VOTE: lambda: UI_HEADERS.AWAIT_VOTE(
+                president=PRESIDENT_ID, 
+                chancellor=NOMINATED_CHANCELLOR_ID, 
+                has_voted=players_who_have_voted(),
+                recipients=[id]
+            ),
+            STATE.PICK_CHANCELLOR: lambda: UI_HEADERS.CHANCELLOR_REQUEST(
+                president=PRESIDENT_ID,
+                eligibles=eligible_chancellor_nominees(),
+                recipients=[id]
+            ),
+            STATE.PRESIDENT_DISCARD: lambda: UI_HEADERS.PRESIDENT_DISCARD(
+                president=PRESIDENT_ID,
+                cards=DRAWN_CARDS,
+                recipients=[id]
+            ),
+            STATE.CHANCELLOR_DISCARD: lambda: UI_HEADERS.CHANCELLOR_DISCARD(
+                chancellor=NOMINATED_CHANCELLOR_ID,
+                cards=DRAWN_CARDS,
+                recipients=[id]
+            ),
+            STATE.CHANCELLOR_VETOED: lambda: UI_HEADERS.ASK_PRESIDENT_VETO(
+                president=PRESIDENT_ID,
+                recipients=[id]
+            ),
+            STATE.ACTION: None, # TODO
+            STATE.END: lambda: UI_HEADERS.GAME_OVER(
+                winner=WINNER, 
+                recipients=[id]
+            )
+        }.get(GAME_STATE)()
+        if send_state is not None:
+            ydl_send(*send_state())
 
 
 
-def start_game(args):
+def send_individual_setups():
+    for p in PLAYERS:
+        send_individual_setup(p)
+    for p in SPECTATORS:
+        send_individual_setup(p)
+
+def send_individual_setup(id):
+    p = None
+    role = ROLES.SPECTATOR
+    see_roles = True
+    if id in PLAYERS:
+        p = PLAYERS[id]
+        role = p.role
+        see_roles = role == ROLES.FASCIST or (role == ROLES.HITLER and len(PLAYERS) <= 6)
+    player_roles = [[oth.name, oth.id, oth.role if see_roles or oth == p else ROLES.NONE]
+        for oth in PLAYERS.values()]
+    ydl_send(*UI_HEADERS.INDIVIDUAL_SETUP(
+        roles=player_roles,
+        individual_role=role,
+        powers=BOARD.board,
+        recipients=[id]
+    ))
+
+
+
+
+def start_game():
     """
     A function that initializes variables that require the number of players.
     """
     global PLAYERS, BOARD
     if len(PLAYERS) < 5:
-        lcm_data = {"players": len(PLAYERS)}
-        ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.NOT_ENOUGH_PLAYERS, lcm_data)
+        ydl_send(*UI_HEADERS.NOT_ENOUGH_PLAYERS(players=len(PLAYERS)))
         return
     # BEGIN QUESTION 1: initialize the list deck with 1 hitler and the relevant number of fascist and liberal cards. Hint: don't use raw strings to represent the roles. Instead, look for a useful class in Utils.py.
     # see the table on page 2 of the rules: https://secrethitler.com/assets/Secret_Hitler_Rules.pdf#page=2. For a challenge, try coming up with a formula for it.
+
+    deck = [ROLES.HITLER]
+    deck += [ROLES.FASCIST]*((len(PLAYERS)-3)//2)
+    deck += [ROLES.LIBERAL]*(len(PLAYERS)//2 + 1)
 
     # END QUESTION 1
     shuffle_deck(deck)
     # BEGIN QUESTION 1
     # Assign roles for each player using the deck.
-    for i in range(_______________):
-        PLAYERS[i].role = __________________
+    for i in range(len(PLAYERS)):
+        PLAYERS.values()[i].role = deck[i]
     # Initialize the board.
-    BOARD = _______________
+    BOARD = Board(len(PLAYERS))
     # END QUESTION 1
-    for player in PLAYERS:
-        player_roles = []
-        lcm_data = {"recipients": [player.id], "individual_role": player.role, "roles": player_roles, "powers": BOARD.board}
-        if player.role == ROLES.LIBERAL or (player.role == ROLES.HITLER and len(PLAYERS) > 6):
-            for other in PLAYERS:
-                if player == other:
-                    player_roles.append([player.name, player.id, player.role])
-                else:
-                    player_roles.append([other.name, other.id, ROLES.NONE])
-        elif player.role == ROLES.FASCIST or (player.role == ROLES.HITLER and len(PLAYERS) <= 6):
-            for other in PLAYERS:
-                player_roles.append([other.name, other.id, other.role])
-        ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.INDIVIDUAL_SETUP, lcm_data)
-    to_chancellor()
+
+    send_individual_setups()
+    to_pick_chancellor()
 
 
-def to_chancellor():
+def to_pick_chancellor():
     """
-    A function that moves the game into the chancellor phase. This is done
-    by constructing a list of eligible players and sending the CHANCELLOR_REQUEST header to the server.
+    A function that moves the game into the pick_chancellor phase. This is done
+    by constructing a list of eligible players and sending the CHANCELLOR_REQUEST 
+    header to the server.
+    """
+    global GAME_STATE
+    GAME_STATE = STATE.PICK_CHANCELLOR
+    # BEGIN QUESTION 3
+    ydl_send(*UI_HEADERS.CHANCELLOR_REQUEST(
+        president=PRESIDENT_ID,
+        eligibles=eligible_chancellor_nominees()
+    ));
+    # END QUESTION 3
 
+def eligible_chancellor_nominees():
+    """
+    Returns the ids of players who can be nominated for chancellor
     Rules:
     - if there are > 5 players, the ineligible players are the president,
     previous president, and previous chancellor.
     - if <= 5 players, only the president and previous chancellor are ineligible
     """
-    global GAME_STATE
-    GAME_STATE = STATE.PICK_CHANCELLOR
-    # BEGIN QUESTION 3
-
-    lcm_data = {"president": player_id(
-        PRESIDENT_INDEX), "eligibles": eligibles}
-    ydl_send(______________, ________________, _______________)
-    # END QUESTION 3
+    eligibles = list(PLAYERS)
+    eligibles.remove(PRESIDENT_ID)
+    eligibles.remove(PREVIOUS_CHANCELLOR_ID)
+    if len(PLAYERS) > 5:
+        eligibles.remove(PREVIOUS_PRESIDENT_ID)
+    return eligibles
 
 
-def receive_chancellor_nomination(args):
+def receive_chancellor_nomination(nominee):
     """
     A function that reads who the president has nominated for chancellor and
     starts the voting process.
     """
-    global GAME_STATE, NOMINATED_CHANCELLOR_INDEX
+    global GAME_STATE, NOMINATED_CHANCELLOR_ID
     GAME_STATE = STATE.VOTE
     chancellor = args["nominee"]
-    NOMINATED_CHANCELLOR_INDEX = player_ids(PLAYERS).index(chancellor)
+    NOMINATED_CHANCELLOR_ID = player_ids(PLAYERS).index(chancellor)
     lcm_data = {"president": player_id(
-        PRESIDENT_INDEX), "chancellor": chancellor}
+        PRESIDENT_ID), "chancellor": chancellor}
     ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.AWAIT_VOTE, lcm_data)
 
 
-def receive_vote(args):
+def receive_vote(id, vote):
     """
     A function that notes a vote and acts if the voting is done.
     """
-    global GAME_STATE, PRESIDENT_INDEX, PREVIOUS_PRESIDENT_INDEX, PREVIOUS_CHANCELLOR_INDEX, ELECTION_TRACKER, CARD_DECK
-    player = player_for_id(args["id"])
-    player.vote = args["vote"]
+    global GAME_STATE, PRESIDENT_ID, PREVIOUS_PRESIDENT_ID, PREVIOUS_CHANCELLOR_ID, ELECTION_TRACKER, CARD_DECK, DRAWN_CARDS
+    PLAYERS[id].vote = vote
     if number_of_votes() >= len(PLAYERS):
         passed = passing_vote()
         for player in PLAYERS:
             player.clear_vote()
         if passed:
-            PREVIOUS_PRESIDENT_INDEX = PRESIDENT_INDEX
-            PREVIOUS_CHANCELLOR_INDEX = NOMINATED_CHANCELLOR_INDEX
+            PREVIOUS_PRESIDENT_ID = PRESIDENT_ID
+            PREVIOUS_CHANCELLOR_ID = NOMINATED_CHANCELLOR_ID
             # BEGIN QUESTION 4: if chancellor is hitler, game_over is called and the function is terminated
 
             # END QUESTION 4
             if len(CARD_DECK) < 3:
                 reshuffle_deck()
             GAME_STATE = STATE.POLICY
+            DRAWN_CARDS = draw_cards(3)
             lcm_data = {"president": player_id(
-                PRESIDENT_INDEX), "cards": draw_cards(3)}
+                PRESIDENT_ID), "cards": DRAWN_CARDS}
             ydl_send(YDL_TARGETS.UI,
                      SERVER_HEADERS.PRESIDENT_DISCARD, lcm_data)
         else:
@@ -268,14 +291,14 @@ def receive_vote(args):
                     reshuffle_deck()
                 card = draw_cards(1)[0]
                 BOARD.enact_policy(card)
-                PREVIOUS_PRESIDENT_INDEX = Player.NONE
-                PREVIOUS_CHANCELLOR_INDEX = Player.NONE
+                PREVIOUS_PRESIDENT_ID = Player.NONE
+                PREVIOUS_CHANCELLOR_ID = Player.NONE
                 lcm_data = {"liberal": BOARD.liberal_enacted,
                             "fascist": BOARD.fascist_enacted}
                 ydl_send(YDL_TARGETS.UI,
                          SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
-            PRESIDENT_INDEX = next_president_index()
-            to_chancellor()
+            PRESIDENT_ID = next_president_index()
+            to_pick_chancellor()
 
 
 def president_discarded(args):
@@ -294,22 +317,19 @@ def president_discarded(args):
     # END QUESTION 5
 
 
-def chancellor_vetoed(args):
+def chancellor_vetoed():
     """
     A function that asks for the president's response after a chancellor veto.
     """
-    lcm_data = {"president": player_id(PRESIDENT_INDEX)}
-    ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.ASK_PRESIDENT_VETO, lcm_data)
+    ydl_send(*UI_HEADERS.ASK_PRESIDENT_VETO(president=PRESIDENT_ID))
 
 
-def president_veto_answer(args):
+def president_veto_answer(veto: bool, cards: List[str]):
     """
     A function that receives if the president vetoes or not.
     """
-    global ELECTION_TRACKER, PRESIDENT_INDEX, PREVIOUS_PRESIDENT_INDEX, PREVIOUS_CHANCELLOR_INDEX, CARD_DECK
-    value = args["veto"]
-    cards = args["cards"]
-    if value:
+    global ELECTION_TRACKER, PRESIDENT_ID, PREVIOUS_PRESIDENT_ID, PREVIOUS_CHANCELLOR_ID, CARD_DECK
+    if veto:
         ELECTION_TRACKER += 1
         if chaos():
             ELECTION_TRACKER = 0
@@ -317,39 +337,41 @@ def president_veto_answer(args):
                 reshuffle_deck()
             card = draw_cards(1)[0]
             BOARD.enact_policy(card)
-            PREVIOUS_PRESIDENT_INDEX = Player.NONE
-            PREVIOUS_CHANCELLOR_INDEX = Player.NONE
+            PREVIOUS_PRESIDENT_ID = Player.NONE
+            PREVIOUS_CHANCELLOR_ID = Player.NONE
             lcm_data = {"liberal": BOARD.liberal_enacted,
                         "fascist": BOARD.fascist_enacted}
             ydl_send(YDL_TARGETS.UI,
                      SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
-        PRESIDENT_INDEX = next_president_index()
-        to_chancellor()
+        PRESIDENT_ID = next_president_index()
+        to_pick_chancellor()
     else:
-        lcm_data = {"chancellor": player_id(
-            NOMINATED_CHANCELLOR_INDEX), "cards": cards, "can_veto": BOARD.can_veto}
-        ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.CHANCELLOR_DISCARD, lcm_data)
+        ydl_send(*UI_HEADERS.CHANCELLOR_DISCARD(
+            chancellor=NOMINATED_CHANCELLOR_ID,
+            cards=cards, can_veto=BOARD.can_veto
+        ))
 
 
 def chancellor_discarded(args):
     """
     A function that enacts the policy left over after two have been discarded.
     """
-    global GAME_STATE, BOARD, PRESIDENT_INDEX
+    global GAME_STATE, BOARD, PRESIDENT_ID
     card = args["card"]
     discarded = args["discarded"]
     DISCARD_DECK.append(discarded)
     BOARD.enact_policy(card)
     DISCARD_DECK.append(card)
-    lcm_data = {"liberal": BOARD.liberal_enacted,
-                "fascist": BOARD.fascist_enacted}
-    ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.POLICIES_ENACTED, lcm_data)
+    ydl_send(*UI_HEADERS.POLICIES_ENACTED(
+        liberal=BOARD.liberal_enacted,
+        fascist=BOARD.fascist_enacted
+    ))
     if BOARD.fascist_enacted >= 6:
         game_over(ROLES.FASCIST)
         return
     elif card == CARDS.LIBERAL or len(BOARD.current_power_list()) == 0:
-        PRESIDENT_INDEX = next_president_index()
-        to_chancellor()
+        PRESIDENT_ID = next_president_index()
+        to_pick_chancellor()
     else:
         GAME_STATE = STATE.ACTION
         for action in BOARD.current_power_list():
@@ -359,12 +381,12 @@ def chancellor_discarded(args):
                 call_special_election()
             elif action == POWERS.POLICY_PEEK:
                 policy_peek()
-                PRESIDENT_INDEX = next_president_index()
+                PRESIDENT_ID = next_president_index()
             elif action == POWERS.EXECUTION:
                 execution()
             elif action == POWERS.VETO:
                 veto()
-                PRESIDENT_INDEX = next_president_index()
+                PRESIDENT_ID = next_president_index()
 
 
 def investigate_loyalty():
@@ -374,7 +396,7 @@ def investigate_loyalty():
     investigated = [player_id(i) for i in range(
         len(PLAYERS)) if not PLAYERS[i].investigated]
     lcm_data = {"president": player_id(
-        PRESIDENT_INDEX), "eligibles": investigated}
+        PRESIDENT_ID), "eligibles": investigated}
     ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.BEGIN_INVESTIGATION, lcm_data)
 
 
@@ -385,10 +407,12 @@ def investigate_player(args):
     is treated as a fascist.
     """
     # BEGIN QUESTION 6
-    player = player_for_id(__________)
+    player = player_for_id(args['player'])
     player.investigated = True
     # find out the loyalty and send it to the server.
-
+    lcm_data = {"president": player_id(
+        PRESIDENT_INDEX),"role": player.role}
+    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.RECEIVE_INVESTIGATION, lcm_data)
 
 def call_special_election():
     """
@@ -397,16 +421,20 @@ def call_special_election():
     Anyone except the current president is eligible to be the next president.
     """
     # BEGIN QUESTION 7
+    eligibles = [player_id(i) for i in range(len(PLAYERS)) if i != PRESIDENT_INDEX]
+    lcm_data = {"president": player_id(
+        PRESIDENT_INDEX),"eligibles": eligibles}
+    lcm_send(LCM_TARGETS.SERVER, SERVER_HEADERS.BEGIN_SPECIAL_ELECTION, lcm_data)
 
 
 def perform_special_election(args):
     """
     A function that starts the next session with the new president.
     """
-    global PRESIDENT_INDEX, AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX
-    AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX = next_president_index()
-    PRESIDENT_INDEX = player_ids(PLAYERS).index(args["player"])
-    to_chancellor()
+    global PRESIDENT_ID, AFTER_SPECIAL_ELECTION_PRESIDENT_ID
+    AFTER_SPECIAL_ELECTION_PRESIDENT_ID = next_president_index()
+    PRESIDENT_ID = player_ids(PLAYERS).index(args["player"])
+    to_pick_chancellor()
 
 
 def policy_peek():
@@ -414,7 +442,7 @@ def policy_peek():
     A function that executes the policy peek power.
     """
     cards = [CARD_DECK[i] for i in range(min(len(CARD_DECK), 3))]
-    lcm_data = {"president": player_id(PRESIDENT_INDEX), "cards": cards}
+    lcm_data = {"president": player_id(PRESIDENT_ID), "cards": cards}
     ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.PERFORM_POLICY_PEEK, lcm_data)
 
 
@@ -422,23 +450,23 @@ def end_policy_peek(args):
     """
     A function that ends the policy peek.
     """
-    to_chancellor()
+    to_pick_chancellor()
 
 
 def end_investigate_player(args):
     """
     A function that ends the investigate player.
     """
-    global PRESIDENT_INDEX
-    PRESIDENT_INDEX = next_president_index()
-    to_chancellor()
+    global PRESIDENT_ID
+    PRESIDENT_ID = next_president_index()
+    to_pick_chancellor()
 
 
 def execution():
     """
     A function that begins the execution power.
     """
-    president = player_id(PRESIDENT_INDEX)
+    president = player_id(PRESIDENT_ID)
     lcm_data = {"president": president, "eligibles": [
         i for i in player_ids(PLAYERS) if i != president]}
     ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.BEGIN_EXECUTION, lcm_data)
@@ -448,7 +476,7 @@ def perform_execution(args):
     """
     A function that executes a player.
     """
-    global PRESIDENT_INDEX, NOMINATED_CHANCELLOR_INDEX, PREVIOUS_PRESIDENT_INDEX, PREVIOUS_CHANCELLOR_INDEX
+    global PRESIDENT_ID, NOMINATED_CHANCELLOR_ID, PREVIOUS_PRESIDENT_ID, PREVIOUS_CHANCELLOR_ID
     p_id = args["player"]
     player = player_for_id(p_id)
     if player.role == ROLES.HITLER:
@@ -457,20 +485,20 @@ def perform_execution(args):
     ind = player_ids(PLAYERS).index(p_id)
     del PLAYERS[ind]
 
-    PRESIDENT_INDEX = Player.NONE if ind == PRESIDENT_INDEX else (
-        PRESIDENT_INDEX - 1 if ind < PRESIDENT_INDEX else PRESIDENT_INDEX)
-    NOMINATED_CHANCELLOR_INDEX = Player.NONE if ind == NOMINATED_CHANCELLOR_INDEX else (
-        NOMINATED_CHANCELLOR_INDEX - 1 if ind < NOMINATED_CHANCELLOR_INDEX else NOMINATED_CHANCELLOR_INDEX)
-    PREVIOUS_PRESIDENT_INDEX = Player.NONE if ind == PREVIOUS_PRESIDENT_INDEX else (
-        PREVIOUS_PRESIDENT_INDEX - 1 if ind < PREVIOUS_PRESIDENT_INDEX else PREVIOUS_PRESIDENT_INDEX)
-    PREVIOUS_CHANCELLOR_INDEX = Player.NONE if ind == PREVIOUS_CHANCELLOR_INDEX else (
-        PREVIOUS_CHANCELLOR_INDEX - 1 if ind < PREVIOUS_CHANCELLOR_INDEX else PREVIOUS_CHANCELLOR_INDEX)
+    PRESIDENT_ID = Player.NONE if ind == PRESIDENT_ID else (
+        PRESIDENT_ID - 1 if ind < PRESIDENT_ID else PRESIDENT_ID)
+    NOMINATED_CHANCELLOR_ID = Player.NONE if ind == NOMINATED_CHANCELLOR_ID else (
+        NOMINATED_CHANCELLOR_ID - 1 if ind < NOMINATED_CHANCELLOR_ID else NOMINATED_CHANCELLOR_ID)
+    PREVIOUS_PRESIDENT_ID = Player.NONE if ind == PREVIOUS_PRESIDENT_ID else (
+        PREVIOUS_PRESIDENT_ID - 1 if ind < PREVIOUS_PRESIDENT_ID else PREVIOUS_PRESIDENT_ID)
+    PREVIOUS_CHANCELLOR_ID = Player.NONE if ind == PREVIOUS_CHANCELLOR_ID else (
+        PREVIOUS_CHANCELLOR_ID - 1 if ind < PREVIOUS_CHANCELLOR_ID else PREVIOUS_CHANCELLOR_ID)
 
     SPECTATORS.append(player)
-    PRESIDENT_INDEX = next_president_index()
+    PRESIDENT_ID = next_president_index()
     lcm_data = {'player': p_id}
     ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.PLAYER_EXECUTED, lcm_data)
-    to_chancellor()
+    to_pick_chancellor()
 
 
 def veto():
@@ -479,6 +507,7 @@ def veto():
     """
     global BOARD
     BOARD.can_veto = True
+    ydl_send(*UI_HEADERS.VE)
     ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.VETO_ENABLED, {})
 
 
@@ -486,10 +515,11 @@ def game_over(winner):
     """
     A function that reports the end of a game.
     """
-    global GAME_STATE
+    global GAME_STATE, WINNER
     GAME_STATE = STATE.END
+    WINNER = winner
     lcm_data = {"winner": winner}
-    ydl_send(YDL_TARGETS.UI, SERVER_HEADERS.GAME_OVER, lcm_data)
+    ydl_send(*UI_HEADERS.GAME_OVER(winner=winner))
 
 # ===================================
 # helper functions
@@ -501,53 +531,6 @@ def player_names(players):
     Returns the list of player names
     """
     return [player.name for player in players]
-
-
-def player_ids(players):
-    """
-    Returns the list of player IDs
-    """
-    return [player.id for player in players]
-
-
-def player_id(index):
-    """
-    Returns the ID of a player at an index, returns None if the index is Player.NONE
-    """
-    if index == Player.NONE:
-        return None
-    return player_ids(PLAYERS)[index]
-
-
-def player_for_id(p_id):
-    """
-    Returns the player with a specified ID
-    """
-    return PLAYERS[player_ids(PLAYERS).index(p_id)]
-
-
-def spectator_for_id(s_id):
-    """
-    Returns the player with a specified ID
-    """
-    return SPECTATORS[player_ids(SPECTATORS).index(s_id)]
-
-
-def reset():
-    """
-    Returns the game state to what it was at the beginning of executions
-    """
-    global PLAYERS, SPECTATORS, DISCARD_DECK, CARD_DECK, PRESIDENT_INDEX, PREVIOUS_PRESIDENT_INDEX, PREVIOUS_CHANCELLOR_INDEX, NOMINATED_CHANCELLOR_INDEX, AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX, ELECTION_TRACKER
-    PLAYERS = []
-    SPECTATORS = []
-    CARD_DECK = []
-    DISCARD_DECK = []
-    PRESIDENT_INDEX = 0
-    PREVIOUS_PRESIDENT_INDEX = Player.NONE
-    PREVIOUS_CHANCELLOR_INDEX = Player.NONE
-    NOMINATED_CHANCELLOR_INDEX = Player.NONE
-    AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX = Player.NONE
-    ELECTION_TRACKER = 0
 
 
 def shuffle_deck(deck):
@@ -594,23 +577,29 @@ def next_president_index():
     """
     Gets the index of the next president, taking into account special elections
     """
-    global AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX
-    if AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX != Player.NONE:
-        value = AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX
-        AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX = Player.NONE
+    global AFTER_SPECIAL_ELECTION_PRESIDENT_ID
+    if AFTER_SPECIAL_ELECTION_PRESIDENT_ID != None:
+        value = AFTER_SPECIAL_ELECTION_PRESIDENT_ID
+        AFTER_SPECIAL_ELECTION_PRESIDENT_ID = None
         return value
-    return (PRESIDENT_INDEX + 1) % len(PLAYERS)
+    return (PRESIDENT_ID + 1) % len(PLAYERS)
 
 
 def number_of_votes():
     """
     Returns the number of players that recorded votes
     """
-    votes = 0
-    for player in PLAYERS:
-        if player.vote != VOTES.UNDEFINED:
-            votes += 1
-    return votes
+    return len(players_who_have_voted())
+
+def players_who_have_voted():
+    """
+    Returns the ids of players who have voted
+    """
+    voters = []
+    for p in PLAYERS.values():
+        if p.vote != VOTES.UNDEFINED:
+            voters.append(p.id)
+    return voters
 
 
 def passing_vote():
@@ -637,50 +626,21 @@ def diagnostics():
     """
     Returns information about the current game
     """
-    diag = "State: " + GAME_STATE + "\n"
-    diag += "Players: " + str([str(p) for p in PLAYERS])
-    diag += "\nSpectators: " + str([str(s) for s in SPECTATORS])
-    diag += "\nPresident: " + \
-        ("None" if PRESIDENT_INDEX == -1 else str(PLAYERS[PRESIDENT_INDEX]))
-    diag += "\nNominated Chancellor: " + \
-        ("None" if NOMINATED_CHANCELLOR_INDEX == -
-         1 else str(PLAYERS[NOMINATED_CHANCELLOR_INDEX]))
-    diag += "\nPrevious President: " + \
-        ("None" if PREVIOUS_PRESIDENT_INDEX == -
-         1 else str(PLAYERS[PREVIOUS_PRESIDENT_INDEX]))
-    diag += "\nPrevious Chancellor: " + \
-        ("None" if PREVIOUS_CHANCELLOR_INDEX == -
-         1 else str(PLAYERS[PREVIOUS_CHANCELLOR_INDEX]))
-    diag += "\nElection Tracker: " + str(ELECTION_TRACKER)
-    diag += "\nLiberal Enacted: " + str(BOARD.liberal_enacted)
-    diag += "\nFascist Enacted: " + str(BOARD.fascist_enacted)
-    diag += "\nCard Deck: " + str(CARD_DECK)
+    diag = "Diagnostics:"
+    diag += "\n\tState: " + GAME_STATE
+    diag += "\n\tPlayers: " + str([str(p) for p in PLAYERS.values()])
+    diag += "\n\tSpectators: " + str([str(s) for s in SPECTATORS.values()])
+    diag += "\n\tPresident: " + str(PLAYERS.get(PRESIDENT_ID, None))
+    diag += "\n\tNominated Chancellor: " + str(PLAYERS.get(NOMINATED_CHANCELLOR_ID, None))
+    diag += "\n\tPrevious President: " + str(PLAYERS.get(PREVIOUS_PRESIDENT_ID, None))
+    diag += "\n\tPrevious Chancellor: " + str(PLAYERS.get(PREVIOUS_CHANCELLOR_ID, None))
+    diag += "\n\tElection Tracker: " + str(ELECTION_TRACKER)
+    diag += "\n\tLiberal Enacted: " + str(BOARD.liberal_enacted)
+    diag += "\n\tFascist Enacted: " + str(BOARD.fascist_enacted)
+    diag += "\n\tCard Deck: " + str(CARD_DECK)
     return diag
 
-# ===================================
-# game variables
-# ===================================
 
-
-# the current game state (setup, pick chancellor, vote, policy, action, end)
-GAME_STATE = STATE.SETUP
-
-PLAYERS = []  # a list of Player objects representing the players in the game
-SPECTATORS = []  # a list of Player objects representing the spectators
-CARD_DECK = new_deck()  # the cards in the deck (not including discarded cards)
-DISCARD_DECK = []  # the discarded cards
-# the index of the president — this changes before the government is elected
-PRESIDENT_INDEX = None
-# the previous elected president (for remembering who is ineligible)
-PREVIOUS_PRESIDENT_INDEX = Player.NONE
-# the previous elected chancellor (for remembering who is ineligible)
-PREVIOUS_CHANCELLOR_INDEX = Player.NONE
-# the player who is nominated for chancellor
-NOMINATED_CHANCELLOR_INDEX = Player.NONE
-# for remembering the president after a special election cycle, Player.NONE if not a special election cycle
-AFTER_SPECIAL_ELECTION_PRESIDENT_INDEX = Player.NONE
-ELECTION_TRACKER = 0  # for tracking failed elections
-BOARD = Board(5)  # the game board
 
 
 ###########################################
@@ -689,39 +649,39 @@ BOARD = Board(5)  # the game board
 
 FUNCTION_MAPPINGS = {
     STATE.SETUP: {
-        SHEPHERD_HEADERS.PLAYER_JOINED: player_joined,
-        SHEPHERD_HEADERS.NEXT_STAGE: start_game
+        SHEPHERD_HEADERS.PLAYER_JOINED.name: player_joined,
+        SHEPHERD_HEADERS.NEXT_STAGE.name: start_game
     },
     STATE.VOTE: {
-        SHEPHERD_HEADERS.PLAYER_VOTED: receive_vote
+        SHEPHERD_HEADERS.PLAYER_VOTED.name: receive_vote
     },
     STATE.PICK_CHANCELLOR: {
-        SHEPHERD_HEADERS.CHANCELLOR_NOMINATION: receive_chancellor_nomination
+        SHEPHERD_HEADERS.CHANCELLOR_NOMINATION.name: receive_chancellor_nomination
     },
     STATE.PRESIDENT_DISCARD: {
-        SHEPHERD_HEADERS.PRESIDENT_DISCARDED: president_discarded
+        SHEPHERD_HEADERS.PRESIDENT_DISCARDED.name: president_discarded
     },
     STATE.CHANCELLOR_DISCARD: {
-        SHEPHERD_HEADERS.CHANCELLOR_DISCARDED: chancellor_discarded,
-        SHEPHERD_HEADERS.CHANCELLOR_VETOED: chancellor_vetoed,
+        SHEPHERD_HEADERS.CHANCELLOR_DISCARDED.name: chancellor_discarded,
+        SHEPHERD_HEADERS.CHANCELLOR_VETOED.name: chancellor_vetoed,
     },
-    STATE.CHANCELLOR_VETO: {
-        SHEPHERD_HEADERS.PRESIDENT_VETO_ANSWER: president_veto_answer,
+    STATE.CHANCELLOR_VETOED: {
+        SHEPHERD_HEADERS.PRESIDENT_VETO_ANSWER.name: president_veto_answer,
     },
     STATE.ACTION: {
-        SHEPHERD_HEADERS.INVESTIGATE_PLAYER: investigate_player,
-        SHEPHERD_HEADERS.SPECIAL_ELECTION_PICK: perform_special_election,
-        SHEPHERD_HEADERS.PERFORM_EXECUTION: perform_execution,
-        SHEPHERD_HEADERS.END_POLICY_PEEK: end_policy_peek,
-        SHEPHERD_HEADERS.END_INVESTIGATE_PLAYER: end_investigate_player
+        SHEPHERD_HEADERS.INVESTIGATE_PLAYER.name: investigate_player,
+        SHEPHERD_HEADERS.SPECIAL_ELECTION_PICK.name: perform_special_election,
+        SHEPHERD_HEADERS.PERFORM_EXECUTION.name: perform_execution,
+        SHEPHERD_HEADERS.END_POLICY_PEEK.name: end_policy_peek,
+        SHEPHERD_HEADERS.END_INVESTIGATE_PLAYER.name: end_investigate_player
     },
     STATE.END: {
-        SHEPHERD_HEADERS.NEXT_STAGE: to_setup
+        SHEPHERD_HEADERS.NEXT_STAGE.name: to_setup
     }
 }
 
 EVERYWHERE_FUNCTIONS = {
-    SHEPHERD_HEADERS.PLAYER_JOINED: player_joined,
+    SHEPHERD_HEADERS.PLAYER_JOINED.name: player_joined,
 }
 
 if __name__ == '__main__':
