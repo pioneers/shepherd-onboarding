@@ -8,7 +8,11 @@ from ydl import ydl_send, ydl_start_read
 from board import Board
 
 
-
+# MAJOR TODOS:
+# - javascript cookies -> uri compnents ofc
+# - literally all of javascript 
+# - what to send for reconnection in action state
+# - do state transitions
 
 
 # ===================================
@@ -70,24 +74,6 @@ def start():
 # ===================================
 # game functions
 # ===================================
-
-
-def to_setup(args):
-    """
-    A function that resets everything and moves the game into setup phase.
-    """
-    global PLAYERS; PLAYERS = {}
-    global SPECTATORS; SPECTATORS = {}
-    global CARD_DECK; CARD_DECK = []
-    global DISCARD_DECK; DISCARD_DECK = []
-    global PRESIDENT_ID; PRESIDENT_ID = 0
-    global PREVIOUS_PRESIDENT_ID; PREVIOUS_PRESIDENT_ID = None
-    global PREVIOUS_CHANCELLOR_ID; PREVIOUS_CHANCELLOR_ID = None
-    global NOMINATED_CHANCELLOR_ID; NOMINATED_CHANCELLOR_ID = None
-    global AFTER_SPECIAL_ELECTION_PRESIDENT_ID; AFTER_SPECIAL_ELECTION_PRESIDENT_ID = None
-    global FAILED_ELECTION_TRACKER; FAILED_ELECTION_TRACKER = 0
-    global GAME_STATE; GAME_STATE = STATE.SETUP
-    ydl_send(*UI_HEADERS.FORCE_RECONNECT())
 
 
 
@@ -184,28 +170,49 @@ def send_individual_setup(id):
 
 
 
+def to_setup():
+    """
+    A function that resets everything and moves the game into setup phase.
+    """
+    global PLAYERS; PLAYERS = {}
+    global SPECTATORS; SPECTATORS = {}
+    global CARD_DECK; CARD_DECK = []
+    global DISCARD_DECK; DISCARD_DECK = []
+    global PRESIDENT_ID; PRESIDENT_ID = None
+    global PREVIOUS_PRESIDENT_ID; PREVIOUS_PRESIDENT_ID = None
+    global PREVIOUS_CHANCELLOR_ID; PREVIOUS_CHANCELLOR_ID = None
+    global NOMINATED_CHANCELLOR_ID; NOMINATED_CHANCELLOR_ID = None
+    global AFTER_SPECIAL_ELECTION_PRESIDENT_ID; AFTER_SPECIAL_ELECTION_PRESIDENT_ID = None
+    global FAILED_ELECTION_TRACKER; FAILED_ELECTION_TRACKER = 0
+    global GAME_STATE; GAME_STATE = STATE.SETUP
+    ydl_send(*UI_HEADERS.FORCE_RECONNECT())
+
+
 
 def start_game():
     """
     A function that initializes variables that require the number of players.
     """
-    global PLAYERS, BOARD
+    global PLAYERS, BOARD, PRESIDENT_ID
     if len(PLAYERS) < 5:
         ydl_send(*UI_HEADERS.NOT_ENOUGH_PLAYERS(players=len(PLAYERS)))
         return
+
+    PRESIDENT_ID = next_president_id()
+    
     # BEGIN QUESTION 1: initialize the list deck with 1 hitler and the relevant number of fascist and liberal cards. Hint: don't use raw strings to represent the roles. Instead, look for a useful class in Utils.py.
     # see the table on page 2 of the rules: https://secrethitler.com/assets/Secret_Hitler_Rules.pdf#page=2. For a challenge, try coming up with a formula for it.
 
-    deck = [ROLES.HITLER]
-    deck += [ROLES.FASCIST]*((len(PLAYERS)-3)//2)
-    deck += [ROLES.LIBERAL]*(len(PLAYERS)//2 + 1)
+    roles = [ROLES.HITLER]
+    roles += [ROLES.FASCIST]*((len(PLAYERS)-3)//2)
+    roles += [ROLES.LIBERAL]*(len(PLAYERS)//2 + 1)
 
     # END QUESTION 1
-    shuffle_deck(deck)
+    shuffle_deck(roles)
     # BEGIN QUESTION 1
     # Assign roles for each player using the deck.
     for i in range(len(PLAYERS)):
-        PLAYERS.values()[i].role = deck[i]
+        PLAYERS.values()[i].role = roles[i]
     # Initialize the board.
     BOARD = Board(len(PLAYERS))
     # END QUESTION 1
@@ -353,13 +360,11 @@ def president_veto_answer(veto: bool, cards: List[str]):
         ))
 
 
-def chancellor_discarded(args):
+def chancellor_discarded(card, discarded):
     """
     A function that enacts the policy left over after two have been discarded.
     """
     global GAME_STATE, BOARD, PRESIDENT_ID
-    card = args["card"]
-    discarded = args["discarded"]
     DISCARD_DECK.append(discarded)
     BOARD.enact_policy(card)
     DISCARD_DECK.append(card)
