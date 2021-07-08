@@ -46,30 +46,39 @@
     border-color: #a8abae;
   }
 
-  .placard {
-      display: inline-block;
-      font-weight: 400;
-      color: #212529;
-      text-align: center;
-      vertical-align: middle;
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
-      user-select: none;
-      background-color: transparent;
-      border: 1px solid transparent;
-      padding:0rem 0.3rem;
-      font-size: 1rem;
-      line-height: 1.5;
-      border-radius: 0.25rem;
-      transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out,
-      border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-      margin-left: 50%; /* needed to help center the text */
-      transform: translateX(-50%); /* center the text */
-      color: #000;
-      background-color: #fdb515;
-      border-color: #fdb515;
-    }
+.placard {
+    display: inline-block;
+    font-weight: 400;
+    color: #212529;
+    text-align: center;
+    vertical-align: middle;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    background-color: transparent;
+    border: 1px solid transparent;
+    padding:0rem 0.3rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    border-radius: 0.25rem;
+    transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out,
+    border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    margin-left: 50%; /* needed to help center the text */
+    transform: translateX(-50%); /* center the text */
+    color: #000;
+    background-color: #fdb515;
+    border-color: #fdb515;
+  }
+
+.i_voted {
+    width: calc(var(--d)/5); height: calc(var(--d)/5);
+    position: absolute;
+    transform:
+        rotate(-55deg)
+        translate(calc(var(--d)/1.75))
+        rotate(55deg)
+}
 
 .board{
     position: relative;

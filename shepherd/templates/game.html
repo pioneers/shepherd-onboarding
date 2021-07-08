@@ -689,7 +689,7 @@
           '"/> ' +
           '<img src="' +
           img_url +
-          'id=' +
+          '"id="' +
           iVotedID +
           '" alt="i voted" class="i_voted" style="display: none"/> ' +
           '<div class="name_card">' +
@@ -747,17 +747,17 @@
       clear_placards();
       var p_placard = document.getElementById(`placardPlayerID${president}`);
       p_placard.innerText = "President";
-      p_placard.style.display = "block";
+      p_placard.style.display = "inline-block";
       if(chancellor != undefined) {
         var c_placard = document.getElementById(`placardPlayerID${chancellor}`);
         c_placard.innerText = "Chancellor";
-        c_placard.style.display = "block";
+        c_placard.style.display = "inline-block";
       }
     }
 
     function clear_placards() {
       Object.keys(idToName).forEach((id) => {
-        var placard = document.getElementById(`placardPlayer${id}`);
+        var placard = document.getElementById(`placardPlayerID${id}`);
         placard.style.display = "none";
       });
     }
