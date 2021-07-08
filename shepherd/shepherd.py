@@ -211,8 +211,9 @@ def start_game():
     shuffle_deck(roles)
     # BEGIN QUESTION 1
     # Assign roles for each player using the deck.
+    player_objs = list(PLAYERS.values())
     for i in range(len(PLAYERS)):
-        PLAYERS.values()[i].role = roles[i]
+        player_objs[i].role = roles[i]
     # Initialize the board.
     BOARD = Board(len(PLAYERS))
     # END QUESTION 1

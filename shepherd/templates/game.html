@@ -43,7 +43,7 @@
   <!-- waiting room -->
   <h1 id="titleText">BAAA play here</h1>
   <a id="playersText"></a>
-  <button id="startGameButton" type="button" class="btn btn-primary" onclick="startGame()" style="display: none">
+  <button id="startGameButton" type="button" class="btn btn-primary" onclick="startNewGame()" style="display: none">
     Start Game
   </button>
 
@@ -255,8 +255,9 @@
     let fascist_color = "#d76f54";
 
     // get player information and display waiting room
-    const name = getCookie("name");
-    const id = getCookie("id");
+    const urlParams = new URLSearchParams(window.location.search);
+    const name = urlParams.get("name");
+    const id = urlParams.get("id");
     document.getElementById(
       "titleText"
     ).textContent = `BAA play here, you are ${name}`;
@@ -283,7 +284,7 @@
       logg(logstr);
     }
 
-    socket.emit("join",name,id);
+    send("join",name,id);
     send("player_joined", JSON.stringify({name:name, id:id}));
 
     // receive information from shepherd
@@ -310,8 +311,15 @@
         idToName[id] = usernames[index];
       });
 
-      display_players(roles);
-      display_powers(powers);
+      // print the players on the screen
+      document.getElementById("playersText").textContent =
+        "Players: " + usernames.toString();
+
+      // let the player start the game if possible
+      if (!ongoingGame && usernames.length >= 5) {
+        show("startGameButton");
+      }
+
     })
 
     // the president must select a chancellor
@@ -419,6 +427,9 @@
         hideAllExcept(["miscEntryText"]);
         document.getElementById("miscEntryText").textContent = "The president is selecting someone to investigate.";
       }
+
+      display_players(roles);
+      display_powers(powers);
     })
 
     // enable veto
@@ -468,17 +479,27 @@
         }
       });
     }
-
-    if (president == id) {
-      hideAllExcept(["miscEntryText"]);
-      document.getElementById("miscEntryText").textContent =
-        "Special election. Select a player to be the next president.";
-      display_player_buttons(eligibles, "specialElection");
-    } else {
-      hideAllExcept(["miscEntryText"]);
-      document.getElementById("miscEntryText").textContent =
-        "Special election. The president is selecting the next president.";
+    // show a specific element on the screen
+    function show(elementID) {
+      document.getElementById(elementID).style.display = "block";
     }
+
+    // tell the president to select a player to be the next president
+    socket.on("begin_special_election", (data) => {
+      const { president, eligibles } = JSON.parse(data);
+
+      if (president == id) {
+        hideAllExcept(["miscEntryText"]);
+        document.getElementById("miscEntryText").textContent =
+          "Special election. Select a player to be the next president.";
+        display_player_buttons(eligibles, specialElection);
+      } else {
+        hideAllExcept(["miscEntryText"]);
+        document.getElementById("miscEntryText").textContent =
+          "Special election. The president is selecting the next president.";
+        }
+    });
+
 
     function show_cards(card1, card2, card3) {
       document.getElementById("chancellorVoteText").textContent =
@@ -503,44 +524,64 @@
         card3 == "fascist_card" ? fascist_color : liberal_color;
     }
 
-    // functions that send information to shepherd
+    // let the president peek at the top policies
+    socket.on("perform_policy_peek", (data) => {
+      const { president, cards } = JSON.parse(data);
 
-    if (president == id) {
-      hideAllExcept(["miscEntryText", "card1Button", "card2Button", "card3Button", "endPolicyPeekButton"]);
-      document.getElementById("miscEntryText").textContent = "These are the top 3 cards in the pile."
-      show_cards(cards[0], cards[1], cards[2]);
-    } else {
-      hideAllExcept(["miscEntryText"]);
-      document.getElementById("miscEntryText").textContent = "The president is reading the top 3 cards in the pile."
-    }
+      cardClickState = 0;
+
+      if (president == id) {
+        hideAllExcept([
+          "miscEntryText",
+          "card1Button",
+          "card2Button",
+          "card3Button",
+          "endPolicyPeekButton",
+        ]);
+        document.getElementById("miscEntryText").textContent =
+          "These are the top 3 cards in the pile.";
+        show_cards(cards[0], cards[1], cards[2]);
+      } else {
+        hideAllExcept(["miscEntryText"]);
+        document.getElementById("miscEntryText").textContent = "The president is reading the top 3 cards in the pile."
+      }
+    });
 
     // nominate chancellor (called by the president)
     function nominateChancellor(id) {
       console.log(`chancellor is being nominated to ${id}`);
-      socket.emit("chancellor_nomination", JSON.stringify({
+      send("chancellor_nomination", JSON.stringify({
         nominee: id
       }));
     }
 
-    if (president == id) {
-      hideAllExcept(["miscEntryText"]);
-      document.getElementById("miscEntryText").textContent = "Select a player to execute.";
-      display_player_buttons(eligibles, "performExecution");
-    } else {
-      hideAllExcept(["miscEntryText"]);
-      document.getElementById("miscEntryText").textContent = "The president is selecting a player to execute.";
-    }
+    // tell the president to execute a player
+    socket.on("begin_execution", (data) => {
+      const { president, eligibles } = JSON.parse(data);
+
+      if (president == id) {
+        hideAllExcept(["miscEntryText"]);
+        document.getElementById("miscEntryText").textContent =
+          "Select a player to execute.";
+        display_player_buttons(eligibles, performExecution);
+      } else {
+        hideAllExcept(["miscEntryText"]);
+        document.getElementById("miscEntryText").textContent = "The president is selecting a player to execute.";
+      }
+    });
 
     /*
-            This function votes no by emitting a player_voted event to the server.
-            You are responsible for finding the relevant header in Utils.py.
-          */
+      This function votes no by emitting a player_voted event to the server.
+      You are responsible for finding the relevant header in Utils.py.
+    */
     function chancellorVoteNo() {
       // vote no on chancellor
       hideAllExcept([]);
+      
       /*
-              BEGIN QUESTION 2
-            */
+        BEGIN QUESTION 2
+      */
+      send("player_voted", JSON.stringify({ id:id, vote:"nein" }))
     }
 
     // do the appropriate action when a card is pressed
@@ -555,7 +596,7 @@
         if (cardClickState == 1) {
           // don't let another button press resend the card
           cardClickState = 0;
-          socket.emit(
+          send(
             "president_discarded",
             JSON.stringify({
               cards: currentCards,
@@ -567,7 +608,7 @@
           const card = currentCards[0];
           // don't let another button press resend the card
           cardClickState = 0;
-          socket.emit(
+          send(
             "chancellor_discarded",
             JSON.stringify({
               card,
@@ -580,24 +621,24 @@
 
     // end the policy peek power (called by the president)
     function endPolicyPeek() {
-      socket.emit("end_policy_peek", JSON.stringify({}));
+      send("end_policy_peek", JSON.stringify({}));
     }
 
     // president chooses a player to investigate
     function investigatePlayer(id) {
-      socket.emit("investigate_player", JSON.stringify({
+      send("investigate_player", JSON.stringify({
         player: id
       }));
     }
 
     // called after the president is done looking at a player's role
     function endInvestigatePlayer() {
-      socket.emit("end_investigate_player", JSON.stringify({}));
+      send("end_investigate_player", JSON.stringify({}));
     }
 
     // president picks who will be the next president
     function specialElection(id) {
-      socket.emit("special_election_pick", JSON.stringify({
+      send("special_election_pick", JSON.stringify({
         player: id
       }));
     }
@@ -605,21 +646,21 @@
     // president determines who to execute
     function performExecution(id) {
       console.log(`${id} is being executed`);
-      socket.emit("perform_execution", JSON.stringify({
+      send("perform_execution", JSON.stringify({
         player: id
       }));
     }
 
     // chancellor performs the veto power
     function chancellorVeto() {
-      socket.emit("chancellor_vetoed", JSON.stringify({}));
+      send("chancellor_vetoed", JSON.stringify({}));
     }
 
     // president agrees with the veto
     function presidentVeto() {
       const veto = true;
       const cards = currentCards;
-      socket.emit("president_veto_answer", JSON.stringify({
+      send("president_veto_answer", JSON.stringify({
         veto,
         cards
       }));
@@ -629,7 +670,7 @@
     function presidentNoVeto() {
       const veto = false;
       const cards = currentCards;
-      socket.emit(
+      send(
         "president_veto_answer",
         JSON.stringify({
           veto: veto,
@@ -810,7 +851,7 @@
 
     function startNewGame() {
       // call shepherd to_setup
-      socket.emit("next_stage");
+      send("next_stage");
       // redirect
     }
   </script>
