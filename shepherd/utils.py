@@ -1,5 +1,5 @@
 # pylint: disable=invalid-name
-from typing import List
+from typing import List, Union
 from header import header
 
 class YDL_TARGETS:
@@ -9,7 +9,7 @@ class YDL_TARGETS:
 
 class SHEPHERD_HEADERS:
     @header(YDL_TARGETS.SHEPHERD, "player_joined")
-    def PLAYER_JOINED(name: str, id: str, recipients: List[str] = None):
+    def PLAYER_JOINED(name: str, id: str):
         """
         Header sent to shepherd whenever a player joins or reconnects to the server
         contains:
@@ -117,7 +117,7 @@ class SHEPHERD_HEADERS:
 
 class UI_HEADERS:
     @header(YDL_TARGETS.UI, "on_join")
-    def ON_JOIN(usernames: List[str], ids: List[str], ongoing_game: bool, recipients: List[str] = None):
+    def ON_JOIN(usernames: List[str], ids: List[str], ongoing_game: bool, recipients: Union[List[str], None]  = None):
         """
         Header sent to the server either because a player has reconnected and needs
         to be brought up to speed, or because a new player has connected.
@@ -163,13 +163,14 @@ class UI_HEADERS:
         """
 
     @header(YDL_TARGETS.UI, "await_vote")
-    def AWAIT_VOTE(president: str, chancellor: str, recipients: List[str] = None):
+    def AWAIT_VOTE(president: str, chancellor: str, has_voted: List[str], recipients: List[str] = None):
         """
         Header sent to server to request vote from all players on the chancellor
         through a PLAYER_VOTED header sent back to shepherd
         contains:
             president  - the id of the current president
             chancellor - the id of the nominated chancellor
+            has_voted  - the ids of people who have voted
         """
 
     @header(YDL_TARGETS.UI, "president_discard")
@@ -214,7 +215,7 @@ class UI_HEADERS:
         Header sent to server to tell the president to select a person to investigate
         contains:
             president  - the id of the investigator
-            eligibles  - the ids of those who have already been investigated
+            eligibles  - the ids of those who have haven't been investigated yet
         """
 
     @header(YDL_TARGETS.UI, "receive_investigation")
@@ -311,7 +312,7 @@ class STATE:
     POLICY = "policy"
     PRESIDENT_DISCARD = "president_discard"
     CHANCELLOR_DISCARD = "chancellor_discard"
-    CHANCELLOR_VETO = "chancellor_veto"
+    CHANCELLOR_VETOED = "chancellor_veto"
     ACTION = "action"
 
 # pylint: disable=invalid-name

@@ -66,9 +66,7 @@
       }
       const id = password.concat(name).hashCode();
       console.log("id and name are ", id, name);
-      setCookie("id", id);
-      setCookie("name", name);
-      location.href = "/game";
+      location.href = `/game?id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
     };
   </script>
 
