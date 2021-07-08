@@ -215,7 +215,7 @@ class UI_HEADERS:
         Header sent to server to tell the president to select a person to investigate
         contains:
             president  - the id of the investigator
-            eligibles  - the ids of those who have already been investigated
+            eligibles  - the ids of those who have haven't been investigated yet
         """
 
     @header(YDL_TARGETS.UI, "receive_investigation")
@@ -312,7 +312,7 @@ class STATE:
     POLICY = "policy"
     PRESIDENT_DISCARD = "president_discard"
     CHANCELLOR_DISCARD = "chancellor_discard"
-    CHANCELLOR_VETO = "chancellor_veto"
+    CHANCELLOR_VETOED = "chancellor_veto"
     ACTION = "action"
 
 # pylint: disable=invalid-name
