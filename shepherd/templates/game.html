@@ -228,14 +228,13 @@
     // global variables
     let cardClickState = 0; // 0: don't click, 1: president discarding, 2: chancellor discarding
     let currentCards = []; // the cards from which the president/chancellor must discard a card
-    let vetoEnabled = false; // whether the chancellor can ask for a veto
     // the ids of all elements on the screen, used to easily show/hide elements
     let allIDs = [
       "titleText",
       "playersText",
       "startGameButton",
       "miscEntryText",
-      "chancellorVoteText",
+      "chancellorVoteText", //TODO: why does this exist?
       "chancellorVoteYesButton",
       "chancellorVoteNoButton",
       "card1Button",
@@ -284,13 +283,17 @@
       logg(logstr);
     }
 
-    send("join",name,id);
-    send("player_joined", JSON.stringify({name:name, id:id}));
+    socket.on("connect", () => {
+      socket.emit("join",name,id);
+      send("player_joined", JSON.stringify({name:name, id:id}));
+    })
+
+
 
     // receive information from shepherd
 
     socket.on("force_reconnect", () => {
-      location.href = "/";
+      location.href = "index.html"
     });
 
     // add a player to the game
@@ -398,9 +401,12 @@
         document.getElementById("chancellorVoteText").textContent = "Discard a policy.";
         show_cards(cards[0], cards[1], "fascist_card") // last card doesn't matter because it's not shown
         // give the chancellor the option to veto if possible
-        if (vetoEnabled) {
+        if (can_veto) {
           show("chancellorVetoButton");
         }
+      } else {
+        hideAllExcept(["miscEntryText"]);
+        document.getElementById("miscEntryText").textContent = "The chancellor is discarding a policy";
       }
     });
 
@@ -419,23 +425,12 @@
         isSpectator = true;
       }
 
-      if (president == id) {
-        hideAllExcept(["miscEntryText"]);
-        document.getElementById("miscEntryText").textContent = "Select who you want to investigate.";
-        display_player_buttons(eligibles, "investigatePlayer");
-      } else {
-        hideAllExcept(["miscEntryText"]);
-        document.getElementById("miscEntryText").textContent = "The president is selecting someone to investigate.";
-      }
+
 
       display_players(roles);
       display_powers(powers);
     })
 
-    // enable veto
-    socket.on("veto_enabled", (data) => {
-      vetoEnabled = true;
-    });
 
     // after the chancellor has vetoed, ask if the president wants to
     socket.on("ask_president_veto", (data) => {
@@ -467,6 +462,8 @@
       } = JSON.parse(data);
 
       hideAllExcept(["miscEntryText", "startNewGameButton"]);
+      document.getElementById("miscEntryText").textContent =
+          winner + " wins!";
     });
 
     // hide all elements on the screen except for those in idArray
@@ -570,19 +567,67 @@
       }
     });
 
-    /*
+    // update the board based on the number of policies enacted
+    socket.on("policies_enacted", (data) => {
+      const { liberal, fascist } = JSON.parse(data);
+
+      updateCards(liberal, fascist);
+    });
+
+    // ask the president to select a player to be investigated
+    socket.on("begin_investigation", (data) => {
+      const { president, eligibles } = JSON.parse(data);
+
+      if (president == id) {
+        hideAllExcept(["miscEntryText"]);
+        document.getElementById("miscEntryText").textContent =
+          "Select you want to investigate.";
+        display_player_buttons(eligibles, investigatePlayer);
+      } else {
+        hideAllExcept([]);
+      }
+    });
+
+    // tell the president the role of the player they investigated
+    socket.on("receive_investigation", (data) => {
+      const { loyalty, president } = JSON.parse(data);
+
+      if (president === id) {
+        hideAllExcept(["miscEntryText", "endInvestigatePlayerButton"]);
+        document.getElementById(
+          "miscEntryText"
+        ).textContent = `That player's role is ${loyalty}`;
+      } else {
+        hideAllExcept([]);
+      }
+    });
+
+
+      /*
+      This function votes yes by emitting a player_voted event to the server.
+      You are responsible for finding the relevant header in Utils.py.
+    */
+    function chancellorVoteYes() {
+        // vote yes on chancellor
+        hideAllExcept([]);
+        /*
+        BEGIN QUESTION 2
+      */
+        send("player_voted", JSON.stringify({ id:id, vote:"ja" }))
+      }
+
+      /*
       This function votes no by emitting a player_voted event to the server.
       You are responsible for finding the relevant header in Utils.py.
     */
-    function chancellorVoteNo() {
-      // vote no on chancellor
-      hideAllExcept([]);
-      
-      /*
+      function chancellorVoteNo() {
+        // vote no on chancellor
+        hideAllExcept([]);
+        /*
         BEGIN QUESTION 2
       */
-      send("player_voted", JSON.stringify({ id:id, vote:"nein" }))
-    }
+        send("player_voted", JSON.stringify({ id:id, vote:"nein" }))
+      }
 
     // do the appropriate action when a card is pressed
     function pressedCard(ind) {

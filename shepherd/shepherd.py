@@ -96,15 +96,7 @@ def player_joined(id: str, name: str):
 
     if GAME_STATE != STATE.SETUP:
         send_individual_setup(id)
-        ydl_send(*UI_HEADERS.POLICIES_ENACTED(
-            liberal=BOARD.liberal_enacted, 
-            fascist=BOARD.fascist_enacted,
-            recipients=[id]
-        ))
-
-        # veto enabled
-        if BOARD.can_veto:
-            ydl_send(*UI_HEADERS.VETO_ENABLED(recipients=[id]))
+        send_policies_enacted(id)
 
         # send state message
         send_state = {
@@ -128,6 +120,7 @@ def player_joined(id: str, name: str):
             STATE.CHANCELLOR_DISCARD: lambda: UI_HEADERS.CHANCELLOR_DISCARD(
                 chancellor=NOMINATED_CHANCELLOR_ID,
                 cards=DRAWN_CARDS,
+                can_veto=BOARD.can_veto,
                 recipients=[id]
             ),
             STATE.CHANCELLOR_VETOED: lambda: UI_HEADERS.ASK_PRESIDENT_VETO(
@@ -139,7 +132,7 @@ def player_joined(id: str, name: str):
                 winner=WINNER, 
                 recipients=[id]
             )
-        }.get(GAME_STATE)()
+        }.get(GAME_STATE)
         if send_state is not None:
             ydl_send(*send_state())
 
@@ -193,12 +186,13 @@ def start_game():
     """
     A function that initializes variables that require the number of players.
     """
-    global PLAYERS, BOARD, PRESIDENT_ID
+    global PLAYERS, BOARD, PRESIDENT_ID, CARD_DECK
     if len(PLAYERS) < 5:
         ydl_send(*UI_HEADERS.NOT_ENOUGH_PLAYERS(players=len(PLAYERS)))
         return
 
     PRESIDENT_ID = next_president_id()
+    CARD_DECK = new_deck()
     
     # BEGIN QUESTION 1: initialize the list deck with 1 hitler and the relevant number of fascist and liberal cards. Hint: don't use raw strings to represent the roles. Instead, look for a useful class in Utils.py.
     # see the table on page 2 of the rules: https://secrethitler.com/assets/Secret_Hitler_Rules.pdf#page=2. For a challenge, try coming up with a formula for it.
@@ -246,10 +240,10 @@ def eligible_chancellor_nominees():
     - if <= 5 players, only the president and previous chancellor are ineligible
     """
     eligibles = list(PLAYERS)
-    eligibles.remove(PRESIDENT_ID)
-    eligibles.remove(PREVIOUS_CHANCELLOR_ID)
+    remove_if_exists(eligibles, PRESIDENT_ID)
+    remove_if_exists(eligibles, PREVIOUS_CHANCELLOR_ID)
     if len(PLAYERS) > 5:
-        eligibles.remove(PREVIOUS_PRESIDENT_ID)
+        remove_if_exists(eligibles, PREVIOUS_PRESIDENT_ID)
     return eligibles
 
 
@@ -276,22 +270,24 @@ def receive_vote(id, vote):
     PLAYERS[id].vote = vote
     if number_of_votes() >= len(PLAYERS):
         passed = passing_vote()
-        for player in PLAYERS:
+        for player in PLAYERS.values():
             player.clear_vote()
         if passed:
             PREVIOUS_PRESIDENT_ID = PRESIDENT_ID
             PREVIOUS_CHANCELLOR_ID = NOMINATED_CHANCELLOR_ID
-            # BEGIN QUESTION 4: if chancellor is hitler, game_over is called and the function is terminated
+            # BEGIN QUESTION 4: if chancellor is hitler, and at least 3 fascist 
+            # policies have been enected, 
+            # game_over is called and the function is terminated
 
             FAILED_ELECTION_TRACKER = 0
-            if PLAYERS[NOMINATED_CHANCELLOR_ID].role == ROLES.HITLER:
+            if PLAYERS[NOMINATED_CHANCELLOR_ID].role == ROLES.HITLER and BOARD.fascist_enacted >= 3:
                 game_over(ROLES.FASCIST)
                 return
 
             # END QUESTION 4
             if len(CARD_DECK) < 3:
                 reshuffle_deck()
-            GAME_STATE = STATE.POLICY
+            GAME_STATE = STATE.PRESIDENT_DISCARD
             DRAWN_CARDS = draw_cards(3)
             ydl_send(*UI_HEADERS.PRESIDENT_DISCARD(
                 president=PRESIDENT_ID,
@@ -317,8 +313,9 @@ def president_discarded(cards, discarded):
     A function that takes the cards left and passes them to the chancellor.
     `cards` contains the remaining two cards.
     """
-    global DISCARD_DECK, DRAWN_CARDS
+    global DISCARD_DECK, DRAWN_CARDS, GAME_STATE
     # BEGIN QUESTION 5
+    GAME_STATE = STATE.CHANCELLOR_DISCARD
     DISCARD_DECK.append(discarded)
     DRAWN_CARDS = cards
     ydl_send(*UI_HEADERS.CHANCELLOR_DISCARD(
@@ -333,6 +330,8 @@ def chancellor_vetoed():
     """
     A function that asks for the president's response after a chancellor veto.
     """
+    global GAME_STATE
+    GAME_STATE = STATE.CHANCELLOR_VETOED
     ydl_send(*UI_HEADERS.ASK_PRESIDENT_VETO(president=PRESIDENT_ID))
 
 
@@ -340,7 +339,7 @@ def president_veto_answer(veto: bool, cards: List[str]):
     """
     A function that receives if the president vetoes or not.
     """
-    global FAILED_ELECTION_TRACKER, PRESIDENT_ID, PREVIOUS_PRESIDENT_ID, PREVIOUS_CHANCELLOR_ID, CARD_DECK
+    global FAILED_ELECTION_TRACKER, PRESIDENT_ID, PREVIOUS_PRESIDENT_ID, PREVIOUS_CHANCELLOR_ID, CARD_DECK, GAME_STATE
     if veto:
         FAILED_ELECTION_TRACKER += 1
         if chaos():
@@ -355,6 +354,7 @@ def president_veto_answer(veto: bool, cards: List[str]):
         PRESIDENT_ID = next_president_id()
         to_pick_chancellor()
     else:
+        GAME_STATE = STATE.CHANCELLOR_DISCARD
         ydl_send(*UI_HEADERS.CHANCELLOR_DISCARD(
             chancellor=NOMINATED_CHANCELLOR_ID,
             cards=cards, can_veto=BOARD.can_veto
@@ -429,7 +429,7 @@ def call_special_election():
     """
     # BEGIN QUESTION 7
     eligibles = list(PLAYERS)
-    eligibles.remove(PRESIDENT_ID)
+    remove_if_exists(eligibles, PRESIDENT_ID)
     ydl_send(*UI_HEADERS.BEGIN_SPECIAL_ELECTION(
         president=PRESIDENT_ID,
         eligibles=eligibles
@@ -477,7 +477,7 @@ def execution():
     A function that begins the execution power.
     """
     eligibles = list(PLAYERS)
-    eligibles.remove(PRESIDENT_ID)
+    remove_if_exists(eligibles, PRESIDENT_ID)
     ydl_send(*UI_HEADERS.BEGIN_EXECUTION(
         president=PRESIDENT_ID,
         eligibles=eligibles
@@ -511,7 +511,7 @@ def veto():
     """
     global BOARD
     BOARD.can_veto = True
-    ydl_send(*UI_HEADERS.VETO_ENABLED())
+    send_policies_enacted()
 
 
 def game_over(winner):
@@ -528,16 +528,28 @@ def game_over(winner):
 # sender functions
 # ===================================
 
-def send_policies_enacted():
-    ydl_send(*UI_HEADERS.POLICIES_ENACTED(
-        liberal=BOARD.liberal_enacted,
-        fascist=BOARD.fascist_enacted
-    ))
+def send_policies_enacted(id = None):
+    if id is None:
+        ydl_send(*UI_HEADERS.POLICIES_ENACTED(
+            liberal=BOARD.liberal_enacted,
+            fascist=BOARD.fascist_enacted,
+            can_veto=BOARD.can_veto
+        ))
+    else:
+        ydl_send(*UI_HEADERS.POLICIES_ENACTED(
+            liberal=BOARD.liberal_enacted,
+            fascist=BOARD.fascist_enacted,
+            can_veto=BOARD.can_veto,
+            recipients=[id]
+        ))
 
 # ===================================
 # helper functions
 # ===================================
 
+def remove_if_exists(ar, element):
+    if element in ar:
+        ar.remove(element)
 
 def player_names(players):
     """
@@ -614,11 +626,7 @@ def players_who_have_voted():
     """
     Returns the ids of players who have voted
     """
-    voters = []
-    for p in PLAYERS.values():
-        if p.vote != VOTES.UNDEFINED:
-            voters.append(p.id)
-    return voters
+    return [p.id for p in PLAYERS.values() if p.vote != VOTES.UNDEFINED]
 
 
 def passing_vote():
@@ -626,7 +634,7 @@ def passing_vote():
     Returns if the recorded votes would elect the proposed government
     """
     diff = 0
-    for player in PLAYERS:
+    for player in PLAYERS.values():
         if player.vote == VOTES.JA:
             diff += 1
         else:
