@@ -79,7 +79,7 @@ def receiver():
                 emit_to_rooms(header, data, data['recipients'])
             else:
                 emit_to_all(header, data)
-        socketio.sleep(0.1)
+        socketio.sleep(0.1) # needed because neither windows not socketio play nice. A timeout on the events.get is not sufficient here.
 
 if __name__ == "__main__":
     print("Hello, world!")

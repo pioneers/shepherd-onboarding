@@ -6,11 +6,11 @@ from typing import List, Set, Dict, Tuple, Optional
 from utils import *
 from ydl import ydl_send, ydl_start_read
 from board import Board
-
+import time
 
 # MAJOR TODOS:
 # - javascript cookies -> uri compnents ofc
-# - literally all of javascript 
+# - literally all of javascript
 # - what to send for reconnection in action state
 # - do state transitions
 
@@ -53,8 +53,11 @@ def start():
     events = queue.Queue()
     ydl_start_read(YDL_TARGETS.SHEPHERD, events)
     while True:
+        try:
+            payload = events.get(True, timeout=1) #this timeout is required because windows is really stupid and terrible.
+        except queue.Empty:
+            continue
         print("GAME STATE OUTSIDE: ", GAME_STATE)
-        payload = events.get(True)
         print(payload)
 
         if GAME_STATE in FUNCTION_MAPPINGS:
@@ -66,7 +69,7 @@ def start():
                 print(f"Invalid Event in {GAME_STATE}")
         else:
             print(f"Invalid State: {GAME_STATE}")
-        
+
         print(diagnostics())
 
 
@@ -102,8 +105,8 @@ def player_joined(id: str, name: str):
         send_state = {
             STATE.SETUP: None,
             STATE.VOTE: lambda: UI_HEADERS.AWAIT_VOTE(
-                president=PRESIDENT_ID, 
-                chancellor=NOMINATED_CHANCELLOR_ID, 
+                president=PRESIDENT_ID,
+                chancellor=NOMINATED_CHANCELLOR_ID,
                 has_voted=players_who_have_voted(),
                 recipients=[id]
             ),
@@ -129,7 +132,7 @@ def player_joined(id: str, name: str):
             ),
             STATE.ACTION: None, # TODO
             STATE.END: lambda: UI_HEADERS.GAME_OVER(
-                winner=WINNER, 
+                winner=WINNER,
                 recipients=[id]
             )
         }.get(GAME_STATE)
@@ -193,7 +196,7 @@ def start_game():
 
     PRESIDENT_ID = next_president_id()
     CARD_DECK = new_deck()
-    
+
     # BEGIN QUESTION 1: initialize the list deck with 1 hitler and the relevant number of fascist and liberal cards. Hint: don't use raw strings to represent the roles. Instead, look for a useful class in Utils.py.
     # see the table on page 2 of the rules: https://secrethitler.com/assets/Secret_Hitler_Rules.pdf#page=2. For a challenge, try coming up with a formula for it.
 
@@ -219,7 +222,7 @@ def start_game():
 def to_pick_chancellor():
     """
     A function that moves the game into the pick_chancellor phase. This is done
-    by constructing a list of eligible players and sending the CHANCELLOR_REQUEST 
+    by constructing a list of eligible players and sending the CHANCELLOR_REQUEST
     header to the server.
     """
     global GAME_STATE
@@ -275,8 +278,8 @@ def receive_vote(id, vote):
         if passed:
             PREVIOUS_PRESIDENT_ID = PRESIDENT_ID
             PREVIOUS_CHANCELLOR_ID = NOMINATED_CHANCELLOR_ID
-            # BEGIN QUESTION 4: if chancellor is hitler, and at least 3 fascist 
-            # policies have been enected, 
+            # BEGIN QUESTION 4: if chancellor is hitler, and at least 3 fascist
+            # policies have been enected,
             # game_over is called and the function is terminated
 
             FAILED_ELECTION_TRACKER = 0
@@ -423,7 +426,7 @@ def investigate_player(player):
 
 def call_special_election():
     """
-    A function that begins the special election power. 
+    A function that begins the special election power.
     Send the appropriate header to the server with the correct data.
     Anyone except the current president is eligible to be the next president.
     """
@@ -613,7 +616,7 @@ def next_president_id():
         return all_ids[ind]
     else:
         return all_ids[0]
-    
+
 
 
 def number_of_votes():
@@ -713,8 +716,3 @@ EVERYWHERE_FUNCTIONS = {
 
 if __name__ == '__main__':
     start()
-
-
-
-
-
