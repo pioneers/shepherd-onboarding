@@ -261,8 +261,10 @@
       "titleText"
     ).textContent = `BAA play here, you are ${name}`;
     console.log(name);
-    if (!id && !name) {
-      location.href = "/";
+    if (!id || !name) {
+      location.href = "/index.html"; //redirect to login
+    } else {
+      history.replaceState({}, '', window.location.pathname); //removes query string from url
     }
 
     function logg() {
