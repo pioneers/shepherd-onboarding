@@ -56,6 +56,12 @@
 
 <body id="root">
   <script type="text/javascript">
+    const urlParams = new URLSearchParams(window.location.search);
+    const message = urlParams.get("message");
+    if (message) {
+      alert(message); //TODO: nice display text
+    }
+
     function joinGame() {
       const password = document.getElementById("passwordField").value;
       const name = document.getElementById("nameField").value;
@@ -65,8 +71,11 @@
         return;
       }
       const id = password.concat(name).hashCode();
-      console.log("id and name are ", id, name);
-      location.href = `/game.html?id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
+      const secret = (password + password + name + "secret sauce").hashCode();
+      location.href = `/game.html?id=${
+        encodeURIComponent(id)
+        }&name=${encodeURIComponent(name)
+        }&secret=${encodeURIComponent(secret)}`;
     };
   </script>
 

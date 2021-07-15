@@ -9,7 +9,6 @@ from board import Board
 import time
 
 # MAJOR TODOS:
-# - javascript cookies -> uri compnents ofc
 # - literally all of javascript
 # - what to send for reconnection in action state
 # - do state transitions
@@ -35,7 +34,7 @@ PREVIOUS_PRESIDENT_ID = None
 PREVIOUS_CHANCELLOR_ID = None
 # the player who is nominated for chancellor
 NOMINATED_CHANCELLOR_ID = None
-# for remembering the president after a special election cycle, Player.NONE if not a special election cycle
+# for remembering the president after a special election cycle, None if not a special election cycle
 AFTER_SPECIAL_ELECTION_PRESIDENT_ID = None
 FAILED_ELECTION_TRACKER = 0  # for tracking failed elections
 BOARD = Board(5)  # the game board
@@ -80,15 +79,38 @@ def start():
 
 
 
-def player_joined(id: str, name: str):
+def player_joined(id: str, name: str, secret: str):
     global PLAYERS
 
-    if id not in PLAYERS and id not in SPECTATORS:
+    all_names = [p.name for p in PLAYERS.values()] + \
+                [p.name for p in SPECTATORS.values()]
+
+    if id in PLAYERS:
+        if PLAYERS[id].name != name or PLAYERS[id].secret != secret:
+            ydl_send(*UI_HEADERS.BAD_LOGIN(
+                message="Your login info was bad try again", 
+                recipients=[id]
+            ))
+            return
+    elif id in SPECTATORS:
+        if SPECTATORS[id].name != name or SPECTATORS[id].secret != secret:
+            ydl_send(*UI_HEADERS.BAD_LOGIN(
+                message="Your login info was bad try again", 
+                recipients=[id]
+            ))
+            return
+    elif name in all_names:
+        ydl_send(*UI_HEADERS.BAD_LOGIN(
+            message="Somebody already took that name! Try again with a different name",
+            recipients=[id]
+        ))
+        return
+    else:
         if len(PLAYERS) >= 10 or GAME_STATE != STATE.SETUP: #TODO: remove hardcoding
-            SPECTATORS[id] = Player(id, name)
+            SPECTATORS[id] = Player(id, name, secret)
             SPECTATORS[id].role = ROLES.SPECTATOR
         else:
-            PLAYERS[id] = Player(id, name)
+            PLAYERS[id] = Player(id, name, secret)
 
     all_players = list(PLAYERS.values()) + list(SPECTATORS.values())
     ydl_send(*UI_HEADERS.ON_JOIN(
@@ -103,13 +125,9 @@ def player_joined(id: str, name: str):
 
         # send state message
         send_state = {
-            STATE.SETUP: None,
-            STATE.VOTE: lambda: UI_HEADERS.AWAIT_VOTE(
-                president=PRESIDENT_ID,
-                chancellor=NOMINATED_CHANCELLOR_ID,
-                has_voted=players_who_have_voted(),
-                recipients=[id]
-            ),
+            STATE.SETUP: lambda: None,
+            STATE.VOTE: lambda: send_await_vote(id),
+            STATE.ELECTION_RESULTS: lambda: send_election_results(id),
             STATE.PICK_CHANCELLOR: lambda: UI_HEADERS.CHANCELLOR_REQUEST(
                 president=PRESIDENT_ID,
                 eligibles=eligible_chancellor_nominees(),
@@ -130,14 +148,14 @@ def player_joined(id: str, name: str):
                 president=PRESIDENT_ID,
                 recipients=[id]
             ),
-            STATE.ACTION: None, # TODO
+            STATE.ACTION: lambda: None, # TODO
             STATE.END: lambda: UI_HEADERS.GAME_OVER(
                 winner=WINNER,
                 recipients=[id]
             )
-        }.get(GAME_STATE)
+        }.get(GAME_STATE)()
         if send_state is not None:
-            ydl_send(*send_state())
+            ydl_send(*send_state)
 
 
 
@@ -258,57 +276,61 @@ def receive_chancellor_nomination(nominee):
     global GAME_STATE, NOMINATED_CHANCELLOR_ID
     GAME_STATE = STATE.VOTE
     NOMINATED_CHANCELLOR_ID = nominee
-    ydl_send(*UI_HEADERS.AWAIT_VOTE(
-        president=PRESIDENT_ID,
-        chancellor=NOMINATED_CHANCELLOR_ID,
-        has_voted=players_who_have_voted()
-    ))
+    send_await_vote()
 
 
 def receive_vote(id, vote):
     """
     A function that notes a vote and acts if the voting is done.
     """
-    global GAME_STATE, PRESIDENT_ID, PREVIOUS_PRESIDENT_ID, PREVIOUS_CHANCELLOR_ID, FAILED_ELECTION_TRACKER, CARD_DECK, DRAWN_CARDS
+    global GAME_STATE
     PLAYERS[id].vote = vote
+    send_await_vote()
     if number_of_votes() >= len(PLAYERS):
-        passed = passing_vote()
-        for player in PLAYERS.values():
-            player.clear_vote()
-        if passed:
-            PREVIOUS_PRESIDENT_ID = PRESIDENT_ID
-            PREVIOUS_CHANCELLOR_ID = NOMINATED_CHANCELLOR_ID
-            # BEGIN QUESTION 4: if chancellor is hitler, and at least 3 fascist
-            # policies have been enected,
-            # game_over is called and the function is terminated
+        GAME_STATE = STATE.ELECTION_RESULTS
+        send_election_results()
 
+def end_election_results():
+    global GAME_STATE, PRESIDENT_ID, PREVIOUS_PRESIDENT_ID, PREVIOUS_CHANCELLOR_ID, FAILED_ELECTION_TRACKER, CARD_DECK, DRAWN_CARDS
+    passed = passing_vote()
+    for player in PLAYERS.values():
+        player.clear_vote()
+
+    if passed:
+        PREVIOUS_PRESIDENT_ID = PRESIDENT_ID
+        PREVIOUS_CHANCELLOR_ID = NOMINATED_CHANCELLOR_ID
+        # BEGIN QUESTION 4: if chancellor is hitler, and at least 3 fascist
+        # policies have been enected,
+        # game_over is called and the function is terminated
+
+        FAILED_ELECTION_TRACKER = 0
+        if PLAYERS[NOMINATED_CHANCELLOR_ID].role == ROLES.HITLER and BOARD.fascist_enacted >= 3:
+            game_over(ROLES.FASCIST)
+            return
+
+        # END QUESTION 4
+        if len(CARD_DECK) < 3:
+            reshuffle_deck()
+        GAME_STATE = STATE.PRESIDENT_DISCARD
+        DRAWN_CARDS = draw_cards(3)
+        ydl_send(*UI_HEADERS.PRESIDENT_DISCARD(
+            president=PRESIDENT_ID,
+            cards=DRAWN_CARDS
+        ))
+    else:
+        FAILED_ELECTION_TRACKER += 1
+        if chaos():
             FAILED_ELECTION_TRACKER = 0
-            if PLAYERS[NOMINATED_CHANCELLOR_ID].role == ROLES.HITLER and BOARD.fascist_enacted >= 3:
-                game_over(ROLES.FASCIST)
-                return
-
-            # END QUESTION 4
             if len(CARD_DECK) < 3:
                 reshuffle_deck()
-            GAME_STATE = STATE.PRESIDENT_DISCARD
-            DRAWN_CARDS = draw_cards(3)
-            ydl_send(*UI_HEADERS.PRESIDENT_DISCARD(
-                president=PRESIDENT_ID,
-                cards=DRAWN_CARDS
-            ))
-        else:
-            FAILED_ELECTION_TRACKER += 1
-            if chaos():
-                FAILED_ELECTION_TRACKER = 0
-                if len(CARD_DECK) < 3:
-                    reshuffle_deck()
-                card = draw_cards(1)[0]
-                BOARD.enact_policy(card)
-                PREVIOUS_PRESIDENT_ID = Player.NONE
-                PREVIOUS_CHANCELLOR_ID = Player.NONE
-                send_policies_enacted()
-            PRESIDENT_ID = next_president_id()
-            to_pick_chancellor()
+            card = draw_cards(1)[0]
+            BOARD.enact_policy(card)
+            PREVIOUS_PRESIDENT_ID = None
+            PREVIOUS_CHANCELLOR_ID = None
+            send_policies_enacted()
+        PRESIDENT_ID = next_president_id()
+        to_pick_chancellor()
+        
 
 
 def president_discarded(cards, discarded):
@@ -351,8 +373,8 @@ def president_veto_answer(veto: bool, cards: List[str]):
                 reshuffle_deck()
             card = draw_cards(1)[0]
             BOARD.enact_policy(card)
-            PREVIOUS_PRESIDENT_ID = Player.NONE
-            PREVIOUS_CHANCELLOR_ID = Player.NONE
+            PREVIOUS_PRESIDENT_ID = None
+            PREVIOUS_CHANCELLOR_ID = None
             send_policies_enacted()
         PRESIDENT_ID = next_president_id()
         to_pick_chancellor()
@@ -495,14 +517,14 @@ def perform_execution(player: str):
     if PLAYERS[player].role == ROLES.HITLER:
         game_over(ROLES.LIBERAL)
         return
-    PLAYERS.pop(player)
+    player_obj = PLAYERS.pop(player)
 
     if player == PRESIDENT_ID: PRESIDENT_ID = None
     if player == NOMINATED_CHANCELLOR_ID: NOMINATED_CHANCELLOR_ID = None
     if player == PREVIOUS_PRESIDENT_ID: PREVIOUS_PRESIDENT_ID = None
     if player == PREVIOUS_CHANCELLOR_ID: PREVIOUS_CHANCELLOR_ID = None
 
-    SPECTATORS.append(player)
+    SPECTATORS[player] = player_obj
     PRESIDENT_ID = next_president_id()
     ydl_send(*UI_HEADERS.PLAYER_EXECUTED(player=player))
     to_pick_chancellor()
@@ -532,19 +554,30 @@ def game_over(winner):
 # ===================================
 
 def send_policies_enacted(id = None):
-    if id is None:
-        ydl_send(*UI_HEADERS.POLICIES_ENACTED(
-            liberal=BOARD.liberal_enacted,
-            fascist=BOARD.fascist_enacted,
-            can_veto=BOARD.can_veto
-        ))
-    else:
-        ydl_send(*UI_HEADERS.POLICIES_ENACTED(
-            liberal=BOARD.liberal_enacted,
-            fascist=BOARD.fascist_enacted,
-            can_veto=BOARD.can_veto,
-            recipients=[id]
-        ))
+    ydl_send(*UI_HEADERS.POLICIES_ENACTED(
+        liberal=BOARD.liberal_enacted,
+        fascist=BOARD.fascist_enacted,
+        can_veto=BOARD.can_veto,
+        recipients=None if id is None else [id]
+    ))
+
+def send_await_vote(id = None):
+    ydl_send(*UI_HEADERS.AWAIT_VOTE(
+        president=PRESIDENT_ID,
+        chancellor=NOMINATED_CHANCELLOR_ID,
+        has_voted=players_who_have_voted(),
+        recipients=None if id is None else [id]
+    ))
+
+
+def send_election_results(id = None):
+    ydl_send(*UI_HEADERS.ELECTION_RESULTS(
+        president=PRESIDENT_ID,
+        voted_yes=players_who_have_voted(VOTES.JA),
+        voted_no=players_who_have_voted(VOTES.NEIN),
+        result=passing_vote(),
+        recipients=None if id is None else [id]
+    ))
 
 # ===================================
 # helper functions
@@ -625,11 +658,14 @@ def number_of_votes():
     """
     return len(players_who_have_voted())
 
-def players_who_have_voted():
+def players_who_have_voted(vote=None):
     """
     Returns the ids of players who have voted
     """
-    return [p.id for p in PLAYERS.values() if p.vote != VOTES.UNDEFINED]
+    if vote is None:
+        return [p.id for p in PLAYERS.values() if p.vote != VOTES.UNDEFINED]
+    else:
+        return [p.id for p in PLAYERS.values() if p.vote == vote]
 
 
 def passing_vote():
@@ -684,6 +720,9 @@ FUNCTION_MAPPINGS = {
     },
     STATE.VOTE: {
         SHEPHERD_HEADERS.PLAYER_VOTED.name: receive_vote
+    },
+    STATE.ELECTION_RESULTS: {
+        SHEPHERD_HEADERS.END_ELECTION_RESULTS.name: end_election_results
     },
     STATE.PICK_CHANCELLOR: {
         SHEPHERD_HEADERS.CHANCELLOR_NOMINATION.name: receive_chancellor_nomination

@@ -10,9 +10,10 @@ class Player:
     vote - Enum of JA, NEIN, or UNDEFINED
     """
 
-    def __init__(self, id, name):
+    def __init__(self, id, name, secret):
         self.id: str = id
         self.name: str = name
+        self.secret: str = secret
         self.vote = VOTES.UNDEFINED
         self.role = ROLES.NONE
         self.investigated: bool = False  # have they been investigated yet?

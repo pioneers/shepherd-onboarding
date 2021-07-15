@@ -51,7 +51,6 @@
   <h4 id="miscEntryText"></h4>
 
   <!-- vote on chancellor -->
-  <h4 id="chancellorVoteText"></h4>
   <div>
     <button id="chancellorVoteYesButton" type="button" class="btn btn-primary" onclick="chancellorVoteYes()"
       style="display: none; float: left">
@@ -106,6 +105,11 @@
       Done
     </button>
   </div>
+
+  <button id="presidentEndElectionResultsButton" type="button" class="btn btn-primary" onclick="endElectionResults()"
+    style="display: none">
+    Done
+  </button>
 
   <!-- investigate player -->
   <button id="endInvestigatePlayerButton" type="button" class="btn btn-primary" onclick="endInvestigatePlayer()"
@@ -234,9 +238,9 @@
       "playersText",
       "startGameButton",
       "miscEntryText",
-      "chancellorVoteText", //TODO: why does this exist?
       "chancellorVoteYesButton",
       "chancellorVoteNoButton",
+      "presidentEndElectionResultsButton",
       "card1Button",
       "card2Button",
       "card3Button",
@@ -257,14 +261,13 @@
     const urlParams = new URLSearchParams(window.location.search);
     const name = urlParams.get("name");
     const id = urlParams.get("id");
+    const secret = urlParams.get("secret");
     document.getElementById(
       "titleText"
     ).textContent = `BAA play here, you are ${name}`;
     console.log(name);
-    if (!id || !name) {
+    if (!id || !name || !secret) {
       location.href = "/index.html"; //redirect to login
-    } else {
-      history.replaceState({}, '', window.location.pathname); //removes query string from url
     }
 
     function logg() {
@@ -287,9 +290,13 @@
 
     socket.on("connect", () => {
       socket.emit("join",name,id);
-      send("player_joined", JSON.stringify({name:name, id:id}));
+      send("player_joined", JSON.stringify({name:name, id:id, secret:secret}));
     })
 
+    socket.on("bad_login", (data) => {
+      const {message} = JSON.parse(data);
+      location.href = "index.html?message=" + encodeURIComponent(message);
+    });
 
 
     // receive information from shepherd
@@ -349,22 +356,41 @@
     socket.on("await_vote", (data) => {
       const {
         president,
-        chancellor
+        chancellor,
+        has_voted
       } = JSON.parse(data);
 
       const presidentName = idToName[president];
       const chancellorName = idToName[chancellor];
-      let voteText = `${presidentName} has nominated ${chancellorName}`;
-      if (!isSpectator) {
-        // if this player is not a spectator, they can vote
-        hideAllExcept(["chancellorVoteText", "chancellorVoteYesButton", "chancellorVoteNoButton"]);
-        voteText = `${voteText}. Please vote.`;
+      let voteText = `${presidentName} has nominated ${chancellorName}. `;
+      if (isSpectator) {
+        hideAllExcept(["miscEntryText"]);
+        voteText += "You are a sad boi who cannot vote.";
+      } else if(has_voted.includes(id)) {
+        hideAllExcept(["miscEntryText"]);
+        voteText += "Waiting for others to vote..."
       } else {
-        hideAllExcept(["chancellorVoteText"]);
-        voteText = `${voteText}. You are a sad boi who cannot vote.`;
+        // if this player is not a spectator, they can vote
+        hideAllExcept(["miscEntryText", "chancellorVoteYesButton", "chancellorVoteNoButton"]);
+        voteText += "Please vote.";
       }
-      document.getElementById("chancellorVoteText").textContent = voteText;
+      document.getElementById("miscEntryText").textContent = voteText;
+      show_votes(has_voted);
     });
+
+    socket.on("election_results", (data) => {
+      const {president, voted_yes, voted_no, result} = JSON.parse(data);
+      if (president === id) {
+        hideAllExcept(["presidentEndElectionResultsButton", "miscEntryText"]);
+      } else {
+        hideAllExcept(["miscEntryText"])
+      }
+      document.getElementById("miscEntryText").textContent = result ? "The vote has passed" : "The vote did not pass";
+    });
+
+    function endElectionResults() {
+      send("end_election_results");
+    }
 
     // the president must discard a card
     socket.on("president_discard", (data) => {
@@ -377,12 +403,12 @@
       currentCards = cards;
 
       if (president == id) {
-        hideAllExcept(["chancellorVoteText", "card1Button", "card2Button", "card3Button"]);
-        document.getElementById("chancellorVoteText").textContent = "The vote has passed. Discard a policy.";
+        hideAllExcept(["miscEntryText", "card1Button", "card2Button", "card3Button"]);
+        document.getElementById("miscEntryText").textContent = "The vote has passed. Discard a policy.";
         show_cards(cards[0], cards[1], cards[2])
       } else {
-        hideAllExcept(["chancellorVoteText"]);
-        document.getElementById("chancellorVoteText").textContent =
+        hideAllExcept(["miscEntryText"]);
+        document.getElementById("miscEntryText").textContent =
           "The vote has passed. The president is discarding a policy."
       }
     })
@@ -399,8 +425,8 @@
       currentCards = cards;
 
       if (chancellor == id) {
-        hideAllExcept(["chancellorVoteText", "card1Button", "card2Button"]);
-        document.getElementById("chancellorVoteText").textContent = "Discard a policy.";
+        hideAllExcept(["miscEntryText", "card1Button", "card2Button"]);
+        document.getElementById("miscEntryText").textContent = "Discard a policy.";
         show_cards(cards[0], cards[1], "fascist_card") // last card doesn't matter because it's not shown
         // give the chancellor the option to veto if possible
         if (can_veto) {
@@ -491,7 +517,7 @@
         hideAllExcept(["miscEntryText"]);
         document.getElementById("miscEntryText").textContent =
           "Special election. Select a player to be the next president.";
-        display_player_buttons(eligibles, specialElection);
+        display_player_buttons(eligibles, "specialElection");
       } else {
         hideAllExcept(["miscEntryText"]);
         document.getElementById("miscEntryText").textContent =
@@ -501,26 +527,13 @@
 
 
     function show_cards(card1, card2, card3) {
-      document.getElementById("chancellorVoteText").textContent =
-        "The vote has passed. Discard a policy.";
-      document.getElementById("card1Button").textContent =
-        card1 == "fascist_card" ? "Fascist" : "Liberal";
-      document.getElementById("card2Button").textContent =
-        card2 == "fascist_card" ? "Fascist" : "Liberal";
-      document.getElementById("card3Button").textContent =
-        card3 == "fascist_card" ? "Fascist" : "Liberal";
-      document.getElementById("card1Button").style.background =
-        card1 == "fascist_card" ? fascist_color : liberal_color;
-      document.getElementById("card2Button").style.background =
-        card2 == "fascist_card" ? fascist_color : liberal_color;
-      document.getElementById("card3Button").style.background =
-        card3 == "fascist_card" ? fascist_color : liberal_color;
-      document.getElementById("card1Button").style.borderColor =
-        card1 == "fascist_card" ? fascist_color : liberal_color;
-      document.getElementById("card2Button").style.borderColor =
-        card2 == "fascist_card" ? fascist_color : liberal_color;
-      document.getElementById("card3Button").style.borderColor =
-        card3 == "fascist_card" ? fascist_color : liberal_color;
+      cards = [card1, card2, card3]
+      for(let a in cards){
+        let el = document.getElementById(`card${parseInt(a)+1}Button`);
+        let f = cards[a] == "fascist_card";
+        el.textContent = f ? "Fascist" : "Liberal";
+        el.style.background = f ? fascist_color : liberal_color;
+      }
     }
 
     // let the president peek at the top policies
@@ -546,6 +559,28 @@
       }
     });
 
+    // perform the execution of a player
+    socket.on("player_executed", (data) => {
+      const { player: executedPlayer } = JSON.parse(data);
+      //print(executedPlayer); this brings up a printer dialogue lol
+
+      // only keep players who are not the executed player
+      roles = roles.filter((player) => player[1] !== executedPlayer);
+
+      // make the executed player a spectator
+      if (executedPlayer == id) {
+        isSpectator = true;
+      }
+
+      // remove the executed player from the display
+      allIDs = allIDs.filter(
+        (elementID) => elementID !== `selectPlayer${executedPlayer}`
+      );
+
+      // display the remaining players
+      display_players(roles);
+    });
+
     // nominate chancellor (called by the president)
     function nominateChancellor(id) {
       console.log(`chancellor is being nominated to ${id}`);
@@ -562,7 +597,7 @@
         hideAllExcept(["miscEntryText"]);
         document.getElementById("miscEntryText").textContent =
           "Select a player to execute.";
-        display_player_buttons(eligibles, performExecution);
+        display_player_buttons(eligibles, "performExecution");
       } else {
         hideAllExcept(["miscEntryText"]);
         document.getElementById("miscEntryText").textContent = "The president is selecting a player to execute.";
@@ -584,7 +619,7 @@
         hideAllExcept(["miscEntryText"]);
         document.getElementById("miscEntryText").textContent =
           "Select you want to investigate.";
-        display_player_buttons(eligibles, investigatePlayer);
+        display_player_buttons(eligibles, "investigatePlayer");
       } else {
         hideAllExcept([]);
       }
@@ -611,7 +646,7 @@
     */
     function chancellorVoteYes() {
         // vote yes on chancellor
-        hideAllExcept([]);
+        hideAllExcept(["miscEntryText"]); // text will be updated on next await_vote header
         /*
         BEGIN QUESTION 2
       */
@@ -624,7 +659,7 @@
     */
       function chancellorVoteNo() {
         // vote no on chancellor
-        hideAllExcept([]);
+        hideAllExcept(["miscEntryText"]); // text will be updated on next await_vote header
         /*
         BEGIN QUESTION 2
       */
