@@ -514,11 +514,13 @@
       // add a player to the game
       socket.on("on_join", (data) => {
         const { usernames, ids, ongoing_game: ongoingGame } = JSON.parse(data);
-        hideAllExcept(["titleText", "playersText"]);
 
+        console.log("Player joined");
+        console.groupCollapsed();
         console.log("players are: ", usernames);
         console.log("player ids are: ", ids);
         console.log("ongoing game is ", ongoingGame);
+        console.groupEnd();
 
         // store the player's id and name in a dictionary
         ids.forEach((id, index) => {
@@ -588,6 +590,7 @@
         document.getElementById("miscEntryText").textContent = result
           ? "The vote has passed"
           : "The vote did not pass";
+        show_jas_neins(voted_yes, voted_no);
       });
 
       function endElectionResults() {
@@ -1010,40 +1013,23 @@
           newElement.setAttribute("style", "--i: " + i);
           //get the correct image
           var url = image_url_mappings[players[i - 1][2]];
-          var img_url =
+          var iVotedURL =
             "{{url_for('static', filename='assets/i_voted_sticker.png')}}";
-          var jaOrNein = "{{url_for('static', filename='assets/ja.png')}}"; // added for positioning testing
+          var jaOrNeinURL = "{{url_for('static', filename='assets/ja.png')}}";
           var buttonID = "selectPlayer" + players[i - 1][1];
           var placardID = "placardPlayerID" + players[i - 1][1];
           var iVotedID = "votePlayerID" + players[i - 1][1];
+          var jaOrNeinID = "jaOrNeinID" + players[i - 1][1];
+          
           //set the rest of the HTML tag
-
           newElement.innerHTML =
-            // added for testing
-            "<img src='" +
-            jaOrNein +
-            "'class='ja-or-nein'/>" +
-            /////////////////
-            '<img src="' +
-            url +
-            '" alt="' +
-            players[i - 1][0] +
-            '"/> ' +
-            '<img src="' +
-            img_url +
-            '"id="' +
-            iVotedID +
-            '" alt="i voted" class="i_voted" style="display: none"/> ' +
-            '<div class="name_card">' +
-            players[i - 1][0] +
-            "</div> " +
-            "<div id=" +
-            placardID +
-            ' class="placard" style="display: none">' +
-            "</div> " +
-            '<button id="' +
-            buttonID +
-            '" type="button" class="btn btn-primary" style="display: none; margin: auto">Select</button>';
+            `<img src="${url}" alt="${players[i - 1][0]}"/> ` +
+            `<img src="${jaOrNeinURL}" id="${jaOrNeinID}" class="ja-or-nein" style="display: none"/>` +
+            `<img src="${iVotedURL}" id="${iVotedID}" alt="i voted" class="i_voted" style="display: none"/> ` +
+            `<div class="name_card">${players[i - 1][0]}</div> ` +
+            `<div id="${placardID}"" class="placard" style="display: none"></div> ` +
+            `<button id="${buttonID}" type="button" class="btn btn-primary" style="display: none; margin: auto">Select</button>`;
+
           //finally append!
           game_canvas.appendChild(newElement);
           if (!allIDs.includes(buttonID)) {
@@ -1054,6 +1040,9 @@
           }
           if (!allIDs.includes(iVotedID)) {
             allIDs.push(iVotedID);
+          }
+          if (!allIDs.includes(jaOrNeinID)) {
+            allIDs.push(jaOrNeinID);
           }
         }
         //adjust the style for the overarching game_canvas div
@@ -1118,6 +1107,29 @@
         Object.keys(idToName).forEach((id) => {
           var vote = document.getElementById(`votePlayerID${id}`);
           vote.style.display = "none";
+        });
+      }
+
+      function show_jas_neins(jas, neins) {
+        clear_jas_neins();
+        var jaURL = "{{url_for('static', filename='assets/ja.png')}}";
+        var neinURL = "{{url_for('static', filename='assets/nein.png')}}";
+        jas.forEach((player) => {
+          let el = document.getElementById(`jaOrNeinID${player}`);
+          el.src = jaURL;
+          el.style.display = "block";
+        });
+        neins.forEach((player) => {
+          let el = document.getElementById(`jaOrNeinID${player}`);
+          el.src = neinURL;
+          el.style.display = "block";
+        });
+      }
+
+      function clear_jas_neins() {
+        Object.keys(idToName).forEach((id) => {
+          var el = document.getElementById(`jaOrNeinID${id}`);
+          el.style.display = "none";
         });
       }
 
