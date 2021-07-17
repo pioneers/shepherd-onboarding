@@ -1012,16 +1012,18 @@
           var url = image_url_mappings[players[i - 1][2]];
           var img_url =
             "{{url_for('static', filename='assets/i_voted_sticker.png')}}";
-          var jaOrNein = "{{url_for('static', filename='assets/JaRight.svg')}}";
+          var jaOrNein = "{{url_for('static', filename='assets/ja.png')}}"; // added for positioning testing
           var buttonID = "selectPlayer" + players[i - 1][1];
           var placardID = "placardPlayerID" + players[i - 1][1];
           var iVotedID = "votePlayerID" + players[i - 1][1];
           //set the rest of the HTML tag
 
           newElement.innerHTML =
+            // added for testing
             "<img src='" +
             jaOrNein +
             "'class='ja-or-nein'/>" +
+            /////////////////
             '<img src="' +
             url +
             '" alt="' +
