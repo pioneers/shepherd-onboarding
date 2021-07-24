@@ -219,6 +219,15 @@
       Start New Game
     </button>
 
+    <!-- join new lobby -->
+    <button
+      id="joinNewLobbyButton"
+      type="button"
+      class="btn btn-primary"
+      onclick="location.reload()"
+      style="display: none"
+    >Join Lobby</button>
+
     <div class="container" id="game_canvas"></div>
 
     <!-- Display the board -->
@@ -454,6 +463,7 @@
         "presidentVetoButton",
         "presidentNoVetoButton",
         "startNewGameButton",
+        "joinNewLobbyButton",
         "endInvestigatePlayerButton",
       ];
       let idToName = {}; // map from player id to name
@@ -461,6 +471,9 @@
       let roles = []; // the roles of each player, formatted [name, id, role]
       let liberal_color = "#5681df";
       let fascist_color = "#d76f54";
+
+      let president_id = null;
+      let chancellor_id = null;
 
       // get player information and display waiting room
       const urlParams = new URLSearchParams(window.location.search);
@@ -507,8 +520,9 @@
 
       // receive information from shepherd
 
-      socket.on("force_reconnect", () => {
-        location.href = "index.html";
+      socket.on("new_lobby", () => {
+        hideAllExcept(["miscEntryText", "joinNewLobbyButton"]);
+        document.getElementById("miscEntryText").textContent = "A new game has been made";
       });
 
       // add a player to the game
@@ -537,11 +551,18 @@
         }
       });
 
+      socket.on("current_government", (data) => {
+        const {president, chancellor} = JSON.parse(data);
+        president_id = president //set global var
+        chancellor_id = chancellor //set global var
+        set_placards(president_id, chancellor_id);
+      });
+
       // the president must select a chancellor
       socket.on("chancellor_request", (data) => {
-        const { president, eligibles } = JSON.parse(data);
+        const { eligibles } = JSON.parse(data);
 
-        if (president === id) {
+        if (president_id === id) {
           // if this player is the president, have them select a chancellor nominee
           hideAllExcept(["miscEntryText"]);
           document.getElementById("miscEntryText").textContent =
@@ -556,10 +577,10 @@
 
       // tell the player they need to vote
       socket.on("await_vote", (data) => {
-        const { president, chancellor, has_voted } = JSON.parse(data);
+        const { has_voted } = JSON.parse(data);
 
-        const presidentName = idToName[president];
-        const chancellorName = idToName[chancellor];
+        const presidentName = idToName[president_id];
+        const chancellorName = idToName[chancellor_id];
         let voteText = `${presidentName} has nominated ${chancellorName}. `;
         if (isSpectator) {
           hideAllExcept(["miscEntryText"]);
@@ -581,15 +602,22 @@
       });
 
       socket.on("election_results", (data) => {
-        const { president, voted_yes, voted_no, result } = JSON.parse(data);
-        if (president === id) {
+        const { voted_yes, voted_no, result, failed_elections } = JSON.parse(data);
+        failedElectionMessages = [
+          "There have been no failed nominations in recent history.",
+          "This is the first failed nomination in recent history.",
+          "This is the second failed nomination in recent history.",
+          "This is the third failed nomination in recent history. Chaos is imminent.",
+          "CHAOS","CHAOS","CHAOS","CHAOS","CHAOS","CHAOS","CHAOS","CHAOS"
+        ]
+        if (president_id === id) {
           hideAllExcept(["presidentEndElectionResultsButton", "miscEntryText"]);
         } else {
           hideAllExcept(["miscEntryText"]);
         }
         document.getElementById("miscEntryText").textContent = result
-          ? "The vote has passed"
-          : "The vote did not pass";
+          ? "The vote has passed!"
+          : failedElectionMessages[failed_elections];
         show_jas_neins(voted_yes, voted_no);
       });
 
@@ -599,12 +627,12 @@
 
       // the president must discard a card
       socket.on("president_discard", (data) => {
-        const { president, cards } = JSON.parse(data);
+        const { cards } = JSON.parse(data);
 
         cardClickState = 1;
         currentCards = cards;
 
-        if (president == id) {
+        if (president_id == id) {
           hideAllExcept([
             "miscEntryText",
             "card1Button",
@@ -623,12 +651,12 @@
 
       // the chancellor must discard a card
       socket.on("chancellor_discard", (data) => {
-        const { chancellor, cards, can_veto } = JSON.parse(data);
+        const { cards, can_veto } = JSON.parse(data);
 
         cardClickState = 2;
         currentCards = cards;
 
-        if (chancellor == id) {
+        if (chancellor_id == id) {
           hideAllExcept(["miscEntryText", "card1Button", "card2Button"]);
           document.getElementById("miscEntryText").textContent =
             "Discard a policy.";
@@ -661,9 +689,7 @@
 
       // after the chancellor has vetoed, ask if the president wants to
       socket.on("ask_president_veto", (data) => {
-        const { president } = JSON.parse(data);
-
-        if (president == id) {
+        if (president_id == id) {
           hideAllExcept([
             "miscEntryText",
             "presidentVetoButton",
@@ -682,8 +708,10 @@
 
       // end the game and show the start new game button
       socket.on("game_over", (data) => {
-        const { winner } = JSON.parse(data);
-
+        const { winner, roles: all_roles } = JSON.parse(data);
+        roles = all_roles;
+        display_players(roles);
+        set_placards(president_id, chancellor_id);
         hideAllExcept(["miscEntryText", "startNewGameButton"]);
         document.getElementById("miscEntryText").textContent =
           winner + " wins!";
@@ -706,9 +734,9 @@
 
       // tell the president to select a player to be the next president
       socket.on("begin_special_election", (data) => {
-        const { president, eligibles } = JSON.parse(data);
+        const { eligibles } = JSON.parse(data);
 
-        if (president == id) {
+        if (president_id == id) {
           hideAllExcept(["miscEntryText"]);
           document.getElementById("miscEntryText").textContent =
             "Special election. Select a player to be the next president.";
@@ -732,11 +760,11 @@
 
       // let the president peek at the top policies
       socket.on("perform_policy_peek", (data) => {
-        const { president, cards } = JSON.parse(data);
+        const { cards } = JSON.parse(data);
 
         cardClickState = 0;
 
-        if (president == id) {
+        if (president_id == id) {
           hideAllExcept([
             "miscEntryText",
             "card1Button",
@@ -757,7 +785,6 @@
       // perform the execution of a player
       socket.on("player_executed", (data) => {
         const { player: executedPlayer } = JSON.parse(data);
-        //print(executedPlayer); this brings up a printer dialogue lol
 
         // only keep players who are not the executed player
         roles = roles.filter((player) => player[1] !== executedPlayer);
@@ -770,6 +797,8 @@
         // remove the executed player from the display
         allIDs = allIDs.filter(
           (elementID) => elementID !== `selectPlayer${executedPlayer}`
+                      && elementID !== `votePlayerID${executedPlayer}`
+                      && elementID !== `jaOrNeinID${executedPlayer}`
         );
 
         // display the remaining players
@@ -789,9 +818,9 @@
 
       // tell the president to execute a player
       socket.on("begin_execution", (data) => {
-        const { president, eligibles } = JSON.parse(data);
+        const { eligibles } = JSON.parse(data);
 
-        if (president == id) {
+        if (president_id == id) {
           hideAllExcept(["miscEntryText"]);
           document.getElementById("miscEntryText").textContent =
             "Select a player to execute.";
@@ -812,9 +841,9 @@
 
       // ask the president to select a player to be investigated
       socket.on("begin_investigation", (data) => {
-        const { president, eligibles } = JSON.parse(data);
+        const { eligibles } = JSON.parse(data);
 
-        if (president == id) {
+        if (president_id == id) {
           hideAllExcept(["miscEntryText"]);
           document.getElementById("miscEntryText").textContent =
             "Select you want to investigate.";
@@ -826,9 +855,9 @@
 
       // tell the president the role of the player they investigated
       socket.on("receive_investigation", (data) => {
-        const { loyalty, president } = JSON.parse(data);
+        const { loyalty } = JSON.parse(data);
 
-        if (president === id) {
+        if (president_id === id) {
           hideAllExcept(["miscEntryText", "endInvestigatePlayerButton"]);
           document.getElementById(
             "miscEntryText"
@@ -1035,15 +1064,13 @@
           if (!allIDs.includes(buttonID)) {
             allIDs.push(buttonID);
           }
-          if (!allIDs.includes(placardID)) {
-            allIDs.push(placardID);
-          }
           if (!allIDs.includes(iVotedID)) {
             allIDs.push(iVotedID);
           }
           if (!allIDs.includes(jaOrNeinID)) {
             allIDs.push(jaOrNeinID);
           }
+          //note that placardIds are not appended - we want persistant placards, that don't get hidden
         }
         //adjust the style for the overarching game_canvas div
         game_canvas.setAttribute(
@@ -1079,7 +1106,7 @@
         var p_placard = document.getElementById(`placardPlayerID${president}`);
         p_placard.innerText = "President";
         p_placard.style.display = "inline-block";
-        if (chancellor != undefined) {
+        if (chancellor) {
           var c_placard = document.getElementById(
             `placardPlayerID${chancellor}`
           );

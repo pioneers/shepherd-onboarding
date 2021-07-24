@@ -141,13 +141,6 @@ class UI_HEADERS:
         Header sent to server to tell a player that their login attempt was unsuccessful
         """
 
-    @header(YDL_TARGETS.UI, "force_reconnect")
-    def FORCE_RECONNECT(recipients = None):
-        """
-        Header sent to server to force all clients to send a PLAYER_JOINED header
-        back to shepherd
-        """
-
     @header(YDL_TARGETS.UI, "not_enough_players")
     def NOT_ENOUGH_PLAYERS(players: int, recipients = None):
         """
@@ -167,74 +160,67 @@ class UI_HEADERS:
         """
 
     @header(YDL_TARGETS.UI, "current_government")
-    def CURRENT_GOVERNMENT(president: str, chancellor: str, recipients = None):
+    def CURRENT_GOVERNMENT(president: str, chancellor, recipients = None):
         """
         Header sent to the server to inform everyone who the current president and chancellor are
         contains:
             president   - the id of the current president
-            chancellor  - the id of the nominated chancellor
+            chancellor  - the id of the nominated chancellor (or None/null)
         """
 
     @header(YDL_TARGETS.UI, "chancellor_request")
-    def CHANCELLOR_REQUEST(president: str, eligibles: list, recipients = None):
+    def CHANCELLOR_REQUEST(eligibles: list, recipients = None):
         """
         Header sent to server to start chancellor state for all players and request
         chancellor nomination from current president through a
         CHANCELLOR_NOMINATION header sent back to shepherd
         contains:
-            president   - the id of the current president
             eligibles   - the ids of players who can be nominated
         """
 
     @header(YDL_TARGETS.UI, "await_vote")
-    def AWAIT_VOTE(president: str, chancellor: str, has_voted: list, recipients = None):
+    def AWAIT_VOTE(has_voted: list, recipients = None):
         """
         Header sent to server to request vote from all players on the chancellor
         through a PLAYER_VOTED header sent back to shepherd
         contains:
-            president  - the id of the current president
-            chancellor - the id of the nominated chancellor
             has_voted  - the ids of people who have voted
         """
 
     @header(YDL_TARGETS.UI, "election_results")
-    def ELECTION_RESULTS(president: str, voted_yes: list, voted_no: list, result: bool, recipients = None):
+    def ELECTION_RESULTS(voted_yes: list, voted_no: list, result: bool, failed_elections: int, recipients = None):
         """
         Header sent to server to tell everyone how everyone voted, and 
         display the result of the election. Gives president a button which
         president will use to forward the game
         contains:
-            president - the id of the current president
             voted_yes - the ids of the players who voted yes
             voted_no  - the ids of the players who voted no
             result    - true if the vote passed, false if the vote did not pass
+            failed_elections - the number of failed elections in a row
         """
 
     @header(YDL_TARGETS.UI, "president_discard")
-    def PRESIDENT_DISCARD(president: str, cards: list, recipients = None):
+    def PRESIDENT_DISCARD(cards: list, recipients = None):
         """
         Header sent to server to tell the president to discard a policy
         contains:
-            president - the id of the president
             cards     - the three cards from which one must be discarded
         """
 
     @header(YDL_TARGETS.UI, "chancellor_discard")
-    def CHANCELLOR_DISCARD(chancellor: str, cards: list, can_veto: bool, recipients = None):
+    def CHANCELLOR_DISCARD(cards: list, can_veto: bool, recipients = None):
         """
         Header sent to server to tell the chancellor to discard a policy
         contains:
-            chancellor - the id of the chancellor
             cards      - the two cards from which one must be discarded
             can_veto   - True if the chancellor is allowed to exercise a veto
         """
 
     @header(YDL_TARGETS.UI, "ask_president_veto")
-    def ASK_PRESIDENT_VETO(president: str, recipients = None):
+    def ASK_PRESIDENT_VETO(recipients = None):
         """
-        Header sent to server to tell the president if they want to veto
-        contains:
-            president - the id of the president
+        Header sent to server to ask the president if they want to veto
         """
 
     @header(YDL_TARGETS.UI, "policies_enacted")
@@ -248,64 +234,66 @@ class UI_HEADERS:
         """
 
     @header(YDL_TARGETS.UI, "begin_investigation")
-    def BEGIN_INVESTIGATION(president: str, eligibles: list, recipients = None):
+    def BEGIN_INVESTIGATION(eligibles: list, recipients = None):
         """
         Header sent to server to tell the president to select a person to investigate
         contains:
-            president  - the id of the investigator
             eligibles  - the ids of those who have haven't been investigated yet
         """
 
     @header(YDL_TARGETS.UI, "receive_investigation")
-    def RECEIVE_INVESTIGATION(president: str, role: str, recipients = None):
+    def RECEIVE_INVESTIGATION(role: str, recipients = None):
         """
         Header sent to server to give the president the result of the investigation
         contains:
-            president - the id of the president
             role      - the role of the person who was investigated
         """
 
     @header(YDL_TARGETS.UI, "begin_special_election")
-    def BEGIN_SPECIAL_ELECTION(president: str, eligibles: list, recipients = None):
+    def BEGIN_SPECIAL_ELECTION(eligibles: list, recipients = None):
         """
         Header sent to server to ask the president to pick a new president
         contains:
-            president - the id of the current president
             eligibles - the ids of the players that can be elected (anyone except the president)
         """
 
     @header(YDL_TARGETS.UI, "perform_policy_peek")
-    def PERFORM_POLICY_PEEK(president: str, cards: list, recipients = None):
+    def PERFORM_POLICY_PEEK(cards: list, recipients = None):
         """
         Header sent to server to allow the president to peek at the top 3 policies
         contains:
-            president - the id of the president
             cards     - the top 3 (or fewer if the deck is smaller) cards
         """
 
     @header(YDL_TARGETS.UI, "begin_execution")
-    def BEGIN_EXECUTION(president: str, eligibles: list, recipients = None):
+    def BEGIN_EXECUTION(eligibles: list, recipients = None):
         """
         Header sent to server to ask for an execution
         contains:
-            president - the id of the president
             eligibles - players who can be executed (anyone but the president)
         """
 
     @header(YDL_TARGETS.UI, "player_executed")
     def PLAYER_EXECUTED(player: str, recipients = None):
         """
-        Header sent to server to tell a player they are executed
+        Header sent to server to tell everyone who has been executed
         contains:
             player - the id of the executed player
         """
 
     @header(YDL_TARGETS.UI, "game_over")
-    def GAME_OVER(winner: str, recipients = None):
+    def GAME_OVER(winner: str, roles, recipients = None):
         """
         Header sent to server to report the end of the game
         contains:
             winner - the role of the winning team
+            roles - the [id, name, role] of all the players
+        """
+    
+    @header(YDL_TARGETS.UI, "new_lobby")
+    def NEW_LOBBY(recipients = None):
+        """
+        Header sent to server to tell clients that a new lobby has been made
         """
 
 

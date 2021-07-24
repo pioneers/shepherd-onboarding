@@ -121,6 +121,7 @@ def player_joined(id: str, name: str, secret: str):
 
     if GAME_STATE != STATE.SETUP:
         send_individual_setup(id)
+        send_current_government(id)
         send_policies_enacted(id)
 
         # send state message
@@ -129,28 +130,25 @@ def player_joined(id: str, name: str, secret: str):
             STATE.VOTE: lambda: send_await_vote(id),
             STATE.ELECTION_RESULTS: lambda: send_election_results(id),
             STATE.PICK_CHANCELLOR: lambda: UI_HEADERS.CHANCELLOR_REQUEST(
-                president=PRESIDENT_ID,
                 eligibles=eligible_chancellor_nominees(),
                 recipients=[id]
             ),
             STATE.PRESIDENT_DISCARD: lambda: UI_HEADERS.PRESIDENT_DISCARD(
-                president=PRESIDENT_ID,
                 cards=DRAWN_CARDS,
                 recipients=[id]
             ),
             STATE.CHANCELLOR_DISCARD: lambda: UI_HEADERS.CHANCELLOR_DISCARD(
-                chancellor=NOMINATED_CHANCELLOR_ID,
                 cards=DRAWN_CARDS,
                 can_veto=BOARD.can_veto,
                 recipients=[id]
             ),
             STATE.CHANCELLOR_VETOED: lambda: UI_HEADERS.ASK_PRESIDENT_VETO(
-                president=PRESIDENT_ID,
                 recipients=[id]
             ),
             STATE.ACTION: lambda: send_current_action(id),
             STATE.END: lambda: UI_HEADERS.GAME_OVER(
                 winner=WINNER,
+                roles=[[p.name, p.id, p.role] for p in PLAYERS.values()],
                 recipients=[id]
             )
         }.get(GAME_STATE)()
@@ -183,7 +181,6 @@ def send_individual_setup(id):
     ))
 
 
-
 def to_setup():
     """
     A function that resets everything and moves the game into setup phase.
@@ -199,7 +196,7 @@ def to_setup():
     global AFTER_SPECIAL_ELECTION_PRESIDENT_ID; AFTER_SPECIAL_ELECTION_PRESIDENT_ID = None
     global FAILED_ELECTION_TRACKER; FAILED_ELECTION_TRACKER = 0
     global GAME_STATE; GAME_STATE = STATE.SETUP
-    ydl_send(*UI_HEADERS.FORCE_RECONNECT())
+    ydl_send(*UI_HEADERS.NEW_LOBBY())
 
 
 
@@ -234,6 +231,7 @@ def start_game():
     # END QUESTION 1
 
     send_individual_setups()
+    send_current_government()
     to_pick_chancellor()
 
 
@@ -243,11 +241,12 @@ def to_pick_chancellor():
     by constructing a list of eligible players and sending the CHANCELLOR_REQUEST
     header to the server.
     """
-    global GAME_STATE
+    global GAME_STATE, NOMINATED_CHANCELLOR_ID
     GAME_STATE = STATE.PICK_CHANCELLOR
+    NOMINATED_CHANCELLOR_ID = None
+    send_current_government()
     # BEGIN QUESTION 3
     ydl_send(*UI_HEADERS.CHANCELLOR_REQUEST(
-        president=PRESIDENT_ID,
         eligibles=eligible_chancellor_nominees()
     ))
     # END QUESTION 3
@@ -276,6 +275,7 @@ def receive_chancellor_nomination(nominee):
     global GAME_STATE, NOMINATED_CHANCELLOR_ID
     GAME_STATE = STATE.VOTE
     NOMINATED_CHANCELLOR_ID = nominee
+    send_current_government()
     send_await_vote()
 
 
@@ -315,7 +315,6 @@ def end_election_results():
         GAME_STATE = STATE.PRESIDENT_DISCARD
         DRAWN_CARDS = draw_cards(3)
         ydl_send(*UI_HEADERS.PRESIDENT_DISCARD(
-            president=PRESIDENT_ID,
             cards=DRAWN_CARDS
         ))
     else:
@@ -329,7 +328,7 @@ def end_election_results():
             PREVIOUS_PRESIDENT_ID = None
             PREVIOUS_CHANCELLOR_ID = None
             send_policies_enacted()
-        PRESIDENT_ID = next_president_id()
+        advance_president()
         to_pick_chancellor()
         
 
@@ -345,7 +344,6 @@ def president_discarded(cards, discarded):
     DISCARD_DECK.append(discarded)
     DRAWN_CARDS = cards
     ydl_send(*UI_HEADERS.CHANCELLOR_DISCARD(
-        chancellor=NOMINATED_CHANCELLOR_ID,
         cards=DRAWN_CARDS,
         can_veto=BOARD.can_veto
     ))
@@ -358,7 +356,7 @@ def chancellor_vetoed():
     """
     global GAME_STATE
     GAME_STATE = STATE.CHANCELLOR_VETOED
-    ydl_send(*UI_HEADERS.ASK_PRESIDENT_VETO(president=PRESIDENT_ID))
+    ydl_send(*UI_HEADERS.ASK_PRESIDENT_VETO())
 
 
 def president_veto_answer(veto: bool, cards: List[str]):
@@ -377,12 +375,11 @@ def president_veto_answer(veto: bool, cards: List[str]):
             PREVIOUS_PRESIDENT_ID = None
             PREVIOUS_CHANCELLOR_ID = None
             send_policies_enacted()
-        PRESIDENT_ID = next_president_id()
+        advance_president()
         to_pick_chancellor()
     else:
         GAME_STATE = STATE.CHANCELLOR_DISCARD
         ydl_send(*UI_HEADERS.CHANCELLOR_DISCARD(
-            chancellor=NOMINATED_CHANCELLOR_ID,
             cards=cards, can_veto=BOARD.can_veto
         ))
 
@@ -400,14 +397,13 @@ def chancellor_discarded(card, discarded):
         game_over(ROLES.FASCIST)
         return
     elif card == CARDS.LIBERAL or len(BOARD.current_power_list()) == 0:
-        PRESIDENT_ID = next_president_id()
+        advance_president()
         to_pick_chancellor()
     else:
         GAME_STATE = STATE.ACTION
         for action in BOARD.current_power_list(): #TODO: sam does not like this model
             if action == POWERS.VETO:
                 veto()
-                PRESIDENT_ID = next_president_id()
             else:
                 CURRENT_ACTION = action
                 send_current_action()
@@ -425,11 +421,11 @@ def send_current_action(id = None):
 
 def investigate_loyalty(id = None):
     """
-    A function that begins the Investigate Loyalty power.
+    A function that begins the Investigate Loyalty power. No player may be
+    investigated twice in a game.
     """
     eligibles = [p for p in PLAYERS if not PLAYERS[p].investigated]
     ydl_send(*UI_HEADERS.BEGIN_INVESTIGATION(
-        president=PRESIDENT_ID,
         eligibles=eligibles,
         recipients=None if id is None else [id]
     ))
@@ -449,7 +445,6 @@ def investigate_player(player):
         role = ROLES.FASCIST
     # find out the loyalty and send it to the server.
     ydl_send(*UI_HEADERS.RECEIVE_INVESTIGATION(
-        president=PRESIDENT_ID,
         role=role
     ))
 
@@ -463,7 +458,6 @@ def call_special_election(id = None):
     eligibles = list(PLAYERS)
     remove_if_exists(eligibles, PRESIDENT_ID)
     ydl_send(*UI_HEADERS.BEGIN_SPECIAL_ELECTION(
-        president=PRESIDENT_ID,
         eligibles=eligibles,
         recipients=None if id is None else [id]
     ))
@@ -477,6 +471,7 @@ def perform_special_election(player):
     if bad_id(player): return
     AFTER_SPECIAL_ELECTION_PRESIDENT_ID = next_president_id()
     PRESIDENT_ID = player
+    send_current_government()
     to_pick_chancellor()
 
 
@@ -485,7 +480,6 @@ def policy_peek(id = None):
     A function that executes the policy peek power.
     """
     ydl_send(*UI_HEADERS.PERFORM_POLICY_PEEK(
-        president=PRESIDENT_ID,
         cards=CARD_DECK[:3],
         recipients=None if id is None else [id]
     ))
@@ -495,6 +489,7 @@ def end_policy_peek():
     """
     A function that ends the policy peek.
     """
+    advance_president()
     to_pick_chancellor()
 
 
@@ -502,8 +497,7 @@ def end_investigate_player():
     """
     A function that ends the investigate player.
     """
-    global PRESIDENT_ID
-    PRESIDENT_ID = next_president_id()
+    advance_president()
     to_pick_chancellor()
 
 
@@ -514,7 +508,6 @@ def execution(id = None):
     eligibles = list(PLAYERS)
     remove_if_exists(eligibles, PRESIDENT_ID)
     ydl_send(*UI_HEADERS.BEGIN_EXECUTION(
-        president=PRESIDENT_ID,
         eligibles=eligibles,
         recipients=None if id is None else [id]
     ))
@@ -537,7 +530,7 @@ def perform_execution(player: str):
     if player == PREVIOUS_CHANCELLOR_ID: PREVIOUS_CHANCELLOR_ID = None
 
     SPECTATORS[player] = player_obj
-    PRESIDENT_ID = next_president_id()
+    advance_president() # also sends current government, in case chancellor dies
     ydl_send(*UI_HEADERS.PLAYER_EXECUTED(player=player))
     to_pick_chancellor()
 
@@ -558,12 +551,23 @@ def game_over(winner):
     global GAME_STATE, WINNER
     GAME_STATE = STATE.END
     WINNER = winner
-    ydl_send(*UI_HEADERS.GAME_OVER(winner=winner))
+    ydl_send(*UI_HEADERS.GAME_OVER(
+        winner=winner,
+        roles=[[p.name, p.id, p.role] for p in PLAYERS.values()]
+    ))
 
 
 # ===================================
 # sender functions
 # ===================================
+
+def send_current_government(id = None):
+    ydl_send(*UI_HEADERS.CURRENT_GOVERNMENT(
+        president=PRESIDENT_ID,
+        chancellor=NOMINATED_CHANCELLOR_ID,
+        recipients=None if id is None else [id]
+    ))
+
 
 def send_policies_enacted(id = None):
     ydl_send(*UI_HEADERS.POLICIES_ENACTED(
@@ -575,8 +579,6 @@ def send_policies_enacted(id = None):
 
 def send_await_vote(id = None):
     ydl_send(*UI_HEADERS.AWAIT_VOTE(
-        president=PRESIDENT_ID,
-        chancellor=NOMINATED_CHANCELLOR_ID,
         has_voted=players_who_have_voted(),
         recipients=None if id is None else [id]
     ))
@@ -584,10 +586,10 @@ def send_await_vote(id = None):
 
 def send_election_results(id = None):
     ydl_send(*UI_HEADERS.ELECTION_RESULTS(
-        president=PRESIDENT_ID,
         voted_yes=players_who_have_voted(VOTES.JA),
         voted_no=players_who_have_voted(VOTES.NEIN),
         result=passing_vote(),
+        failed_elections=FAILED_ELECTION_TRACKER+1, # +1 if this is a failed election
         recipients=None if id is None else [id]
     ))
 
@@ -651,6 +653,12 @@ def draw_cards(number):
     for i in range(number):
         cards.append(CARD_DECK.pop(0))
     return cards
+
+
+def advance_president():
+    global PRESIDENT_ID
+    PRESIDENT_ID = next_president_id()
+    send_current_government()
 
 
 def next_president_id():
