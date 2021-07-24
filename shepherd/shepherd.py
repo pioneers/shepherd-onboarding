@@ -41,6 +41,7 @@ BOARD = Board(5)  # the game board
 
 DRAWN_CARDS = [] # only valid in president_discard and chancellor discard states,
                  # cards that are up for discarding
+CURRENT_ACTION = None # only valid in the action state
 WINNER = None # only valid in end state; who the winner of the game is
 
 
@@ -112,10 +113,9 @@ def player_joined(id: str, name: str, secret: str):
         else:
             PLAYERS[id] = Player(id, name, secret)
 
-    all_players = list(PLAYERS.values()) + list(SPECTATORS.values())
     ydl_send(*UI_HEADERS.ON_JOIN(
-        usernames= [p.name for p in all_players],
-        ids= [p.id for p in all_players],
+        usernames= [p.name for p in PLAYERS.values()],
+        ids= [p.id for p in PLAYERS.values()],
         ongoing_game= GAME_STATE != STATE.SETUP,
     ))
 
@@ -148,7 +148,7 @@ def player_joined(id: str, name: str, secret: str):
                 president=PRESIDENT_ID,
                 recipients=[id]
             ),
-            STATE.ACTION: lambda: None, # TODO
+            STATE.ACTION: lambda: send_current_action(id),
             STATE.END: lambda: UI_HEADERS.GAME_OVER(
                 winner=WINNER,
                 recipients=[id]
@@ -168,7 +168,7 @@ def send_individual_setups():
 def send_individual_setup(id):
     p = None
     role = ROLES.SPECTATOR
-    see_roles = True
+    see_roles = False
     if id in PLAYERS:
         p = PLAYERS[id]
         role = p.role
@@ -284,6 +284,7 @@ def receive_vote(id, vote):
     A function that notes a vote and acts if the voting is done.
     """
     global GAME_STATE
+    if bad_id(id): return
     PLAYERS[id].vote = vote
     send_await_vote()
     if number_of_votes() >= len(PLAYERS):
@@ -390,7 +391,7 @@ def chancellor_discarded(card, discarded):
     """
     A function that enacts the policy left over after two have been discarded.
     """
-    global GAME_STATE, BOARD, PRESIDENT_ID
+    global GAME_STATE, BOARD, PRESIDENT_ID, CURRENT_ACTION
     DISCARD_DECK.append(discarded)
     BOARD.enact_policy(card)
     DISCARD_DECK.append(card)
@@ -403,29 +404,34 @@ def chancellor_discarded(card, discarded):
         to_pick_chancellor()
     else:
         GAME_STATE = STATE.ACTION
-        for action in BOARD.current_power_list():
-            if action == POWERS.INVESTIGATE_LOYALTY:
-                investigate_loyalty()
-            elif action == POWERS.SPECIAL_ELECTION:
-                call_special_election()
-            elif action == POWERS.POLICY_PEEK:
-                policy_peek()
-                PRESIDENT_ID = next_president_id()
-            elif action == POWERS.EXECUTION:
-                execution()
-            elif action == POWERS.VETO:
+        for action in BOARD.current_power_list(): #TODO: sam does not like this model
+            if action == POWERS.VETO:
                 veto()
                 PRESIDENT_ID = next_president_id()
+            else:
+                CURRENT_ACTION = action
+                send_current_action()
 
 
-def investigate_loyalty():
+def send_current_action(id = None):
+    send_functions = {
+        POWERS.INVESTIGATE_LOYALTY: investigate_loyalty,
+        POWERS.SPECIAL_ELECTION: call_special_election,
+        POWERS.POLICY_PEEK: policy_peek,
+        POWERS.EXECUTION: execution
+    }
+    send_functions[CURRENT_ACTION](id)
+
+
+def investigate_loyalty(id = None):
     """
     A function that begins the Investigate Loyalty power.
     """
     eligibles = [p for p in PLAYERS if not PLAYERS[p].investigated]
     ydl_send(*UI_HEADERS.BEGIN_INVESTIGATION(
         president=PRESIDENT_ID,
-        eligibles=eligibles
+        eligibles=eligibles,
+        recipients=None if id is None else [id]
     ))
 
 
@@ -436,6 +442,7 @@ def investigate_player(player):
     is treated as a fascist.
     """
     # BEGIN QUESTION 6
+    if bad_id(player): return
     PLAYERS[player].investigated = True
     role = PLAYERS[player].role
     if role == ROLES.HITLER:
@@ -446,7 +453,7 @@ def investigate_player(player):
         role=role
     ))
 
-def call_special_election():
+def call_special_election(id = None):
     """
     A function that begins the special election power.
     Send the appropriate header to the server with the correct data.
@@ -457,7 +464,8 @@ def call_special_election():
     remove_if_exists(eligibles, PRESIDENT_ID)
     ydl_send(*UI_HEADERS.BEGIN_SPECIAL_ELECTION(
         president=PRESIDENT_ID,
-        eligibles=eligibles
+        eligibles=eligibles,
+        recipients=None if id is None else [id]
     ))
 
 
@@ -466,18 +474,20 @@ def perform_special_election(player):
     A function that starts the next session with the new president.
     """
     global PRESIDENT_ID, AFTER_SPECIAL_ELECTION_PRESIDENT_ID
+    if bad_id(player): return
     AFTER_SPECIAL_ELECTION_PRESIDENT_ID = next_president_id()
     PRESIDENT_ID = player
     to_pick_chancellor()
 
 
-def policy_peek():
+def policy_peek(id = None):
     """
     A function that executes the policy peek power.
     """
     ydl_send(*UI_HEADERS.PERFORM_POLICY_PEEK(
         president=PRESIDENT_ID,
-        cards=CARD_DECK[:3]
+        cards=CARD_DECK[:3],
+        recipients=None if id is None else [id]
     ))
 
 
@@ -497,7 +507,7 @@ def end_investigate_player():
     to_pick_chancellor()
 
 
-def execution():
+def execution(id = None):
     """
     A function that begins the execution power.
     """
@@ -505,7 +515,8 @@ def execution():
     remove_if_exists(eligibles, PRESIDENT_ID)
     ydl_send(*UI_HEADERS.BEGIN_EXECUTION(
         president=PRESIDENT_ID,
-        eligibles=eligibles
+        eligibles=eligibles,
+        recipients=None if id is None else [id]
     ))
 
 
@@ -514,6 +525,7 @@ def perform_execution(player: str):
     A function that executes a player.
     """
     global PRESIDENT_ID, NOMINATED_CHANCELLOR_ID, PREVIOUS_PRESIDENT_ID, PREVIOUS_CHANCELLOR_ID
+    if bad_id(player): return
     if PLAYERS[player].role == ROLES.HITLER:
         game_over(ROLES.LIBERAL)
         return
@@ -582,6 +594,13 @@ def send_election_results(id = None):
 # ===================================
 # helper functions
 # ===================================
+
+def bad_id(id):
+    if id not in PLAYERS:
+        print(f"BAD ID: {id}")
+        return True
+    return False
+
 
 def remove_if_exists(ar, element):
     if element in ar:

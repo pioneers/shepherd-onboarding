@@ -160,9 +160,19 @@ class UI_HEADERS:
     def INDIVIDUAL_SETUP(roles: list, individual_role: str, powers: list, recipients = None):
         """
         Header sent to server to tell each individual client information necessary to render the ui and have the appropriate game state
+        contains:
             roles - a list of player names and their associated roles... [[player, id, role],[player, id, role],...]
             individual_role - the role of the player this is given to
             powers - the list of powers for the current game board (from the BOARDS class)
+        """
+
+    @header(YDL_TARGETS.UI, "current_government")
+    def CURRENT_GOVERNMENT(president: str, chancellor: str, recipients = None):
+        """
+        Header sent to the server to inform everyone who the current president and chancellor are
+        contains:
+            president   - the id of the current president
+            chancellor  - the id of the nominated chancellor
         """
 
     @header(YDL_TARGETS.UI, "chancellor_request")
