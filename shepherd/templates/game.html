@@ -581,6 +581,8 @@
 
         const presidentName = idToName[president_id];
         const chancellorName = idToName[chancellor_id];
+        var portraitID = "portraitID" + chancellor_id;
+        document.getElementById(portraitID).dataset.picked = "true";
         let voteText = `${presidentName} has nominated ${chancellorName}. `;
         if (isSpectator) {
           hideAllExcept(["miscEntryText"]);
@@ -602,6 +604,7 @@
       });
 
       socket.on("election_results", (data) => {
+        clear_highlights();
         const { voted_yes, voted_no, result, failed_elections } = JSON.parse(data);
         failedElectionMessages = [
           "There have been no failed nominations in recent history.",
@@ -1049,10 +1052,11 @@
           var placardID = "placardPlayerID" + players[i - 1][1];
           var iVotedID = "votePlayerID" + players[i - 1][1];
           var jaOrNeinID = "jaOrNeinID" + players[i - 1][1];
-          
+          var portraitID = "portraitID" + players[i - 1][1];
+
           //set the rest of the HTML tag
           newElement.innerHTML =
-            `<img src="${url}" alt="${players[i - 1][0]}"/> ` +
+            `<img class="sheep" id="${portraitID}" src="${url}" alt="${players[i - 1][0]}" data-picked="false"/> ` +
             `<img src="${jaOrNeinURL}" id="${jaOrNeinID}" class="ja-or-nein" style="display: none"/>` +
             `<img src="${iVotedURL}" id="${iVotedID}" alt="i voted" class="i_voted" style="display: none"/> ` +
             `<div class="name_card">${players[i - 1][0]}</div> ` +
@@ -1134,6 +1138,13 @@
         Object.keys(idToName).forEach((id) => {
           var vote = document.getElementById(`votePlayerID${id}`);
           vote.style.display = "none";
+        });
+      }
+
+      function clear_highlights() {
+        Object.keys(idToName).forEach((id) => {
+          var portrait = document.getElementById(`portraitID${id}`);
+          portrait.dataset.picked = "false";
         });
       }
 

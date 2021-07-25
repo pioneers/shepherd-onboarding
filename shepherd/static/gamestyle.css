@@ -22,6 +22,13 @@
     /* shift over to the correct spot */ rotate(calc(-1 * var(--az))); /* make it vertical again */
 }
 
+.container .sheep[data-picked*="true"] {
+  filter: drop-shadow(2px 2px 0 #ffc107)
+        drop-shadow(-2px 2px 0 #ffc107)
+        drop-shadow(2px -2px 0 #ffc107)
+        drop-shadow(-2px -2px 0 #ffc107);
+}
+
 .name_card {
   display: inline-block;
   font-weight: 400;
