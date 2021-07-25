@@ -230,8 +230,22 @@
 
     <div class="container" id="game_canvas"></div>
 
+    <div class="election-tracker" style="top: 50px">
+      <div class="circle" id="electionID1" data-filled="false">
+        <div class="text">1</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="circle" id="electionID2" data-filled="false">
+        <div class="text">2</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="circle" id="electionID3" data-filled="false">
+        <img src="{{url_for('static', filename='assets/chaos_icon.png')}}" alt="chaos"/>
+      </div>
+    </div>
+
     <!-- Display the board -->
-    <div class="board" id="liberal board" style="--n: 5; top: 100px">
+    <div class="board" id="liberal board" style="--n: 5; top: 60px">
       <tile>
         <img
           src="{{url_for('static', filename='assets/liberal_board.png')}}"
@@ -305,7 +319,7 @@
       </tile>
       <div style="clear: both"></div>
     </div>
-    <div class="board" id="fascist board" style="--n: 6; top: 50px">
+    <div class="board" id="fascist board" style="--n: 6; top: 10px">
       <tile>
         <img
           src="{{url_for('static', filename='assets/fascist_board.png')}}"

@@ -22,7 +22,7 @@
     /* shift over to the correct spot */ rotate(calc(-1 * var(--az))); /* make it vertical again */
 }
 
-.container .sheep[data-picked*="true"] {
+.container .sheep[data-picked="true"] {
   filter: drop-shadow(2px 2px 0 #ffc107)
         drop-shadow(-2px 2px 0 #ffc107)
         drop-shadow(2px -2px 0 #ffc107)
@@ -137,6 +137,62 @@
   background: transparent;
   border-color: transparent;
   text-align: center;
+}
+
+.election-tracker {
+  position: relative;
+  margin: auto;
+  --d: 3em; /* circle size */
+  --spaceing: 2em;
+  width: calc(calc(3 * var(--d)) + calc(2 * var(--spaceing)));
+  height: var(--d);
+}
+
+.election-tracker .circle {
+  float: left;
+  border-radius: 50%;
+  width: var(--d);
+  height: var(--d);
+  border-style: solid;
+  border-width: calc(var(--d) * .1);
+  border-color: rgb(63, 68, 231);
+  background: rgb(161, 204, 240);
+}
+
+.election-tracker .circle[data-filled="true"]{
+  background: rgb(63, 68, 231);
+}
+
+.election-tracker .circle .text {
+  font-weight: 400;
+  color: #e8e8e9;
+  text-align: center;
+  vertical-align: middle;
+  overflow: hidden;
+  display:block;
+  user-select: none;
+  font-size: 155%;
+}
+
+.election-tracker .circle > img {
+  --scale: .7;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: calc(calc(var(--d) - calc(var(--d) * var(--scale))) / 2);
+  width: 70%;
+  height: 70%;
+}
+
+.election-tracker .spacer {
+  float: left;
+  --scale: .7;
+  width: calc(var(--spaceing) * var(--scale));
+  height: calc(var(--d) * .1);
+  background: rgb(63, 68, 231);
+  margin-right: calc(var(--spaceing) * calc(calc(1 - var(--scale)) / 2));
+  margin-left: calc(var(--spaceing) * calc(calc(1 - var(--scale)) / 2));
+  margin-top: calc(calc(var(--d) - calc(var(--d) * .1)) / 2);
 }
 
 img {
