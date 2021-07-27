@@ -635,6 +635,7 @@
         document.getElementById("miscEntryText").textContent = result
           ? "The vote has passed!"
           : failedElectionMessages[failed_elections];
+        show_failed_elections(failed_elections);
         show_jas_neins(voted_yes, voted_no);
       });
 
@@ -648,6 +649,10 @@
 
         cardClickState = 1;
         currentCards = cards;
+        //TODO: need to replace this with real election tracker logic.
+        if (document.getElementById("electionID3").dataset.filled == "true") {
+          show_failed_elections(0);
+        }
 
         if (president_id == id) {
           hideAllExcept([
@@ -1160,6 +1165,13 @@
           var portrait = document.getElementById(`portraitID${id}`);
           portrait.dataset.picked = "false";
         });
+      }
+
+      function show_failed_elections(failed_elections) {
+        for (var i = 1; i <= 3; i++) {
+          var circle = document.getElementById(`electionID${i}`);
+          circle.dataset.filled = i <= failed_elections ? "true" : "false";
+        }
       }
 
       function show_jas_neins(jas, neins) {
