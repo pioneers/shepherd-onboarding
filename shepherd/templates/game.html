@@ -23,7 +23,6 @@
       type="text/javascript"
       src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.2/socket.io.js"
     ></script>
-    <script src="{{url_for('static', filename='utils/cookies.js')}}"></script>
     <link
       rel="stylesheet"
       href="{{url_for('static', filename='bootstrap.min.css')}}"
@@ -576,6 +575,8 @@
       socket.on("chancellor_request", (data) => {
         const { eligibles } = JSON.parse(data);
 
+        clear_highlights(); //in case the last nomination was a failure
+
         if (president_id === id) {
           // if this player is the president, have them select a chancellor nominee
           hideAllExcept(["miscEntryText"]);
@@ -595,8 +596,8 @@
 
         const presidentName = idToName[president_id];
         const chancellorName = idToName[chancellor_id];
-        var portraitID = "portraitID" + chancellor_id;
-        document.getElementById(portraitID).dataset.picked = "true";
+        show_highlight(chancellor_id);
+        set_placards(president_id); // no chancellor placard since just nominee
         let voteText = `${presidentName} has nominated ${chancellorName}. `;
         if (isSpectator) {
           hideAllExcept(["miscEntryText"]);
@@ -618,15 +619,22 @@
       });
 
       socket.on("election_results", (data) => {
-        clear_highlights();
         const { voted_yes, voted_no, result, failed_elections } = JSON.parse(data);
+
+        if (result) {
+          clear_highlights();
+          set_placards(president_id, chancellor_id);
+        } else {
+          show_highlight(chancellor_id); //will be cleared in chancellor_request
+          set_placards(president_id);
+        }
+
         failedElectionMessages = [
           "There have been no failed nominations in recent history.",
           "This is the first failed nomination in recent history.",
           "This is the second failed nomination in recent history.",
-          "This is the third failed nomination in recent history. Chaos is imminent.",
-          "CHAOS","CHAOS","CHAOS","CHAOS","CHAOS","CHAOS","CHAOS","CHAOS"
-        ]
+          "This is the third failed nomination in recent history. Chaos is upon us."
+        ];
         if (president_id === id) {
           hideAllExcept(["presidentEndElectionResultsButton", "miscEntryText"]);
         } else {
@@ -642,6 +650,11 @@
       function endElectionResults() {
         send("end_election_results");
       }
+
+      socket.on("failed_elections", (data) => {
+        const { num } = JSON.parse(data);
+        show_failed_elections(failed_elections);
+      })
 
       // the president must discard a card
       socket.on("president_discard", (data) => {
@@ -696,7 +709,11 @@
 
       // inform the player of their role and display the other players
       socket.on("individual_setup", (data) => {
-        const { individual_role, roles: all_roles, powers } = JSON.parse(data);
+        const { 
+          individual_role, 
+          roles: all_roles, 
+          powers
+        } = JSON.parse(data);
         roles = all_roles;
 
         document.getElementById("startGameButton").style.display = "none";
@@ -810,6 +827,7 @@
 
         // only keep players who are not the executed player
         roles = roles.filter((player) => player[1] !== executedPlayer);
+        delete idToName[player];
 
         // make the executed player a spectator
         if (executedPlayer == id) {
@@ -1158,6 +1176,12 @@
           var vote = document.getElementById(`votePlayerID${id}`);
           vote.style.display = "none";
         });
+      }
+
+      function show_highlight(nominee) {
+        clear_highlights();
+        var portraitID = "portraitID" + nominee;
+        document.getElementById(portraitID).dataset.picked = "true";
       }
 
       function clear_highlights() {
