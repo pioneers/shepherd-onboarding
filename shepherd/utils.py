@@ -234,7 +234,7 @@ class UI_HEADERS:
         """
 
     @header(YDL_TARGETS.UI, "failed_elections")
-    def FAILED_ELECTIONS(num: int):
+    def FAILED_ELECTIONS(num: int, recipients = None):
         """
         Header send to server to update the number of failed elections
         contains:
