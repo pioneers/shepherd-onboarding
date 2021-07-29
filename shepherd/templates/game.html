@@ -662,10 +662,6 @@
 
         cardClickState = 1;
         currentCards = cards;
-        //TODO: need to replace this with real election tracker logic.
-        if (document.getElementById("electionID3").dataset.filled == "true") {
-          show_failed_elections(0);
-        }
 
         if (president_id == id) {
           hideAllExcept([
