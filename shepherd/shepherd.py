@@ -39,6 +39,9 @@ AFTER_SPECIAL_ELECTION_PRESIDENT_ID = None
 FAILED_ELECTION_TRACKER = 0  # for tracking failed elections
 BOARD = Board(5)  # the game board
 
+# state specific variables
+
+VOTE_PASSED = False # only valid in election_results state, says whether the vote passed
 DRAWN_CARDS = [] # only valid in president_discard and chancellor discard states,
                  # cards that are up for discarding
 CURRENT_ACTION = None # only valid in the action state
@@ -123,6 +126,7 @@ def player_joined(id: str, name: str, secret: str):
         send_individual_setup(id)
         send_current_government(id)
         send_policies_enacted(id)
+        send_failed_elections(id)
 
         # send state message
         send_state = {
@@ -283,28 +287,38 @@ def receive_vote(id, vote):
     """
     A function that notes a vote and acts if the voting is done.
     """
-    global GAME_STATE
     if bad_id(id): return
     PLAYERS[id].vote = vote
     send_await_vote()
     if number_of_votes() >= len(PLAYERS):
-        GAME_STATE = STATE.ELECTION_RESULTS
-        send_election_results()
+        to_election_results()
+
+def to_election_results():
+    """
+    updates VOTE_PASSED and the FAILED_ELECTION_TRACKER, then sends info to everyone
+    """
+    global GAME_STATE, VOTE_PASSED, FAILED_ELECTION_TRACKER
+    GAME_STATE = STATE.ELECTION_RESULTS
+    VOTE_PASSED = passing_vote()
+    FAILED_ELECTION_TRACKER = 0 if VOTE_PASSED else FAILED_ELECTION_TRACKER + 1
+    send_election_results()
 
 def end_election_results():
-    global GAME_STATE, PRESIDENT_ID, PREVIOUS_PRESIDENT_ID, PREVIOUS_CHANCELLOR_ID, FAILED_ELECTION_TRACKER, CARD_DECK, DRAWN_CARDS
-    passed = passing_vote()
+    """
+    clears everyone's votes, then either advances to the next stage based on whether the
+    vote has passed. clears the FAILED_ELECTION_TRACKER in the case of chaos
+    """
+    global GAME_STATE, PRESIDENT_ID, PREVIOUS_PRESIDENT_ID, PREVIOUS_CHANCELLOR_ID, CARD_DECK, DRAWN_CARDS, FAILED_ELECTION_TRACKER
     for player in PLAYERS.values():
         player.clear_vote()
 
-    if passed:
+    if VOTE_PASSED:
         PREVIOUS_PRESIDENT_ID = PRESIDENT_ID
         PREVIOUS_CHANCELLOR_ID = NOMINATED_CHANCELLOR_ID
         # BEGIN QUESTION 4: if chancellor is hitler, and at least 3 fascist
         # policies have been enected,
         # game_over is called and the function is terminated
 
-        FAILED_ELECTION_TRACKER = 0
         if PLAYERS[NOMINATED_CHANCELLOR_ID].role == ROLES.HITLER and BOARD.fascist_enacted >= 3:
             game_over(ROLES.FASCIST)
             return
@@ -318,9 +332,9 @@ def end_election_results():
             cards=DRAWN_CARDS
         ))
     else:
-        FAILED_ELECTION_TRACKER += 1
         if chaos():
             FAILED_ELECTION_TRACKER = 0
+            send_failed_elections()
             if len(CARD_DECK) < 3:
                 reshuffle_deck()
             card = draw_cards(1)[0]
@@ -330,7 +344,7 @@ def end_election_results():
             send_policies_enacted()
         advance_president()
         to_pick_chancellor()
-        
+
 
 
 def president_discarded(cards, discarded):
@@ -577,6 +591,12 @@ def send_policies_enacted(id = None):
         recipients=None if id is None else [id]
     ))
 
+def send_failed_elections(id = None):
+    ydl_send(*UI_HEADERS.FAILED_ELECTIONS(
+        num=FAILED_ELECTION_TRACKER,
+        recipients=None if id is None else [id]
+    ))
+
 def send_await_vote(id = None):
     ydl_send(*UI_HEADERS.AWAIT_VOTE(
         has_voted=players_who_have_voted(),
@@ -588,8 +608,8 @@ def send_election_results(id = None):
     ydl_send(*UI_HEADERS.ELECTION_RESULTS(
         voted_yes=players_who_have_voted(VOTES.JA),
         voted_no=players_who_have_voted(VOTES.NEIN),
-        result=passing_vote(),
-        failed_elections=FAILED_ELECTION_TRACKER+1, # +1 if this is a failed election
+        result=VOTE_PASSED,
+        failed_elections=FAILED_ELECTION_TRACKER,
         recipients=None if id is None else [id]
     ))
 

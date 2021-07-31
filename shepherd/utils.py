@@ -233,6 +233,14 @@ class UI_HEADERS:
             can_veto - whether the veto power has been enabled
         """
 
+    @header(YDL_TARGETS.UI, "failed_elections")
+    def FAILED_ELECTIONS(num: int, recipients = None):
+        """
+        Header send to server to update the number of failed elections
+        contains:
+            num - the number of failed elections
+        """
+
     @header(YDL_TARGETS.UI, "begin_investigation")
     def BEGIN_INVESTIGATION(eligibles: list, recipients = None):
         """
