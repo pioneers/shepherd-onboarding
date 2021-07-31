@@ -71,7 +71,11 @@ class ClientThread(threading.Thread):
 
     def run(self):
         while True:
-            data = self.conn.recv(1024)
+            try: # try statement needed because windows sucks and throws an 10054 
+                 # connection reset error rather than just returning a 0 byte.
+                data = self.conn.recv(1024)  # Should be ready
+            except ConnectionResetError:
+                data = []
             if len(data) == 0:
                 break
             else:
@@ -144,7 +148,8 @@ def read(sel, subscriptions, conn, obj):
     When conn has bytes ready to read, read those bytes and
     forward messages to the correct subscribers
     '''
-    try: # try statement needed because windows sucks and throws an 10054 connection reset error rather than just returning a 0 byte.
+    try: # try statement needed because windows sucks and throws an 10054 
+         # connection reset error rather than just returning a 0 byte.
         data = conn.recv(1024)  # Should be ready
     except ConnectionResetError:
         data = []
