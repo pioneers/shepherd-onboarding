@@ -200,7 +200,7 @@ img {
 }
 
 .facts {
-  height: 6em;
+  display: inline-block;
   position: relative;
   margin: auto;
 }
@@ -224,12 +224,11 @@ img {
   border-radius: 1em;
   padding: .5em;
   float:left;
-  height: 6em;
   width: 30em;
   background-color: white;
   transform: translateX(-.1em);
 }
 
 .facts button {
-  transform: translateX(-3.3em) translateY(3em);
+  float: right;
 }

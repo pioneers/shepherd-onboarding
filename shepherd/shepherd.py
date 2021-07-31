@@ -271,23 +271,26 @@ def eligible_chancellor_nominees():
     return eligibles
 
 
-def receive_chancellor_nomination(nominee):
+def receive_chancellor_nomination(secret, nominee):
     """
     A function that reads who the president has nominated for chancellor and
     starts the voting process.
     """
     global GAME_STATE, NOMINATED_CHANCELLOR_ID
+
+    if bad_credentials(PRESIDENT_ID, secret): return
+
     GAME_STATE = STATE.VOTE
     NOMINATED_CHANCELLOR_ID = nominee
     send_current_government()
     send_await_vote()
 
 
-def receive_vote(id, vote):
+def receive_vote(secret, id, vote):
     """
     A function that notes a vote and acts if the voting is done.
     """
-    if bad_id(id): return
+    if bad_credentials(id, secret): return
     PLAYERS[id].vote = vote
     send_await_vote()
     if number_of_votes() >= len(PLAYERS):
@@ -303,12 +306,15 @@ def to_election_results():
     FAILED_ELECTION_TRACKER = 0 if VOTE_PASSED else FAILED_ELECTION_TRACKER + 1
     send_election_results()
 
-def end_election_results():
+def end_election_results(secret):
     """
     clears everyone's votes, then either advances to the next stage based on whether the
     vote has passed. clears the FAILED_ELECTION_TRACKER in the case of chaos
     """
     global GAME_STATE, PRESIDENT_ID, PREVIOUS_PRESIDENT_ID, PREVIOUS_CHANCELLOR_ID, CARD_DECK, DRAWN_CARDS, FAILED_ELECTION_TRACKER
+    
+    if bad_credentials(PRESIDENT_ID, secret): return
+    
     for player in PLAYERS.values():
         player.clear_vote()
 
@@ -347,12 +353,14 @@ def end_election_results():
 
 
 
-def president_discarded(cards, discarded):
+def president_discarded(secret, cards, discarded):
     """
     A function that takes the cards left and passes them to the chancellor.
     `cards` contains the remaining two cards.
     """
     global DISCARD_DECK, DRAWN_CARDS, GAME_STATE
+
+    if bad_credentials(PRESIDENT_ID, secret): return
     # BEGIN QUESTION 5
     GAME_STATE = STATE.CHANCELLOR_DISCARD
     DISCARD_DECK.append(discarded)
@@ -364,20 +372,26 @@ def president_discarded(cards, discarded):
     # END QUESTION 5
 
 
-def chancellor_vetoed():
+def chancellor_vetoed(secret):
     """
     A function that asks for the president's response after a chancellor veto.
     """
     global GAME_STATE
+
+    if bad_credentials(NOMINATED_CHANCELLOR_ID, secret): return
+
     GAME_STATE = STATE.CHANCELLOR_VETOED
     ydl_send(*UI_HEADERS.ASK_PRESIDENT_VETO())
 
 
-def president_veto_answer(veto: bool, cards: List[str]):
+def president_veto_answer(secret: str, veto: bool, cards: List[str]):
     """
     A function that receives if the president vetoes or not.
     """
     global FAILED_ELECTION_TRACKER, PRESIDENT_ID, PREVIOUS_PRESIDENT_ID, PREVIOUS_CHANCELLOR_ID, CARD_DECK, GAME_STATE
+    
+    if bad_credentials(PRESIDENT_ID, secret): return
+
     if veto:
         FAILED_ELECTION_TRACKER += 1
         if chaos():
@@ -398,11 +412,14 @@ def president_veto_answer(veto: bool, cards: List[str]):
         ))
 
 
-def chancellor_discarded(card, discarded):
+def chancellor_discarded(secret, card, discarded):
     """
     A function that enacts the policy left over after two have been discarded.
     """
     global GAME_STATE, BOARD, PRESIDENT_ID, CURRENT_ACTION
+
+    if bad_credentials(NOMINATED_CHANCELLOR_ID, secret): return
+
     DISCARD_DECK.append(discarded)
     BOARD.enact_policy(card)
     DISCARD_DECK.append(card)
@@ -445,7 +462,7 @@ def investigate_loyalty(id = None):
     ))
 
 
-def investigate_player(player):
+def investigate_player(secret, player):
     """
     A function that returns the loyalty (as a role) of the player the president
     has asked to investigate using the RECEIVE_INVESTIGATION header. Hitler
@@ -453,6 +470,7 @@ def investigate_player(player):
     """
     # BEGIN QUESTION 6
     if bad_id(player): return
+    if bad_credentials(PRESIDENT_ID, secret): return 
     PLAYERS[player].investigated = True
     role = PLAYERS[player].role
     if role == ROLES.HITLER:
@@ -477,12 +495,13 @@ def call_special_election(id = None):
     ))
 
 
-def perform_special_election(player):
+def perform_special_election(secret, player):
     """
     A function that starts the next session with the new president.
     """
     global PRESIDENT_ID, AFTER_SPECIAL_ELECTION_PRESIDENT_ID
     if bad_id(player): return
+    if bad_credentials(PRESIDENT_ID, secret): return
     AFTER_SPECIAL_ELECTION_PRESIDENT_ID = next_president_id()
     PRESIDENT_ID = player
     send_current_government()
@@ -499,18 +518,20 @@ def policy_peek(id = None):
     ))
 
 
-def end_policy_peek():
+def end_policy_peek(secret: str):
     """
     A function that ends the policy peek.
     """
+    if bad_credentials(PRESIDENT_ID, secret): return
     advance_president()
     to_pick_chancellor()
 
 
-def end_investigate_player():
+def end_investigate_player(secret: str):
     """
     A function that ends the investigate player.
     """
+    if bad_credentials(PRESIDENT_ID, secret): return
     advance_president()
     to_pick_chancellor()
 
@@ -527,12 +548,13 @@ def execution(id = None):
     ))
 
 
-def perform_execution(player: str):
+def perform_execution(secret, player: str):
     """
     A function that executes a player.
     """
     global PRESIDENT_ID, NOMINATED_CHANCELLOR_ID, PREVIOUS_PRESIDENT_ID, PREVIOUS_CHANCELLOR_ID
     if bad_id(player): return
+    if bad_credentials(PRESIDENT_ID, secret): return
     if PLAYERS[player].role == ROLES.HITLER:
         game_over(ROLES.LIBERAL)
         return
@@ -618,8 +640,22 @@ def send_election_results(id = None):
 # ===================================
 
 def bad_id(id):
+    """
+    Checks to make sure id is a valid id
+    """
     if id not in PLAYERS:
         print(f"BAD ID: {id}")
+        return True
+    return False
+
+def bad_credentials(id, secret):
+    """
+    Checks to make sure id is a valid id, and that the secret is correct
+    """
+    if bad_id(id):
+        return True
+    if PLAYERS[id].secret != secret:
+        print(f"INCORRECT SECRET FOR {PLAYERS[id]}")
         return True
     return False
 

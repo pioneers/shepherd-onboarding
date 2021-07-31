@@ -56,6 +56,9 @@
         location.href = "/index.html"; //redirect to login
       }
 
+      //initialize random fact
+      refreshFacts();
+
       function logg() {
         //as of now, do nothing
         //add logging later?
@@ -77,7 +80,7 @@
         socket.emit("join", name, id);
         send(
           "player_joined",
-          JSON.stringify({ name: name, id: id, secret: secret })
+          JSON.stringify({name, id, secret})
         );
       });
 
@@ -203,7 +206,7 @@
       });
 
       function endElectionResults() {
-        send("end_election_results");
+        send("end_election_results", JSON.stringify({secret}));
       }
 
       socket.on("failed_elections", (data) => {
@@ -304,7 +307,7 @@
         set_placards(president_id, chancellor_id);
         hideAllExcept(["miscEntryText", "startNewGameButton"]);
         document.getElementById("miscEntryText").textContent =
-          winner + " wins!";
+          winner + "s win!";
       });
 
       // hide all elements on the screen except for those in idArray
@@ -378,7 +381,7 @@
 
         // only keep players who are not the executed player
         roles = roles.filter((player) => player[1] !== executedPlayer);
-        delete idToName[player];
+        delete idToName[executedPlayer];
 
         // make the executed player a spectator
         if (executedPlayer == id) {
@@ -402,6 +405,7 @@
         send(
           "chancellor_nomination",
           JSON.stringify({
+            secret,
             nominee: id,
           })
         );
@@ -468,7 +472,7 @@
         /*
         BEGIN QUESTION 2
       */
-        send("player_voted", JSON.stringify({ id: id, vote: "ja" }));
+        send("player_voted", JSON.stringify({ secret, id, vote: "ja" }));
       }
 
       /*
@@ -481,7 +485,7 @@
         /*
         BEGIN QUESTION 2
       */
-        send("player_voted", JSON.stringify({ id: id, vote: "nein" }));
+        send("player_voted", JSON.stringify({ secret, id, vote: "nein" }));
       }
 
       // do the appropriate action when a card is pressed
@@ -499,6 +503,7 @@
             send(
               "president_discarded",
               JSON.stringify({
+                secret,
                 cards: currentCards,
                 discarded,
               })
@@ -511,6 +516,7 @@
             send(
               "chancellor_discarded",
               JSON.stringify({
+                secret,
                 card,
                 discarded,
               })
@@ -521,31 +527,27 @@
 
       // end the policy peek power (called by the president)
       function endPolicyPeek() {
-        send("end_policy_peek", JSON.stringify({}));
+        send("end_policy_peek", JSON.stringify({secret}));
       }
 
       // president chooses a player to investigate
       function investigatePlayer(id) {
         send(
           "investigate_player",
-          JSON.stringify({
-            player: id,
-          })
+          JSON.stringify({secret, player: id})
         );
       }
 
       // called after the president is done looking at a player's role
       function endInvestigatePlayer() {
-        send("end_investigate_player", JSON.stringify({}));
+        send("end_investigate_player", JSON.stringify({secret}));
       }
 
       // president picks who will be the next president
       function specialElection(id) {
         send(
           "special_election_pick",
-          JSON.stringify({
-            player: id,
-          })
+          JSON.stringify({secret, player: id})
         );
       }
 
@@ -554,15 +556,13 @@
         console.log(`${id} is being executed`);
         send(
           "perform_execution",
-          JSON.stringify({
-            player: id,
-          })
+          JSON.stringify({secret, player: id})
         );
       }
 
       // chancellor performs the veto power
       function chancellorVeto() {
-        send("chancellor_vetoed", JSON.stringify({}));
+        send("chancellor_vetoed", JSON.stringify({secret}));
       }
 
       // president agrees with the veto
@@ -571,10 +571,7 @@
         const cards = currentCards;
         send(
           "president_veto_answer",
-          JSON.stringify({
-            veto,
-            cards,
-          })
+          JSON.stringify({secret, veto, cards})
         );
       }
 
@@ -584,10 +581,7 @@
         const cards = currentCards;
         send(
           "president_veto_answer",
-          JSON.stringify({
-            veto: veto,
-            cards: cards,
-          })
+          JSON.stringify({secret, veto, cards})
         );
       }
 

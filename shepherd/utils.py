@@ -28,27 +28,31 @@ class SHEPHERD_HEADERS:
         """
 
     @header(YDL_TARGETS.SHEPHERD, "chancellor_nomination")
-    def CHANCELLOR_NOMINATION(nominee: str):
+    def CHANCELLOR_NOMINATION(secret: str, nominee: str):
         """
         Header to tell shepherd who the president has nominated to be chancellor
         contains:
+            secret - the president's secret
             nominee - the id of the player who was nominated to be chancellor
         """
 
     @header(YDL_TARGETS.SHEPHERD, "player_voted")
-    def PLAYER_VOTED(id: str, vote: str):
+    def PLAYER_VOTED(secret: str, id: str, vote: str):
         """
         Header to tell shepherd the player's vote on the chancellor
         contains:
+            secret - the player's secret
             id   - the id of the voter
             vote - ja if the vote was yes.
         """
 
     @header(YDL_TARGETS.SHEPHERD, "end_election_results")
-    def END_ELECTION_RESULTS():
+    def END_ELECTION_RESULTS(secret: str):
         """
         Header send from president to forward the game after everyone is done
         viewing the election results
+        contains:
+            secret - the president's secret
         """
 
     @header(YDL_TARGETS.SHEPHERD, "president_discarded")
@@ -56,27 +60,31 @@ class SHEPHERD_HEADERS:
         """
         Header to tell shepherd that the president has discarded a policy
         contains:
+            secret - the president's secret
             cards - the two policies left
             discarded - the card discarded (String value)
         """
 
     @header(YDL_TARGETS.SHEPHERD, "chancellor_discarded")
-    def CHANCELLOR_DISCARDED(card: str, discarded: str):
+    def CHANCELLOR_DISCARDED(secret: str, card: str, discarded: str):
         """
         Header to tell shepherd that the chancellor has discarded a policy
         contains:
+            secret - the chancellor's secret
             card - the card left (String value)
             discarded - the card discarded (String value)
         """
 
     @header(YDL_TARGETS.SHEPHERD, "chancellor_vetoed")
-    def CHANCELLOR_VETOED():
+    def CHANCELLOR_VETOED(secret: str):
         """
         Header to tell shepherd that the chancellor decided to exercise the veto
+        contains:
+            secret - the chancellor's secret
         """
 
     @header(YDL_TARGETS.SHEPHERD, "president_veto_answer")
-    def PRESIDENT_VETO_ANSWER(veto: bool, cards: list):
+    def PRESIDENT_VETO_ANSWER(secret: str, veto: bool, cards: list):
         """
         Header to tell shepherd if the president decided to veto
         contains:
@@ -85,38 +93,45 @@ class SHEPHERD_HEADERS:
         """
 
     @header(YDL_TARGETS.SHEPHERD, "end_policy_peek")
-    def END_POLICY_PEEK():
+    def END_POLICY_PEEK(secret: str):
         """
         Header sent to shepherd to end the policy peek
+        contains:
+            secret - the president's secret
         """
 
     @header(YDL_TARGETS.SHEPHERD, "investigate_player")
-    def INVESTIGATE_PLAYER(player: str):
+    def INVESTIGATE_PLAYER(secret: str, player: str):
         """
         Header to tell shepherd which player to investigate
         contains:
+            secret - the president's secret
             player - the id of the player to investigate
         """
 
     @header(YDL_TARGETS.SHEPHERD, "end_investigate_player")
-    def END_INVESTIGATE_PLAYER():
+    def END_INVESTIGATE_PLAYER(secret: str):
         """
         Header to tell shepherd to end the player investigation
+        contains:
+            secret - the president's secret
         """
 
     @header(YDL_TARGETS.SHEPHERD, "special_election_pick")
-    def SPECIAL_ELECTION_PICK(player: str):
+    def SPECIAL_ELECTION_PICK(secret: str, player: str):
         """
         Header to tell shepherd who the president picked in the special election
         contains:
+            secret - the president's secret
             player - the id of the new president
         """
 
     @header(YDL_TARGETS.SHEPHERD, "perform_execution")
-    def PERFORM_EXECUTION(player: str):
+    def PERFORM_EXECUTION(secret: str, player: str):
         """
         Header to pick player to execute
         contains:
+            secret - the president's secret
             player - the id of the player to execute
         """
 
