@@ -198,3 +198,38 @@
 img {
   max-width: 100%;
 }
+
+.facts {
+  height: 6em;
+  position: relative;
+  margin: auto;
+}
+
+.facts img{
+  height: 6em;
+  float: left;
+}
+
+.facts .speach-arrow {
+  float:left;
+  width: 0;
+  height: 0;
+  border-top: 1.7em solid transparent;
+  border-bottom: .5em solid transparent;
+  border-right:3em solid white;
+  transform: translateY(.5em);
+}
+
+.facts .speach-bubble {
+  border-radius: 1em;
+  padding: .5em;
+  float:left;
+  height: 6em;
+  width: 30em;
+  background-color: white;
+  transform: translateX(-.1em);
+}
+
+.facts button {
+  transform: translateX(-3.3em) translateY(3em);
+}
