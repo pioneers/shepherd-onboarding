@@ -91,6 +91,7 @@
   height: calc(var(--d) / 1.5);
   position: absolute;
   transform: translateX(-3.5rem) translateY(-7.5rem);
+  z-index: 9999;
 }
 
 .board {
