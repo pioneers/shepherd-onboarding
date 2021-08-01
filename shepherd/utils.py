@@ -60,9 +60,9 @@ class SHEPHERD_HEADERS:
         """
         Header to tell shepherd that the president has discarded a policy
         contains:
-            secret - the president's secret
-            cards - the two policies left
-            discarded - the card discarded (String value)
+            secret    - the president's secret
+            cards     - the two policies left
+            discarded - the card discarded
         """
 
     @header(YDL_TARGETS.SHEPHERD, "chancellor_discarded")
@@ -70,9 +70,9 @@ class SHEPHERD_HEADERS:
         """
         Header to tell shepherd that the chancellor has discarded a policy
         contains:
-            secret - the chancellor's secret
-            card - the card left (String value)
-            discarded - the card discarded (String value)
+            secret    - the chancellor's secret
+            card      - the card left
+            discarded - the card discarded
         """
 
     @header(YDL_TARGETS.SHEPHERD, "chancellor_vetoed")
@@ -84,12 +84,12 @@ class SHEPHERD_HEADERS:
         """
 
     @header(YDL_TARGETS.SHEPHERD, "president_veto_answer")
-    def PRESIDENT_VETO_ANSWER(secret: str, veto: bool, cards: list):
+    def PRESIDENT_VETO_ANSWER(secret: str, veto: bool):
         """
         Header to tell shepherd if the president decided to veto
         contains:
-            veto  - Boolean if the president vetoes
-            cards - the cards the chancellor must choose from if the president doesn't veto
+            secret - the president's secret
+            veto   - Boolean if the president vetoes
         """
 
     @header(YDL_TARGETS.SHEPHERD, "end_policy_peek")
@@ -265,10 +265,11 @@ class UI_HEADERS:
         """
 
     @header(YDL_TARGETS.UI, "receive_investigation")
-    def RECEIVE_INVESTIGATION(role: str, recipients = None):
+    def RECEIVE_INVESTIGATION(player: str, role: str, recipients = None):
         """
         Header sent to server to give the president the result of the investigation
         contains:
+            player    - the id of the person who was investigate
             role      - the role of the person who was investigated
         """
 

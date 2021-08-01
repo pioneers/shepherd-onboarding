@@ -44,7 +44,9 @@ BOARD = Board(5)  # the game board
 VOTE_PASSED = False # only valid in election_results state, says whether the vote passed
 DRAWN_CARDS = [] # only valid in president_discard and chancellor discard states,
                  # cards that are up for discarding
+CAN_VETO_THIS_ROUND = True # only valid in chancellor discard state
 CURRENT_ACTION = None # only valid in the action state
+CURRENT_INVESTIGATED_PLAYER = None # only valid in the action state
 WINNER = None # only valid in end state; who the winner of the game is
 
 
@@ -129,35 +131,18 @@ def player_joined(id: str, name: str, secret: str):
         send_failed_elections(id)
 
         # send state message
-        send_state = {
-            STATE.SETUP: lambda: None,
-            STATE.VOTE: lambda: send_await_vote(id),
-            STATE.ELECTION_RESULTS: lambda: send_election_results(id),
-            STATE.PICK_CHANCELLOR: lambda: UI_HEADERS.CHANCELLOR_REQUEST(
-                eligibles=eligible_chancellor_nominees(),
-                recipients=[id]
-            ),
-            STATE.PRESIDENT_DISCARD: lambda: UI_HEADERS.PRESIDENT_DISCARD(
-                cards=DRAWN_CARDS,
-                recipients=[id]
-            ),
-            STATE.CHANCELLOR_DISCARD: lambda: UI_HEADERS.CHANCELLOR_DISCARD(
-                cards=DRAWN_CARDS,
-                can_veto=BOARD.can_veto,
-                recipients=[id]
-            ),
-            STATE.CHANCELLOR_VETOED: lambda: UI_HEADERS.ASK_PRESIDENT_VETO(
-                recipients=[id]
-            ),
-            STATE.ACTION: lambda: send_current_action(id),
-            STATE.END: lambda: UI_HEADERS.GAME_OVER(
-                winner=WINNER,
-                roles=[[p.name, p.id, p.role] for p in PLAYERS.values()],
-                recipients=[id]
-            )
-        }.get(GAME_STATE)()
-        if send_state is not None:
-            ydl_send(*send_state)
+        send_funs = {
+            STATE.SETUP: lambda _: None,
+            STATE.VOTE: send_await_vote,
+            STATE.ELECTION_RESULTS: send_election_results,
+            STATE.PICK_CHANCELLOR: send_chancellor_request,
+            STATE.PRESIDENT_DISCARD: send_president_discard,
+            STATE.CHANCELLOR_DISCARD: send_chancellor_discard,
+            STATE.CHANCELLOR_VETOED: send_ask_president_veto,
+            STATE.ACTION: send_current_action,
+            STATE.END: send_game_over
+        }
+        send_funs.get(GAME_STATE)(id)
 
 
 
@@ -250,9 +235,7 @@ def to_pick_chancellor():
     NOMINATED_CHANCELLOR_ID = None
     send_current_government()
     # BEGIN QUESTION 3
-    ydl_send(*UI_HEADERS.CHANCELLOR_REQUEST(
-        eligibles=eligible_chancellor_nominees()
-    ))
+    send_chancellor_request()
     # END QUESTION 3
 
 def eligible_chancellor_nominees():
@@ -303,15 +286,16 @@ def to_election_results():
     global GAME_STATE, VOTE_PASSED, FAILED_ELECTION_TRACKER
     GAME_STATE = STATE.ELECTION_RESULTS
     VOTE_PASSED = passing_vote()
-    FAILED_ELECTION_TRACKER = 0 if VOTE_PASSED else FAILED_ELECTION_TRACKER + 1
+    if not VOTE_PASSED: 
+        FAILED_ELECTION_TRACKER += 1
     send_election_results()
 
 def end_election_results(secret):
     """
     clears everyone's votes, then either advances to the next stage based on whether the
-    vote has passed. clears the FAILED_ELECTION_TRACKER in the case of chaos
+    vote has passed. May enact chaos.
     """
-    global GAME_STATE, PRESIDENT_ID, PREVIOUS_PRESIDENT_ID, PREVIOUS_CHANCELLOR_ID, CARD_DECK, DRAWN_CARDS, FAILED_ELECTION_TRACKER
+    global PREVIOUS_PRESIDENT_ID, PREVIOUS_CHANCELLOR_ID, GAME_STATE, DRAWN_CARDS
     
     if bad_credentials(PRESIDENT_ID, secret): return
     
@@ -334,23 +318,29 @@ def end_election_results(secret):
             reshuffle_deck()
         GAME_STATE = STATE.PRESIDENT_DISCARD
         DRAWN_CARDS = draw_cards(3)
-        ydl_send(*UI_HEADERS.PRESIDENT_DISCARD(
-            cards=DRAWN_CARDS
-        ))
+        send_president_discard()
     else:
-        if chaos():
-            FAILED_ELECTION_TRACKER = 0
-            send_failed_elections()
-            if len(CARD_DECK) < 3:
-                reshuffle_deck()
-            card = draw_cards(1)[0]
-            BOARD.enact_policy(card)
-            PREVIOUS_PRESIDENT_ID = None
-            PREVIOUS_CHANCELLOR_ID = None
-            send_policies_enacted()
+        if chaos(): 
+            enact_chaos()
         advance_president()
         to_pick_chancellor()
 
+
+def enact_chaos():
+    """
+    Throws the country into chaos. Resets the failed_election_tracker to 0,
+    sets the previous president and chancellor to None, and enacts a random policy.
+    """
+    global FAILED_ELECTION_TRACKER, PREVIOUS_CHANCELLOR_ID, PREVIOUS_PRESIDENT_ID
+    FAILED_ELECTION_TRACKER = 0
+    send_failed_elections()
+    if len(CARD_DECK) < 3:
+        reshuffle_deck()
+    card = draw_cards(1)[0]
+    BOARD.enact_policy(card)
+    PREVIOUS_PRESIDENT_ID = None
+    PREVIOUS_CHANCELLOR_ID = None
+    send_policies_enacted()
 
 
 def president_discarded(secret, cards, discarded):
@@ -358,17 +348,15 @@ def president_discarded(secret, cards, discarded):
     A function that takes the cards left and passes them to the chancellor.
     `cards` contains the remaining two cards.
     """
-    global DISCARD_DECK, DRAWN_CARDS, GAME_STATE
+    global DISCARD_DECK, DRAWN_CARDS, GAME_STATE, CAN_VETO_THIS_ROUND
 
     if bad_credentials(PRESIDENT_ID, secret): return
     # BEGIN QUESTION 5
     GAME_STATE = STATE.CHANCELLOR_DISCARD
     DISCARD_DECK.append(discarded)
     DRAWN_CARDS = cards
-    ydl_send(*UI_HEADERS.CHANCELLOR_DISCARD(
-        cards=DRAWN_CARDS,
-        can_veto=BOARD.can_veto
-    ))
+    CAN_VETO_THIS_ROUND = BOARD.can_veto
+    send_chancellor_discard()
     # END QUESTION 5
 
 
@@ -381,48 +369,44 @@ def chancellor_vetoed(secret):
     if bad_credentials(NOMINATED_CHANCELLOR_ID, secret): return
 
     GAME_STATE = STATE.CHANCELLOR_VETOED
-    ydl_send(*UI_HEADERS.ASK_PRESIDENT_VETO())
+    send_ask_president_veto()
 
 
-def president_veto_answer(secret: str, veto: bool, cards: List[str]):
+def president_veto_answer(secret: str, veto: bool):
     """
     A function that receives if the president vetoes or not.
     """
-    global FAILED_ELECTION_TRACKER, PRESIDENT_ID, PREVIOUS_PRESIDENT_ID, PREVIOUS_CHANCELLOR_ID, CARD_DECK, GAME_STATE
+    global FAILED_ELECTION_TRACKER, GAME_STATE, CAN_VETO_THIS_ROUND
     
     if bad_credentials(PRESIDENT_ID, secret): return
 
     if veto:
         FAILED_ELECTION_TRACKER += 1
+        send_failed_elections()
         if chaos():
-            FAILED_ELECTION_TRACKER = 0
-            if len(CARD_DECK) < 3:
-                reshuffle_deck()
-            card = draw_cards(1)[0]
-            BOARD.enact_policy(card)
-            PREVIOUS_PRESIDENT_ID = None
-            PREVIOUS_CHANCELLOR_ID = None
-            send_policies_enacted()
+            enact_chaos()
         advance_president()
         to_pick_chancellor()
     else:
         GAME_STATE = STATE.CHANCELLOR_DISCARD
-        ydl_send(*UI_HEADERS.CHANCELLOR_DISCARD(
-            cards=cards, can_veto=BOARD.can_veto
-        ))
+        CAN_VETO_THIS_ROUND = False
+        send_chancellor_discard()
 
 
 def chancellor_discarded(secret, card, discarded):
     """
     A function that enacts the policy left over after two have been discarded.
     """
-    global GAME_STATE, BOARD, PRESIDENT_ID, CURRENT_ACTION
+    global GAME_STATE, BOARD, PRESIDENT_ID, CURRENT_ACTION, \
+        CURRENT_INVESTIGATED_PLAYER, FAILED_ELECTION_TRACKER
 
     if bad_credentials(NOMINATED_CHANCELLOR_ID, secret): return
 
     DISCARD_DECK.append(discarded)
     BOARD.enact_policy(card)
+    FAILED_ELECTION_TRACKER = 0 # government has successfully enacted a policy
     DISCARD_DECK.append(card)
+    send_failed_elections()
     send_policies_enacted()
     if BOARD.fascist_enacted >= 6:
         game_over(ROLES.FASCIST)
@@ -432,6 +416,7 @@ def chancellor_discarded(secret, card, discarded):
         to_pick_chancellor()
     else:
         GAME_STATE = STATE.ACTION
+        CURRENT_INVESTIGATED_PLAYER = None
         for action in BOARD.current_power_list(): #TODO: sam does not like this model
             if action == POWERS.VETO:
                 veto()
@@ -442,7 +427,7 @@ def chancellor_discarded(secret, card, discarded):
 
 def send_current_action(id = None):
     send_functions = {
-        POWERS.INVESTIGATE_LOYALTY: investigate_loyalty,
+        POWERS.INVESTIGATE_LOYALTY: send_loyalty,
         POWERS.SPECIAL_ELECTION: call_special_election,
         POWERS.POLICY_PEEK: policy_peek,
         POWERS.EXECUTION: execution
@@ -450,16 +435,35 @@ def send_current_action(id = None):
     send_functions[CURRENT_ACTION](id)
 
 
-def investigate_loyalty(id = None):
+def send_loyalty(id = None):
     """
     A function that begins the Investigate Loyalty power. No player may be
-    investigated twice in a game.
+    investigated twice in a game. Also resends headers if Investigate Loyalty
+    is ongoing.
     """
-    eligibles = [p for p in PLAYERS if not PLAYERS[p].investigated]
-    ydl_send(*UI_HEADERS.BEGIN_INVESTIGATION(
-        eligibles=eligibles,
-        recipients=None if id is None else [id]
-    ))
+    if CURRENT_INVESTIGATED_PLAYER is None:
+        eligibles = [p for p in PLAYERS if not PLAYERS[p].investigated]
+        ydl_send(*UI_HEADERS.BEGIN_INVESTIGATION(
+            eligibles=eligibles,
+            recipients=None if id is None else [id]
+        ))
+    else:
+        role = PLAYERS[CURRENT_INVESTIGATED_PLAYER].role
+        if role == ROLES.HITLER:
+            role = ROLES.FASCIST
+        if id is None or id == PRESIDENT_ID:
+            ydl_send(*UI_HEADERS.RECEIVE_INVESTIGATION(
+                player=CURRENT_INVESTIGATED_PLAYER,
+                role=role,
+                recipients=[PRESIDENT_ID]
+            ))
+        if id != PRESIDENT_ID:
+            ydl_send(*UI_HEADERS.RECEIVE_INVESTIGATION(
+                player=CURRENT_INVESTIGATED_PLAYER,
+                role=ROLES.NONE,
+                recipients=[p for p in PLAYERS if p != PRESIDENT_ID] \
+                 if id is None else [id]
+            ))
 
 
 def investigate_player(secret, player):
@@ -469,16 +473,12 @@ def investigate_player(secret, player):
     is treated as a fascist.
     """
     # BEGIN QUESTION 6
+    global CURRENT_INVESTIGATED_PLAYER
     if bad_id(player): return
     if bad_credentials(PRESIDENT_ID, secret): return 
     PLAYERS[player].investigated = True
-    role = PLAYERS[player].role
-    if role == ROLES.HITLER:
-        role = ROLES.FASCIST
-    # find out the loyalty and send it to the server.
-    ydl_send(*UI_HEADERS.RECEIVE_INVESTIGATION(
-        role=role
-    ))
+    CURRENT_INVESTIGATED_PLAYER = player
+    send_loyalty()
 
 def call_special_election(id = None):
     """
@@ -587,10 +587,7 @@ def game_over(winner):
     global GAME_STATE, WINNER
     GAME_STATE = STATE.END
     WINNER = winner
-    ydl_send(*UI_HEADERS.GAME_OVER(
-        winner=winner,
-        roles=[[p.name, p.id, p.role] for p in PLAYERS.values()]
-    ))
+    send_game_over()
 
 
 # ===================================
@@ -603,7 +600,6 @@ def send_current_government(id = None):
         chancellor=NOMINATED_CHANCELLOR_ID,
         recipients=None if id is None else [id]
     ))
-
 
 def send_policies_enacted(id = None):
     ydl_send(*UI_HEADERS.POLICIES_ENACTED(
@@ -619,12 +615,17 @@ def send_failed_elections(id = None):
         recipients=None if id is None else [id]
     ))
 
+def send_chancellor_request(id = None):
+    ydl_send(*UI_HEADERS.CHANCELLOR_REQUEST(
+        eligibles=eligible_chancellor_nominees(),
+        recipients=None if id is None else [id]
+    ))
+
 def send_await_vote(id = None):
     ydl_send(*UI_HEADERS.AWAIT_VOTE(
         has_voted=players_who_have_voted(),
         recipients=None if id is None else [id]
     ))
-
 
 def send_election_results(id = None):
     ydl_send(*UI_HEADERS.ELECTION_RESULTS(
@@ -632,6 +633,46 @@ def send_election_results(id = None):
         voted_no=players_who_have_voted(VOTES.NEIN),
         result=VOTE_PASSED,
         failed_elections=FAILED_ELECTION_TRACKER,
+        recipients=None if id is None else [id]
+    ))
+
+def send_president_discard(id = None):
+    if id is None or id == PRESIDENT_ID:
+        ydl_send(*UI_HEADERS.PRESIDENT_DISCARD(
+            cards=DRAWN_CARDS,
+            recipients=[PRESIDENT_ID]
+        ))
+    if id != PRESIDENT_ID:
+        ydl_send(*UI_HEADERS.PRESIDENT_DISCARD(
+            cards=[], #for security, don't want other UIs to know cards
+            recipients=[d for d in PLAYERS if d != PRESIDENT_ID]\
+                if id is None else [id]
+        ))
+
+def send_chancellor_discard(id = None):
+    if id is None or id == NOMINATED_CHANCELLOR_ID:
+        ydl_send(*UI_HEADERS.CHANCELLOR_DISCARD(
+            cards=DRAWN_CARDS,
+            can_veto=CAN_VETO_THIS_ROUND,
+            recipients=[NOMINATED_CHANCELLOR_ID]
+        ))
+    if id != NOMINATED_CHANCELLOR_ID:
+        ydl_send(*UI_HEADERS.CHANCELLOR_DISCARD(
+            cards=[], #for security, don't want other UIs to know cards
+            can_veto=CAN_VETO_THIS_ROUND,
+            recipients=[d for d in PLAYERS if d != NOMINATED_CHANCELLOR_ID]\
+                if id is None else [id]
+        ))
+
+def send_ask_president_veto(id = None):
+    ydl_send(*UI_HEADERS.ASK_PRESIDENT_VETO(
+        recipients=None if id is None else [id]
+    ))
+
+def send_game_over(id = None):
+    ydl_send(*UI_HEADERS.GAME_OVER(
+        winner=WINNER,
+        roles=[[p.name, p.id, p.role] for p in PLAYERS.values()],
         recipients=None if id is None else [id]
     ))
 

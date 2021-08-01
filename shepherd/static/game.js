@@ -94,6 +94,7 @@
       socket.on("new_lobby", () => {
         hideAllExcept(["miscEntryText", "joinNewLobbyButton"]);
         document.getElementById("miscEntryText").textContent = "A new game has been made";
+        socket.close();
       });
 
       // add a player to the game
@@ -133,7 +134,8 @@
       socket.on("chancellor_request", (data) => {
         const { eligibles } = JSON.parse(data);
 
-        clear_highlights(); //in case the last nomination was a failure
+        //in case the last nomination was a failure, or an investigation happened
+        clear_highlights();  
 
         if (president_id === id) {
           // if this player is the president, have them select a chancellor nominee
@@ -441,24 +443,30 @@
         if (president_id == id) {
           hideAllExcept(["miscEntryText"]);
           document.getElementById("miscEntryText").textContent =
-            "Select you want to investigate.";
+            "Select who you want to investigate.";
           display_player_buttons(eligibles, "investigatePlayer");
         } else {
-          hideAllExcept([]);
+          hideAllExcept(["miscEntryText"]);
+          document.getElementById("miscEntryText").textContent =
+          "The president is investigating a player's loyalty.";
         }
       });
 
       // tell the president the role of the player they investigated
       socket.on("receive_investigation", (data) => {
-        const { loyalty } = JSON.parse(data);
+        const { player, role:loyalty } = JSON.parse(data);
 
+        let player_name = idToName[player];
+        show_highlight(player)
         if (president_id === id) {
           hideAllExcept(["miscEntryText", "endInvestigatePlayerButton"]);
           document.getElementById(
             "miscEntryText"
-          ).textContent = `That player's role is ${loyalty}`;
+          ).textContent = `${player_name}'s role is ${loyalty}`;
         } else {
-          hideAllExcept([]);
+          hideAllExcept(["miscEntryText"]);
+          document.getElementById("miscEntryText").textContent =
+          `The president has investigated ${player_name}.`;
         }
       });
 
@@ -567,22 +575,12 @@
 
       // president agrees with the veto
       function presidentVeto() {
-        const veto = true;
-        const cards = currentCards;
-        send(
-          "president_veto_answer",
-          JSON.stringify({secret, veto, cards})
-        );
+        send("president_veto_answer", JSON.stringify({secret, veto: true}));
       }
 
       // president denies the veto
       function presidentNoVeto() {
-        const veto = false;
-        const cards = currentCards;
-        send(
-          "president_veto_answer",
-          JSON.stringify({secret, veto, cards})
-        );
+        send("president_veto_answer", JSON.stringify({secret, veto: false}));
       }
 
       function display_players(players) {
