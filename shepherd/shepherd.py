@@ -443,6 +443,8 @@ def send_loyalty(id = None):
     """
     if CURRENT_INVESTIGATED_PLAYER is None:
         eligibles = [p for p in PLAYERS if not PLAYERS[p].investigated]
+        if PRESIDENT_ID in eligibles:
+            eligibles.remove(PRESIDENT_ID)
         ydl_send(*UI_HEADERS.BEGIN_INVESTIGATION(
             eligibles=eligibles,
             recipients=None if id is None else [id]

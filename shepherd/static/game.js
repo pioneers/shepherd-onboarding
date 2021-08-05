@@ -31,6 +31,7 @@
         "presidentNoVetoButton",
         "startNewGameButton",
         "joinNewLobbyButton",
+        "signOutButton",
         "endInvestigatePlayerButton",
         "facts",
       ];
@@ -92,7 +93,9 @@
       // receive information from shepherd
 
       socket.on("new_lobby", () => {
-        hideAllExcept(["miscEntryText", "joinNewLobbyButton"]);
+        hideAllExcept(["miscEntryText"]);
+        document.getElementById("joinNewLobbyButton").style.display = "inline-block";
+        document.getElementById("signOutButton").style.display = "inline-block";
         document.getElementById("miscEntryText").textContent = "A new game has been made";
         socket.close();
       });
