@@ -208,9 +208,8 @@ def start_game():
     roles += [ROLES.FASCIST]*((len(PLAYERS)-3)//2)
     roles += [ROLES.LIBERAL]*(len(PLAYERS)//2 + 1)
 
-    # END QUESTION 1
     shuffle_deck(roles)
-    # BEGIN QUESTION 1
+
     # Assign roles for each player using the deck.
     player_objs = list(PLAYERS.values())
     for i in range(len(PLAYERS)):
