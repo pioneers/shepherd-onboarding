@@ -417,7 +417,11 @@ def chancellor_discarded(secret, card, discarded):
     else:
         GAME_STATE = STATE.ACTION
         CURRENT_INVESTIGATED_PLAYER = None
-        for action in BOARD.current_power_list(): #TODO: sam does not like this model
+        # note: in any given election cycle, there may be:
+        #  - no actions
+        #  - a regular action
+        #  - a veto enabled and a regular action
+        for action in BOARD.current_power_list():
             if action == POWERS.VETO:
                 veto()
             else:
@@ -514,10 +518,17 @@ def policy_peek(id = None):
     """
     A function that executes the policy peek power.
     """
-    ydl_send(*UI_HEADERS.PERFORM_POLICY_PEEK(
-        cards=CARD_DECK[:3],
-        recipients=None if id is None else [id]
-    ))
+    if id is None or id == PRESIDENT_ID:
+        ydl_send(*UI_HEADERS.PERFORM_POLICY_PEEK(
+            cards=CARD_DECK[:3],
+            recipients=[PRESIDENT_ID]
+        ))
+    if id != PRESIDENT_ID:
+        ydl_send(*UI_HEADERS.PERFORM_POLICY_PEEK(
+            cards=[], #for security, don't want other UIs to know cards
+            recipients=[d for d in PLAYERS if d != PRESIDENT_ID]\
+                if id is None else [id]
+        ))
 
 
 def end_policy_peek(secret: str):
