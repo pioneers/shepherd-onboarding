@@ -140,6 +140,10 @@
         //in case the last nomination was a failure, or an investigation happened
         clear_highlights();  
 
+        // BEGIN QUESTION 3
+        // fill in appropriate messages for the president (who need to select a 
+        // nominee), and for everyone else (who is just waiting for the president)
+        // Make sure to test your code after filling this out!
         if (president_id === id) {
           // if this player is the president, have them select a chancellor nominee
           hideAllExcept(["miscEntryText"]);
@@ -151,6 +155,7 @@
           document.getElementById("miscEntryText").textContent =
             "The president is selecting a chancellor nominee";
         }
+        // END QUESTION 3
       });
 
       // tell the player they need to vote
@@ -434,9 +439,16 @@
 
       // update the board based on the number of policies enacted
       socket.on("policies_enacted", (data) => {
+        // BEGIN QUESTION 2
+        // this is where the policies_enacted header that Shepherd sends gets
+        // received on the front-end. This first unpacks the header,
+        // then updates the UI element that corresponds to the enacted policies
+        // There's no code to fill in here, but feel free to play around with
+        // this. Try uncommenting/modifying the console.log statement!
         const { liberal, fascist } = JSON.parse(data);
-
+        // console.log("Received a policies_enacted header from Shepherd!");
         updateCards(liberal, fascist);
+        // END QUESTION 2
       });
 
       // ask the president to select a player to be investigated
@@ -649,9 +661,6 @@
            choose the chancellor and can only select certain players.
            */
       function display_player_buttons(players, method) {
-        /*
-        BEGIN QUESTION 3
-      */
         players.forEach((player, index) => {
           var button = document.getElementById(`selectPlayer${player}`);
           button.style.display = "block";

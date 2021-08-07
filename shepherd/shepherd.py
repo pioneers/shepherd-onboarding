@@ -125,10 +125,16 @@ def player_joined(id: str, name: str, secret: str):
     ))
 
     if GAME_STATE != STATE.SETUP:
+        # BEGIN QUESTION 2
+        # Whenever a player loads a page during the game, Shepherd will send
+        # these headers so that the page can get the information it needs to
+        # show the current state of the game. There's no code to fill in here,
+        # but you'll be implementing send_policies_enacted so that this can work
         send_individual_setup(id)
         send_current_government(id)
         send_policies_enacted(id)
         send_failed_elections(id)
+        # END QUESTION 2
 
         # send state message
         send_funs = {
@@ -230,10 +236,14 @@ def to_pick_chancellor():
     header to the server.
     """
     global GAME_STATE, NOMINATED_CHANCELLOR_ID
+    # BEGIN QUESTION 3
+    # this is a state-transition function; when this gets called, the state of
+    # the game will transition to pick_chancellor, where the president need to
+    # choose a chancellor nominee. There's no code to fill out here, but note
+    # that this is where the send_chancellor_request gets called.
     GAME_STATE = STATE.PICK_CHANCELLOR
     NOMINATED_CHANCELLOR_ID = None
-    send_current_government()
-    # BEGIN QUESTION 3
+    send_current_government() # so UIs know that there is no current chancellor
     send_chancellor_request()
     # END QUESTION 3
 
@@ -245,12 +255,17 @@ def eligible_chancellor_nominees():
     previous president, and previous chancellor.
     - if <= 5 players, only the president and previous chancellor are ineligible
     """
+    # BEGIN QUESTION 3
+    # This should get called from the send_chancellor_request function. Fill in
+    # this function so it returns a list of eligable nominees, as described by
+    # the docstring
     eligibles = list(PLAYERS)
     remove_if_exists(eligibles, PRESIDENT_ID)
     remove_if_exists(eligibles, PREVIOUS_CHANCELLOR_ID)
     if len(PLAYERS) > 5:
         remove_if_exists(eligibles, PREVIOUS_PRESIDENT_ID)
     return eligibles
+    # END QUESTION 3
 
 
 def receive_chancellor_nomination(secret, nominee):
@@ -304,7 +319,7 @@ def end_election_results(secret):
     if VOTE_PASSED:
         PREVIOUS_PRESIDENT_ID = PRESIDENT_ID
         PREVIOUS_CHANCELLOR_ID = NOMINATED_CHANCELLOR_ID
-        # BEGIN QUESTION 4: if chancellor is hitler, and at least 3 fascist
+        # BEGIN QUESTION 5: if chancellor is hitler, and at least 3 fascist
         # policies have been enected,
         # game_over is called and the function is terminated
 
@@ -312,7 +327,7 @@ def end_election_results(secret):
             game_over(ROLES.FASCIST)
             return
 
-        # END QUESTION 4
+        # END QUESTION 5
         if len(CARD_DECK) < 3:
             reshuffle_deck()
         GAME_STATE = STATE.PRESIDENT_DISCARD
@@ -349,14 +364,21 @@ def president_discarded(secret, cards, discarded):
     """
     global DISCARD_DECK, DRAWN_CARDS, GAME_STATE, CAN_VETO_THIS_ROUND
 
+    # this is to make sure that the person discarding is actually
+    # the president and not some hackermans
     if bad_credentials(PRESIDENT_ID, secret): return
-    # BEGIN QUESTION 5
     GAME_STATE = STATE.CHANCELLOR_DISCARD
+    # BEGIN QUESTION 4
+    # In order to forward the game after the president discards a card, 
+    # a few variables need to be updated:
+    # - the discarded card needs to be added to DISCARD_DECK
+    # - DRAWN_CARDS needs to be set the the remaining two cards
+    # - CAN_VETO_THIS_ROUND needs to be set based on a BOARD variable
     DISCARD_DECK.append(discarded)
     DRAWN_CARDS = cards
     CAN_VETO_THIS_ROUND = BOARD.can_veto
+    # END QUESTION 4
     send_chancellor_discard()
-    # END QUESTION 5
 
 
 def chancellor_vetoed(secret):
@@ -596,10 +618,18 @@ def game_over(winner):
     """
     A function that reports the end of a game.
     """
-    global GAME_STATE, WINNER
+    # BEGIN QUESTION 5
+    # This is a state transition function - it moves the game into the appropriate
+    # state (by setting the GAME_STATE to STATE.END), sets any related variables
+    # (in this case, just need to set WINNER), and notifies the UIs of the change
+    # (we've already made a sender function for this - you just have to figure out
+    # which one it is. Hint: it's in the below "sender functions" section) 
+    # You shouldn't need to add any addition lines.
+    global GAME_STATE, WINNER    
     GAME_STATE = STATE.END
     WINNER = winner
     send_game_over()
+    # END QUESTION 5
 
 
 # ===================================
@@ -614,12 +644,16 @@ def send_current_government(id = None):
     ))
 
 def send_policies_enacted(id = None):
+    # BEGIN QUESTION 2
+    # Using the BOARD object, fill in these blanks to send the correct info
+    # Hint: look at utils.py for this header,
+    # and look at Board.py to see what instance attributes you need
     ydl_send(*UI_HEADERS.POLICIES_ENACTED(
         liberal=BOARD.liberal_enacted,
         fascist=BOARD.fascist_enacted,
-        can_veto=BOARD.can_veto,
         recipients=None if id is None else [id]
     ))
+    # END QUESTION 2
 
 def send_failed_elections(id = None):
     ydl_send(*UI_HEADERS.FAILED_ELECTIONS(
@@ -628,10 +662,15 @@ def send_failed_elections(id = None):
     ))
 
 def send_chancellor_request(id = None):
+    # BEGIN QUESTION 3
+    # Fill this function out! Look at other sender functions for best practices
+    # and look at utils.py for what header to use
+    # Hint: you should use the eligible_chancellor_nominees function
     ydl_send(*UI_HEADERS.CHANCELLOR_REQUEST(
         eligibles=eligible_chancellor_nominees(),
         recipients=None if id is None else [id]
     ))
+    # END QUESTION 3
 
 def send_await_vote(id = None):
     ydl_send(*UI_HEADERS.AWAIT_VOTE(
@@ -854,14 +893,14 @@ FUNCTION_MAPPINGS = {
         SHEPHERD_HEADERS.PLAYER_JOINED.name: player_joined,
         SHEPHERD_HEADERS.NEXT_STAGE.name: start_game
     },
+    STATE.PICK_CHANCELLOR: {
+        SHEPHERD_HEADERS.CHANCELLOR_NOMINATION.name: receive_chancellor_nomination
+    },
     STATE.VOTE: {
         SHEPHERD_HEADERS.PLAYER_VOTED.name: receive_vote
     },
     STATE.ELECTION_RESULTS: {
         SHEPHERD_HEADERS.END_ELECTION_RESULTS.name: end_election_results
-    },
-    STATE.PICK_CHANCELLOR: {
-        SHEPHERD_HEADERS.CHANCELLOR_NOMINATION.name: receive_chancellor_nomination
     },
     STATE.PRESIDENT_DISCARD: {
         SHEPHERD_HEADERS.PRESIDENT_DISCARDED.name: president_discarded

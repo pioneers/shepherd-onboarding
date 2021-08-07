@@ -1,0 +1,45 @@
+
+
+Question 1:
+ - shepherd:
+    - gut the middle of start_game()
+ - game.js:
+    - 
+
+Question 2:
+ - shepherd:
+    - look at top of on_join
+    - fill out send_policies_enacted
+ - game.js:
+    - look at socket.on(policies_enacted)
+
+Question 3:
+ - shepherd:
+    - look at to_pick_chancellor
+    - fill out send_chancellor_request
+    - fill out eligible_chancellor_nominees
+ - game.js:
+     - fill in messages in socket.on(chancellor_request)
+
+Question 4:
+ - shepherd:
+    - fill out president_discarded
+    - TODO: fill out sended function and javascript
+ - game.html:
+    - 3rd card button
+
+Question 5:
+ - shepherd:
+    - hitler is elected game over logic
+    - fill out game_over
+
+
+Question 6:
+ - shepherd:
+    - 
+ - game.js:
+    - 
+
+ - 
+
+

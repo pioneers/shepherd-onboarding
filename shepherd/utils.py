@@ -239,13 +239,12 @@ class UI_HEADERS:
         """
 
     @header(YDL_TARGETS.UI, "policies_enacted")
-    def POLICIES_ENACTED(liberal: int, fascist: int, can_veto: bool, recipients = None):
+    def POLICIES_ENACTED(liberal: int, fascist: int, recipients = None):
         """
         Header sent to server to update the number of each policy enacted
         contains:
             liberal - the number of liberal policies enacted
             fascist - the number of fascist policies enacted
-            can_veto - whether the veto power has been enabled
         """
 
     @header(YDL_TARGETS.UI, "failed_elections")
@@ -385,11 +384,11 @@ class POWERS:
 
 
 class BOARDS:
-    # BEGIN QUESTION 1: each arrangement contains a list of 6 lists. List i contains each power that occurs after the (i + 1)th fascist policy is passed.
+    # each arrangement contains a list of 6 lists. List i contains each power that occurs after the (i + 1)th fascist policy is passed.
     FIVE_SIX = [[], [], [POWERS.POLICY_PEEK], [
         POWERS.EXECUTION], [POWERS.EXECUTION, POWERS.VETO], []]
     SEVEN_EIGHT = [[], [POWERS.INVESTIGATE_LOYALTY], [POWERS.SPECIAL_ELECTION], [
         POWERS.EXECUTION], [POWERS.EXECUTION, POWERS.VETO], []]
     NINE_TEN = [[POWERS.INVESTIGATE_LOYALTY], [POWERS.INVESTIGATE_LOYALTY], [
         POWERS.SPECIAL_ELECTION], [POWERS.EXECUTION], [POWERS.EXECUTION, POWERS.VETO], []]
-    # END QUESTION 1
+
