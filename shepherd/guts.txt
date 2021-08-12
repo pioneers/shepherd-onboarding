@@ -3,8 +3,6 @@
 Question 1:
  - shepherd:
     - gut the middle of start_game()
- - game.js:
-    - 
 
 Question 2:
  - shepherd:
@@ -24,22 +22,28 @@ Question 3:
 Question 4:
  - shepherd:
     - fill out president_discarded
-    - TODO: fill out sended function and javascript
+    - fill out send_chancellor_discard
+ - game.js
+    - fill out chancellor logic for on(chancellor_discard)
  - game.html:
     - 3rd card button
 
 Question 5:
  - shepherd:
     - hitler is elected game over logic
+    - policies enacted game over logic
+    - hitler is executed game over logic
     - fill out game_over
 
 
 Question 6:
  - shepherd:
-    - 
+    - look at investigate_player
+    - fill out call_special_election
+    - fill out send_loyalty
+    - fill out call_special_election
+    - fill out policy_peek
  - game.js:
-    - 
-
- - 
+    - fill in investigate_player(id)
 
 

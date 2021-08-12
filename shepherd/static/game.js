@@ -256,14 +256,20 @@
         currentCards = cards;
 
         if (chancellor_id == id) {
+          // BEGIN QUESTION 4
+          // if this player is the chancellor, we need to show the 2 cards
+          // availible to discard, as well as text that telling the player
+          // to discard a policy. If veto is enabled, also show the veto button.
+          // You can look for its id in the allIDs array near the top.
           hideAllExcept(["miscEntryText", "card1Button", "card2Button"]);
           document.getElementById("miscEntryText").textContent =
             "Discard a policy.";
-          show_cards(cards[0], cards[1], "fascist_card"); // last card doesn't matter because it's not shown
+          show_cards(cards[0], cards[1]);
           // give the chancellor the option to veto if possible
           if (can_veto) {
             show("chancellorVetoButton");
           }
+          // END QUESTION 4
         } else {
           hideAllExcept(["miscEntryText"]);
           document.getElementById("miscEntryText").textContent =
@@ -351,7 +357,7 @@
         }
       });
 
-      function show_cards(card1, card2, card3) {
+      function show_cards(card1, card2, card3 = "no card") {
         cards = [card1, card2, card3];
         for (let a in cards) {
           let el = document.getElementById(`card${parseInt(a) + 1}Button`);
@@ -555,10 +561,18 @@
 
       // president chooses a player to investigate
       function investigatePlayer(id) {
+        // BEGIN QUESTION 6
+        // this function is called when the president clicks on a player button
+        // to investigate them. Send a header notfying Shepherd what the
+        // president's choice is! You can look at endInvestigatePlayer
+        // for an example.
+        // CHALLENGE: what sets the callback of the player button to be this
+        // function?
         send(
           "investigate_player",
           JSON.stringify({secret, player: id})
         );
+        // END QUESTION 6
       }
 
       // called after the president is done looking at a player's role

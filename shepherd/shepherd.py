@@ -429,9 +429,17 @@ def chancellor_discarded(secret, card, discarded):
     DISCARD_DECK.append(card)
     send_failed_elections()
     send_policies_enacted()
+
+    # BEGIN QUESTION 5
+    # If the fascists enact 6 or more policies, they win.
+    # If the liberals enact 5 or more policies, they win.
     if BOARD.fascist_enacted >= 6:
         game_over(ROLES.FASCIST)
         return
+    if BOARD.liberal_enacted >= 5:
+        game_over(ROLES.LIBERAL)
+        return
+    # END QUESTION 5
     elif card == CARDS.LIBERAL or len(BOARD.current_power_list()) == 0:
         advance_president()
         to_pick_chancellor()
@@ -451,6 +459,12 @@ def chancellor_discarded(secret, card, discarded):
 
 
 def send_current_action(id = None):
+    # BEGIN QUESTION 6
+    # This function is called at the beginning of the action stage, as well as
+    # when a player reloads the page during the action stage. Here, it calls
+    # one of the more specific sender functions depending on which action/power
+    # is active. There's no code to fill out here, but make sure you understand
+    # how actions work in general.
     send_functions = {
         POWERS.INVESTIGATE_LOYALTY: send_loyalty,
         POWERS.SPECIAL_ELECTION: call_special_election,
@@ -458,6 +472,7 @@ def send_current_action(id = None):
         POWERS.EXECUTION: execution
     }
     send_functions[CURRENT_ACTION](id)
+    # END QUESTION 6
 
 
 def send_loyalty(id = None):
@@ -466,6 +481,16 @@ def send_loyalty(id = None):
     investigated twice in a game. Also resends headers if Investigate Loyalty
     is ongoing.
     """
+    # BEGIN QUESTION 6
+    # This sender function handles two seperate cases:
+    # - if the president has not chosen a player to investigate yet, send a
+    #   BEGIN_INVESTIGATION header with everyone who's eligible to be investigated
+    # - if the president has chosen a player to investigate, follow the logic
+    #   of a "secure" sender function.
+    #    - to the president, send the current investigated player and thier role.
+    #      However, if the player is hitler, send ROLES.FASCIST instead.
+    #    - to everyone else, send the current investigated player with the role
+    #      ROLES.NONE
     if CURRENT_INVESTIGATED_PLAYER is None:
         eligibles = [p for p in PLAYERS if not PLAYERS[p].investigated]
         if PRESIDENT_ID in eligibles:
@@ -491,6 +516,7 @@ def send_loyalty(id = None):
                 recipients=[p for p in PLAYERS if p != PRESIDENT_ID] \
                  if id is None else [id]
             ))
+    # END QUESTION 6
 
 
 def investigate_player(secret, player):
@@ -500,12 +526,19 @@ def investigate_player(secret, player):
     is treated as a fascist.
     """
     # BEGIN QUESTION 6
+    # this function gets called halfway through the investigate player action,
+    # immediately after the president chooses a player to investigate.
+    # set an instance variable of the player so that the player can't be
+    # investigated again, and set the global variable that saves which player
+    # got investigated.
+    # CHALLANGE: what calls this function?
     global CURRENT_INVESTIGATED_PLAYER
     if bad_id(player): return
     if bad_credentials(PRESIDENT_ID, secret): return 
     PLAYERS[player].investigated = True
     CURRENT_INVESTIGATED_PLAYER = player
     send_loyalty()
+    # END QUESTION 6
 
 def call_special_election(id = None):
     """
@@ -513,13 +546,16 @@ def call_special_election(id = None):
     Send the appropriate header to the server with the correct data.
     Anyone except the current president is eligible to be the next president.
     """
-    # BEGIN QUESTION 7
+    # BEGIN QUESTION 6
+    # this is another sender function - send the correct header,
+    # with all of the players who are eligible to become the next president
     eligibles = list(PLAYERS)
     remove_if_exists(eligibles, PRESIDENT_ID)
     ydl_send(*UI_HEADERS.BEGIN_SPECIAL_ELECTION(
         eligibles=eligibles,
         recipients=None if id is None else [id]
     ))
+    # END QUESTION 6
 
 
 def perform_special_election(secret, player):
@@ -539,6 +575,9 @@ def policy_peek(id = None):
     """
     A function that executes the policy peek power.
     """
+    # BEGIN QUESTION 6
+    # this is another sender function - send the current header with the top
+    # 3 cards. HINT: should this be secure?
     if id is None or id == PRESIDENT_ID:
         ydl_send(*UI_HEADERS.PERFORM_POLICY_PEEK(
             cards=CARD_DECK[:3],
@@ -550,6 +589,7 @@ def policy_peek(id = None):
             recipients=[d for d in PLAYERS if d != PRESIDENT_ID]\
                 if id is None else [id]
         ))
+    # END QUESTION 6
 
 
 def end_policy_peek(secret: str):
@@ -589,9 +629,13 @@ def perform_execution(secret, player: str):
     global PRESIDENT_ID, NOMINATED_CHANCELLOR_ID, PREVIOUS_PRESIDENT_ID, PREVIOUS_CHANCELLOR_ID
     if bad_id(player): return
     if bad_credentials(PRESIDENT_ID, secret): return
+
+    # BEGIN QUESTION 5
+    # if Hitler is executed, the liberals win
     if PLAYERS[player].role == ROLES.HITLER:
         game_over(ROLES.LIBERAL)
         return
+    # END QUESTION 5
     player_obj = PLAYERS.pop(player)
 
     if player == PRESIDENT_ID: PRESIDENT_ID = None
@@ -701,6 +745,13 @@ def send_president_discard(id = None):
         ))
 
 def send_chancellor_discard(id = None):
+    # BEGIN QUESTION 4
+    # fill this function out! This is an example of a "secure"
+    # sender function - essentially, only the chancellor 
+    # (NOMINATED_CHANCELLOR_ID) should get to know what the actual cards are, 
+    # and everyone else should just receive an empty list instead of the cards.
+    # Look in utils.py for the correct header, and look at
+    # send_president_discard above for an example of how this could work.
     if id is None or id == NOMINATED_CHANCELLOR_ID:
         ydl_send(*UI_HEADERS.CHANCELLOR_DISCARD(
             cards=DRAWN_CARDS,
@@ -714,6 +765,7 @@ def send_chancellor_discard(id = None):
             recipients=[d for d in PLAYERS if d != NOMINATED_CHANCELLOR_ID]\
                 if id is None else [id]
         ))
+    # END QUESTION 4
 
 def send_ask_president_veto(id = None):
     ydl_send(*UI_HEADERS.ASK_PRESIDENT_VETO(
