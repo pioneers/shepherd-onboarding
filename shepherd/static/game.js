@@ -148,12 +148,12 @@
           // if this player is the president, have them select a chancellor nominee
           hideAllExcept(["miscEntryText"]);
           document.getElementById("miscEntryText").textContent =
-            "Select your chancellor nominee";
+            ______________________;
           display_player_buttons(eligibles, "nominateChancellor");
         } else {
           hideAllExcept(["miscEntryText"]);
           document.getElementById("miscEntryText").textContent =
-            "The president is selecting a chancellor nominee";
+            ______________________;
         }
         // END QUESTION 3
       });
@@ -261,10 +261,9 @@
           // availible to discard, as well as text that telling the player
           // to discard a policy. If veto is enabled, also show the veto button.
           // You can look for its id in the allIDs array near the top.
-          hideAllExcept(["miscEntryText", "card1Button", "card2Button"]);
-          document.getElementById("miscEntryText").textContent =
-            "Discard a policy.";
-          show_cards(cards[0], cards[1]);
+          hideAllExcept([_______, _______, _______]);
+          ______________________________________________________________
+          show_cards(_______, _______);
           // give the chancellor the option to veto if possible
           if (can_veto) {
             show("chancellorVetoButton");
@@ -568,10 +567,9 @@
         // for an example.
         // CHALLENGE: what sets the callback of the player button to be this
         // function?
-        send(
-          "investigate_player",
-          JSON.stringify({secret, player: id})
-        );
+
+        // TODO: write code here
+        
         // END QUESTION 6
       }
 

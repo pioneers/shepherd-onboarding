@@ -38,12 +38,14 @@ Question 5:
 
 Question 6:
  - shepherd:
-    - look at investigate_player
+    - look at send_current_action
     - fill out call_special_election
     - fill out send_loyalty
-    - fill out call_special_election
+    - fill out investigate_player
     - fill out policy_peek
  - game.js:
     - fill in investigate_player(id)
 
 
+TODO: add arguments to docstring of perform_execution
+TODO: (solution branch) use remove_if_exists in send_loyalty
