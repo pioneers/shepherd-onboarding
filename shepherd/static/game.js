@@ -823,6 +823,6 @@
           fetch("https://uselessfacts.jsph.pl/random.json?language=en").then(r => r.json()).then(r => {
             console.log("api fact: " + r.text);
             document.getElementById("fact-text").innerText = r.text;
-        });
+          });
         }
       }
