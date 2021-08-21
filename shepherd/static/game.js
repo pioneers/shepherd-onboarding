@@ -801,8 +801,28 @@
       }
 
       function refreshFacts() {
-        fetch("https://uselessfacts.jsph.pl/random.json?language=en").then(r => r.json()).then(r => {
-            console.log("fact: " + r.text);
+        if (Math.random() < 0.5) {
+          const pie_facts = [
+            "Xylophagia is a condition involving the consumption of paper and form of eating disorder known as pica."
+              + " Pica is an unusual craving for ingestion of either edible or inedible substances.",
+            "Moose are excellent swimmers, able to hold their breath underwater for 30 seconds.",
+            "Ben is named Daddy.",
+            "Sam likes cheese.",
+            "Every 60 seconds in Africa, a minute passes.",
+            "Thermometers are speedometers for atoms.",
+            "Monopoly would be more realistic if the person with the most money got to change the rules whenever they liked.",
+            "Any application that can be written in JavaScript, will eventually be written in JavaScript.",
+            "YDL is pronounced \"yodel\".",
+            "According to Linus Torvalds, \"git\" is an acronym for:\n"
+              + "- \"global information tracker\" if you're in a good mood\n- \"goddamn idiotic truckload of sh*t\" when it breaks",
+          ];
+          let rtxt = pie_facts[Math.floor(Math.random()*pie_facts.length)];
+          console.log("pie fact: " + rtxt);
+          document.getElementById("fact-text").innerText = rtxt;
+        } else {
+          fetch("https://uselessfacts.jsph.pl/random.json?language=en").then(r => r.json()).then(r => {
+            console.log("api fact: " + r.text);
             document.getElementById("fact-text").innerText = r.text;
         });
+        }
       }

@@ -625,6 +625,9 @@ def execution(id = None):
 def perform_execution(secret, player: str):
     """
     A function that executes a player.
+    secret - the president's secret, used to verify that the president actually 
+             requested the execution
+    player - the id of the player to be executed 
     """
     global PRESIDENT_ID, NOMINATED_CHANCELLOR_ID, PREVIOUS_PRESIDENT_ID, PREVIOUS_CHANCELLOR_ID
     if bad_id(player): return
