@@ -12,7 +12,7 @@ First, let's get the game running. Open the `shepherd-onboarding/shepherd` folde
 
 If all goes well, your teminals should have some output similar to this:
 
-[insert image here]
+![a screenshot of 3 terminals](SHsplitterminal.png)
 
 Open the `index.html` link shown in the second terminal. This should bring you to a login screen - make up any username and password (this won't be saved so it doesn't matter for now) and log in. You should be put into the lobby, where a very wise sheep will tell you fun facts.
 
