@@ -26,7 +26,7 @@ There are a few main parts to this game:
  - `shepherd.py` handles all the game logic. However, it is only partially implemented, so you'll need to write much of it yourself.
  - `index.html` is the logic page.
  - `game.html` is the game page. This is mostly implemented, but you'll be completing it in Question 4.
- - `game.html` is the front-end logic for the game page. However, it is only partially implemented, so you'll need to write much of it yourself.
+ - `game.js` is the front-end logic for the game page. However, it is only partially implemented, so you'll need to write much of it yourself.
 
 Most of your time in this project will be spent completing the game logic in `shepherd.py`, so there are a few main data structures you should be aware of:
 
@@ -47,6 +47,9 @@ Go to `shepherd.py`, and search for a comment that says "BEGIN QUESTION 1". This
 Once you have code that you think will work, test it by
 
 # Question 2: __a__
+Go to `shepherd.py` and search for a comment that says "BEGIN QUESTION 2". There are two of them. 
+- The first one is inside `player_joined`, which is called when a new user logs in. Read the selected section, and feel free to poke inside the functions such as `send_current_government`, which is similar to the one you will be implementing.
+- The second is in `send_policies_enacted`, which is called to send the UI information about how many liberal and fascist policies have been enacted. Per the comment description, look for `POLICIES_ENACTED` in utils.py.
 
 # Question 3: __a__
 # Question 4: __a__
