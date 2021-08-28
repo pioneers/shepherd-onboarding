@@ -76,7 +76,7 @@ In general, if you have bugs, it's a good idea to check the network tab to see w
 
 # Question 3: The Democratic Process
 
-> The best argument against democracy is a five-minute conversation with the average voter. - Winston Churchill
+> The best argument against democracy is a five-minute conversation with the average voter - Winston Churchill
 
 So far, the game isn't very interesting. We can start a game without crashing `shepherd.py`, but that's about it. Let's implement an election cycle!
 
@@ -89,11 +89,16 @@ Here are the parts you'll have to read/implement:
  - `game.js`:
      - fill in messages in socket.on(chancellor_request)
 
-TODO
+Once you have code that you think will work, test it using the instructions in section 0A. This time, the president should be able to pick a candidate for chancellor, and everyone should be able to vote on whether they agree with the nomination or not. 
+
+The voting logic has been pre-implemented for you, but we encourage you to try to figure out how it works. Try to answer the following questions:
+   - How do the other players know who has been nominated for chancellor? What header gets sent and what function in `shepherd.py` sends it?
+   - What header gets send from the front-end to shepherd when a player votes? What function receives and processes the vote?
+   - Are there measures in place to prevent election fraud (i.e. someone voting twice, or someone voting for someone else)? If so, what are they?
 
 # Question 4: Government Decisions
 
-> Power tends to corrupt, and absolute power corrupts absolutely. - Lord Acton
+> Power tends to corrupt, and absolute power corrupts absolutely - Lord Acton
 
 We can now elect a government, but what does the government do? Make bad decisions, of course!
 
@@ -107,11 +112,18 @@ Here are the parts you'll have to implement:
  - `game.html`:
     - 3rd card button
 
-TODO
+ Once you have code that you think will work, test it using the instructions in section 0A. This time, the president and chancellor should each be able to discard a card, enacting a policy and completing the election cycle. The cycle should then restart; the next president chooses a chancellor, everyone votes, etc.
 
 # Question 5: Game Over
 
-TODO
+> People who live in glass houses should shut the fuck up - Ready Player One
+
+We now have a smoothly-running society that can choose its government, enact policies, and argue with each other over who's secretly a fascist. But an eternal society isn't very fun - all things must come to an end, including the game. There are 4 ways that this can happen: 
+ - If Hitler is elected after 3 fascist policies, he builds a fascist utopia, and the fascists win
+ - If Hitler is executed, the fascists are leaderless, the movement dissolves into chaos, and the liberals win.
+ - If 5 liberal policies are enacted, the liberals build a liberal distopia, and they win.
+ - If 6 fascist policies are enacted, the fascists build a fascist utopia, and they win. 
+
 
 Here are the parts you'll have to implement:
 
@@ -121,12 +133,19 @@ Here are the parts you'll have to implement:
     - hitler is executed game over logic
     - fill out game_over
 
-TODO
+Once you have code that you think will work, continue to question 6. You won't be able to test any of the win conditions (besides liberals winning on policies) until after you implement actions.
 
 # Question 6: Special Actions
 
+> Every triangle is a love triangle when you love triangles - Pythagoras
 
-TODO
+This is the final stretch of the game! Here you'll be implementing actions / executive powers, which the president can use after the 3rd fascist policy. Specifically, the powers are:
+ - investigate loyalty - the president chooses someone to investigate, and gets shown whether they are liberal or fascist.
+ - special election - the president chooses the next president
+ - policy peek - the president is shown the top 3 cards of the deck
+ - execution - the president chooses someone to have an "accident"
+ - veto - if the president and chancellor both don't like the cards, they can veto instead of enacting a policy. However, the president and chancellor must agree.
+
 
 Here are the parts you'll have to implement:
 
@@ -139,9 +158,15 @@ Here are the parts you'll have to implement:
  - `game.js`:
     - fill in investigate_player(id)
 
-TODO
+Once you finish implementing these parts, make sure to test both question 5 and question 6, as well as a few other things. Specifically, we recommend testing:
+ - After a policy is enacted, there shown be a UI change that shows how many liberal and fascist policies have been enacted
+ - All 4 win conditions should work, and end the game
+ - Make sure that electing Hitler before the 3rd fascist policy does not end the game.
+ - Test games with 5 players, 6 players, and 7 players. 7-player games should have different actions from the 5/6 player games.
+ - The veto power should only be enabled after the 2nd-to-last fascist policy is enacted.
+ - If the president denies a veto, the chancellor should not be able to re-request a veto. On the next round, the chancellor should be able to request a veto again.
 
-Congratulations! You've successfully implemented the game Secret Hitler. Take a moment to relax and pat yourself on the back.
+ Once everything works, congratulations! You've successfully implemented the game Secret Hitler. Take a moment to relax and pat yourself on the back.
 
 # Question 7: Improvements (Optional)
 
