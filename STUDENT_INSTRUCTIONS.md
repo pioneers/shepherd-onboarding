@@ -3,7 +3,7 @@
 
 Welcome to the Secret Hitler project! We suggest doing the mini-projects before starting the Secret Hitler project - if you haven't done this, head over to MINI-PROJ-1 and MINI-PROJ-2 to get acquainted with some of the tools that you'll be using in this project.
 
-# Question 0: Getting Started
+# Question 0A: Getting Started
 
 First, let's get the game running. Open the `shepherd-onboarding/shepherd` folder in VSCode (or preferred editor) and then open 3 terminal windows in that folder (in VSCode, you can use the "Split terminal" button):
  - in the first window, run `python3 ydl.py`
@@ -12,13 +12,13 @@ First, let's get the game running. Open the `shepherd-onboarding/shepherd` folde
 
 If all goes well, your teminals should have some output similar to this:
 
-![a screenshot of 3 terminals](SHsplitterminal.png)
+![a screenshot of 3 terminals](readmefigures/SHsplitterminal.png)
 
 Open the `index.html` link shown in the second terminal. This should bring you to a login screen - make up any username and password (this won't be saved so it doesn't matter for now) and log in. You should be put into the lobby, where a very wise sheep will tell you fun facts.
 
 Open `index.html` in 4 more tabs, and make up 4 more usernames/passwords. Now that you have 5 players, you should be able to click "start game"! However, when you do so, `shepherd.py` will crash. Your mission in this project is to fix the game, and successfully play a full game of Secret Hitler.
 
-# Question 00: Overview
+# Question 0B: Overview
 
 There are a few main parts to this game:
  - `ydl.py` enables communication between Python files
@@ -35,57 +35,131 @@ Most of your time in this project will be spent completing the game logic in `sh
  - powers, votes, and roles are represented by strings, which can be found near the bottom of `Utils.py`.
  - `BOARD` is a `Board` object, which can be made using the constructor in `board.py`.
 
-There are a few more 
+The other global variables are explained in the comments of `shepherd.py`. We suggest reading through the section labelled `game variables` to get a good understanding of what each variable represents. If you have any questions, message us on Slack or ask us in worksession! 
 
 
 # Question 1: Starting a Game
 
 Go to `shepherd.py`, and search for a comment that says "BEGIN QUESTION 1". This is where you'll be implementing part of the logic for `start_game`, in order to set the game up correctly. You'll need to:
-    - assign player roles (based on number of players)
-    - initialize the board (based on number of players)
+ - assign player roles (based on number of players)
+ - initialize the board (based on number of players)
 
-Once you have code that you think will work, test it by
+Once you have code that you think will work, test it using the instructions in section OA. This time, Shepherd should take slightly longer to crash, and you should see all players as sheep in a circle.
 
-# Question 2: __a__
+# Question 2: Sending a Header
 Go to `shepherd.py` and search for a comment that says "BEGIN QUESTION 2". There are two of them. 
 - The first one is inside `player_joined`, which is called when a new user logs in. Read the selected section, and feel free to poke inside the functions such as `send_current_government`, which is similar to the one you will be implementing.
-- The second is in `send_policies_enacted`, which is called to send the UI information about how many liberal and fascist policies have been enacted. Per the comment description, look for `POLICIES_ENACTED` in utils.py.
+- The second is in `send_policies_enacted`, which is called to send the UI information about how many liberal and fascist policies have been enacted. Per the comment description, look for `POLICIES_ENACTED` in `utils.py`.
 
-# Question 3: __a__
-# Question 4: __a__
-# Question 5: __a__
-# Question 6: __a__
+Now, go to `game.js` and search for a comment that says "BEGIN QUESTION 2". This is the receiving end of the `policies_enacted` header - take a look around and try playing around with the code.
+
+Once you have code that you think will work, test it using the instructions in section 0A. This time, Shepherd shouldn't crash at all! Now, open up "inspect element" on the webpage, and go to the network tab. If you __reload the page__ with the network tab open, you should see something like this:
+
+![a screenshot of devtools network tab](readmefigures/devtools_network_tab.png)
+
+This is essentially a list of all the network requests that happened when you loaded the page. Now, scroll down the list until you find a request that has "websocket" in the "Type" column (the name will likely begin with `?EIO=4&transport=websocket&...` or something similar). Click on the name of that request, then go to the "Messages" tab in the popup. It should look like this:
+
+![a screenshot of devtools websocket messages](readmefigures/devtools_websocket_messages.png)
+
+There should be a line that contains something like
+```
+["policies_enacted","{\"liberal\": 0, \"fascist\": 0, ...
+```
+If so, congrats! You've successfully completed a sender function. To summarize the lifecycle of a "shepherd to frontend" header:
+ - First, a function in Shepherd calls the sender function. For example, we saw that `player_joined` calls `send_policies_enacted` in response to a page load.
+ - The sender function (`send_policies_enacted`) calls `ydl_send` with a header from `Utils.py`. This passes the message to YDL (usng TCP sockets), and then YDL passes it to `server.py`.
+ - `server.py` forwards the message to the correct recipient through a websocket.
+ - On the browser side, a Javascript websocket recieved the message. This is what shows up in the network tab.
+ - A Javascript function then parses the message (`JSON.parse`), and shows any changes on the game page. 
+
+In general, if you have bugs, it's a good idea to check the network tab to see what exactly is being received by the frontend. This can help you isolate where the bug is happening.
+
+# Question 3: The Democratic Process
+
+> The best argument against democracy is a five-minute conversation with the average voter. - Winston Churchill
+
+So far, the game isn't very interesting. We can start a game without crashing `shepherd.py`, but that's about it. Let's implement an election cycle!
+
+Here are the parts you'll have to read/implement:
+
+ - `shepherd.py`:
+    - look at to_pick_chancellor
+    - fill out send_chancellor_request
+    - fill out eligible_chancellor_nominees
+ - `game.js`:
+     - fill in messages in socket.on(chancellor_request)
+
+TODO
+
+# Question 4: Government Decisions
+
+> Power tends to corrupt, and absolute power corrupts absolutely. - Lord Acton
+
+We can now elect a government, but what does the government do? Make bad decisions, of course!
+
+Here are the parts you'll have to implement:
+
+ - `shepherd.py`:
+    - fill out president_discarded
+    - fill out send_chancellor_discard
+ - `game.js`:
+    - fill out chancellor logic for on(chancellor_discard)
+ - `game.html`:
+    - 3rd card button
+
+TODO
+
+# Question 5: Game Over
+
+TODO
+
+Here are the parts you'll have to implement:
+
+ - `shepherd.py`:
+    - hitler is elected game over logic
+    - policies enacted game over logic
+    - hitler is executed game over logic
+    - fill out game_over
+
+TODO
+
+# Question 6: Special Actions
 
 
-- Game parts to implement
-  - Shepherd.py
-    1. start_game
-       - deck creation/shuffle
-       - role assignment
-       - board initialization
-    2. player_joined_ongoing_game
-       - send policies enacted
-    3. to_chancellor
-       - determine who is eligible to be selected for chancellor
-       - send chancellor request header
-    4. receive_vote
-       - for this function to be called, you must first implement #1 in server.py
-       - end game if Hitler is elected chancellor with 3+ fascist policies
-    5. president_discarded
-       - for this function to be called, you must first implement #1 in server.py
-       - all of the function
-    6. investigate_player
-       - all of the function
-  - Utils.py
-  - server.py
-    1. player_voted
-    2. president_discarded
-  - game.html
-    - socket.on chancellor_request
-    - chancellorVoteYes and chancellorVoteNo
-      - socket emit
-    - display_player_buttons
-      - body of forEach
-  - Final challenge: all special election business
-- Make flowchart of function calls in game flow
-- Tests for game parts?
+TODO
+
+Here are the parts you'll have to implement:
+
+ - `shepherd.py`:
+    - look at investigate_player
+    - fill out call_special_election
+    - fill out send_loyalty
+    - fill out call_special_election
+    - fill out policy_peek
+ - `game.js`:
+    - fill in investigate_player(id)
+
+TODO
+
+Congratulations! You've successfully implemented the game Secret Hitler. Take a moment to relax and pat yourself on the back.
+
+# Question 7: Improvements (Optional)
+
+> Art is never finished, only abandoned. - Leonardo da Vinci
+
+Not satisfied with your shiny new game? Help us improve it! At this point you have two options:
+ - You can continue working on the `master` branch, and let us know of any improvements that you make. We can then add them to next year's project.
+ - You can switch the the `solution` branch, which contains our version of the fully implemented game. Once you make your improvements there, you can make a pull request to the main onboarding repo, which will help us add your improvements much more quickly.
+
+Here are some suggestions on things you could work on:
+ - Near the bottom of `game.js`, there's a list of fun facts that get shown to the players. Add your own fun facts to this list!
+ - You can add more interesting dialogue for certain actions.
+ - You can add your own artwork to the game; replace image files in `shepherd/static/assets`, or add additional image files there and edit `game.html` and `game.js` appropriately.
+ - If parts of this spec were confusing or unclear, feel free to edit this spec to improve it.
+ - If you feel like different parts of the code should be emphasized for the questions, you can move/add question blanks. Make sure to edit this spec as well, to match the new questions.
+ - On github at https://github.com/pioneers/shepherd-onboarding, there's a tab called "Projects", which should have a single project for the current year. This is where we keep track of known issues / stuff we want to work on; feel free to ask us about anything on the project board.
+
+You're not restricted to this list - feel free to work on anything you feel can be improved. Finally, this part is completely optional; feel free to work on schoolwork or other projects instead.
+
+
+
