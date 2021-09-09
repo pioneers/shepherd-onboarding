@@ -322,9 +322,9 @@ def end_election_results(secret):
         # game_over is called and the function is terminated
 
         # feel free to add lines if needed!
-        if _____________________________________:
-            ___________________
-            return
+        #if _____________________________________:
+        #   ___________________
+        #   return
 
         # END QUESTION 5
         if len(CARD_DECK) < 3:
@@ -432,12 +432,12 @@ def chancellor_discarded(secret, card, discarded):
     # BEGIN QUESTION 5
     # If the fascists enact 6 or more policies, they win.
     # If the liberals enact 5 or more policies, they win.
-    if _______________________:
-        _______________________
-        return
-    if _______________________:
-        _______________________
-        return
+    #if _______________________:
+    #    _______________________
+    #    return
+    #if _______________________:
+    #    _______________________
+    #    return
     # END QUESTION 5
     elif card == CARDS.LIBERAL or len(BOARD.current_power_list()) == 0:
         advance_president()
