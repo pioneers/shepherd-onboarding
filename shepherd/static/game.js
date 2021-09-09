@@ -803,6 +803,7 @@
           const pie_facts = [
             "Xylophagia is a condition involving the consumption of paper and form of eating disorder known as pica."
               + " Pica is an unusual craving for ingestion of either edible or inedible substances.",
+            "Hippopotomonstrosesquippedaliophobia is the fear of long words.",
             "Moose are excellent swimmers, able to hold their breath underwater for 30 seconds.",
             "Ben is named Daddy.",
             "Sam likes cheese.",
@@ -813,6 +814,9 @@
             "YDL is pronounced \"yodel\".",
             "According to Linus Torvalds, \"git\" is an acronym for:\n"
               + "- \"global information tracker\" if you're in a good mood\n- \"goddamn idiotic truckload of sh*t\" when it breaks",
+            "Hailey doesn't like cheese.",
+            "Hailey can eat pizza but hates cheese. Hailey dislikes milk chocolate and milk but likes chocolate milk.",
+            
           ];
           let rtxt = pie_facts[Math.floor(Math.random()*pie_facts.length)];
           console.log("pie fact: " + rtxt);
@@ -821,6 +825,6 @@
           fetch("https://uselessfacts.jsph.pl/random.json?language=en").then(r => r.json()).then(r => {
             console.log("api fact: " + r.text);
             document.getElementById("fact-text").innerText = r.text;
-        });
+          });
         }
       }

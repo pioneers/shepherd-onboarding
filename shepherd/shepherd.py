@@ -8,10 +8,6 @@ from ydl import ydl_send, ydl_start_read
 from board import Board
 import time
 
-# MAJOR TODOS:
-# - literally all of javascript
-# - what to send for reconnection in action state
-# - do state transitions
 
 
 # ===================================
