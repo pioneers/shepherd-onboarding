@@ -436,7 +436,7 @@ def chancellor_discarded(secret, card, discarded):
         game_over(ROLES.LIBERAL)
         return
     # END QUESTION 5
-    elif card == CARDS.LIBERAL or len(BOARD.current_power_list()) == 0:
+    if card == CARDS.LIBERAL or len(BOARD.current_power_list()) == 0:
         advance_president()
         to_pick_chancellor()
     else:

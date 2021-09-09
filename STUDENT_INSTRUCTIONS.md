@@ -89,7 +89,7 @@ Here are the parts you'll have to read/implement:
  - `game.js`:
      - fill in messages in socket.on(chancellor_request)
 
-Once you have code that you think will work, test it using the instructions in section 0A. This time, the president should be able to pick a candidate for chancellor, and everyone should be able to vote on whether they agree with the nomination or not. 
+Once you have code that you think will work, test it using the instructions in section 0A. **Make sure to hard refresh the front-end pages, instead of just reloading them! Otherwise your changes in `game.js` won't take effect.** This time, the president should be able to pick a candidate for chancellor, and everyone should be able to vote on whether they agree with the nomination or not. 
 
 The voting logic has been pre-implemented for you, but we encourage you to try to figure out how it works. Try to answer the following questions:
    - How do the other players know who has been nominated for chancellor? What header gets sent and what function in `shepherd.py` sends it?
@@ -109,6 +109,7 @@ Here are the parts you'll have to implement:
     - fill out send_chancellor_discard
  - `game.js`:
     - fill out chancellor logic for on(chancellor_discard)
+    - uncomment the 3rd card button from `allIDs`
  - `game.html`:
     - 3rd card button
 
