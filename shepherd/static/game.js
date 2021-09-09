@@ -26,7 +26,7 @@
         "card2Button",
         // BEGIN QUESTION 4
         // uncomment the following line 
-        "card3Button",
+        //"card3Button",
         // END QUESTION 4
         "endPolicyPeekButton",
         "chancellorVetoButton",
