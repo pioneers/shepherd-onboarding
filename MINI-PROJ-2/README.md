@@ -7,11 +7,11 @@ How do shepherds communicate with each other? By yodeling. In this mini-project 
 
 Open up 3 terminals (you can do "split terminal" in VSCode). In the first terminal, run
 ```
-python3 po.py
+python3 ydl.py
 ```
 In the second terminal, run
 ```
-python3 ydl.py
+python3 po.py
 ```
 Now, you can run `python3 pi.py` in the third terminal. A message should appear in the first terminal. 
 If you want to stop the first two terminals, press `Ctrl C` in each of them.
@@ -27,8 +27,8 @@ __Task 2__: Modify `po.py` such that instead of listening indefinately, it will 
 
 In your 3 terminals, run:
 
-Terminal 1: `python3 pong.py`
-Terminal 2: `python3 ydl.py`
+Terminal 1: `python3 ydl.py`
+Terminal 2: `python3 pong.py`
 Terminal 3: `python3 ping.py`
 
 Now, `ping.py` should prompt you for a message. Send the message `shepherd` and see what happens!
