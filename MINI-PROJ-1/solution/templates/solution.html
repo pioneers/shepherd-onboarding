@@ -1,73 +1,64 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="en-us">
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Jonathan's Intro</title>
 
-
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="../static/css/styling.css">
+
+	<title> Intro to Web Dev </title>
+ 
+    <div class="container-header"> 
+        <h1> Solutions to challenges 1-3 </h1> 
+    </div>     
+
+	<!--Additional elements for browsers and robots go here goes here-->
 </head>
 
 <body>
-  <div class="container-light" id="container">
-
-    <h1>
-      Jonathan Atkins
-      <button id="dark-mode">Dark Mode</button>
-    </h1>
-
-    <div class="content-light content">
-      <h3>
-        Basic Info
-      </h3>
+  <div class = "challenge-1">
+    <p> Goal: Create a list describing who you are. Ex: Name, Year, Where you're from, etc </p>
+    <!-- Write code within here -->
       <ul>
-        <li>EECS 3rd year</li>
-        <li>From San Jose</li>
-        <li>Was a "discoverer" of cs at Berkeley</li>
+        <li>Jane Doe</li>
+        <li>Freshman</li>
+        <li>Berkeley</li>
+        <li>ETC</li>
       </ul>
-    </div>
-
-    <div class="content-light content">
-      <h3>
-        Facts "Not Fun"
-      </h3>
-      <ul>
-        <li>
-          Light novel reader
-        </li>
-        <li>
-          Likes web development
-        </li>
-        <li>
-          Ugly feet
-        </li>
-      </ul>
-    </div>
-
-
-    <div class="content-light content">
-      <h4>
-        Contact Info
-      </h4>
-      <ul>
-        <li>
-          berkeley email: jonathan.atkins@berkeley.edu
-        </li>
-        <li>
-          pie email: jonathanatkins@pioneers.berkeley.edu
-        </li>
-        <li>
-          Phone: 4087961675
-        </li>
-      </ul>
-    </div>
 
   </div>
 
-  <script src="../static/js/functions.js"></script>
+  <div class = "challenge-2">
+    <p> Goal: Create a button that directs to anything </p>
+
+      <form action="https://www.omfgdogs.com/">
+        <button type="submit">Click me</button>
+      </form>
+
+    <!-- Write code within here -->
+
+  </div>
+
+  <div class = "challenge-3">
+    <p> Goal: Add a Image and make it a hyperlink to something <br> </p>
+    <!-- Write code within here -->
+
+    <a href = "https://spca.bc.ca/news/fun-facts-about-sheep/">
+      <img src="https://cdn.mos.cms.futurecdn.net/8k3DjpgmsoD7fKwk3zyBEf.jpg" alt="HTML" width="350" height="250">
+    </a>
+   
+
+  </div>
+
+  
+  
+  <!-- Connecting to the  Javasctipt File -->
+  <script src="../static/js/functions.js">
+    //can also write javascript within here
+    console.log("Hi!!!!!")
+  
+
+  </script>
 </body>
 
 </html>

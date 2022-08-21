@@ -1,12 +1,48 @@
-* {
-    padding: 0;
-    margin: 0;
-    box-sizing: border-box;
+
+:root {
+    font-family: "Comic Sans MS", "Comic Sans", cursive;
 }
 
-/* 
-Todo:
-- Add styling here 
-*/
 
-/* Your code here */
+/* challenge-1 is div you created within the html file -> edits all the elements within that div class */
+.challenge-1 {
+    background-color: lightblue; 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    
+    /* Your code here */
+    
+}
+
+.challenge-2{
+    background-color: lightgray;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    /* Your code here */
+   
+}
+
+.challenge-3{
+    background-color: lightslategray;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    /* Your code here */
+}
+.challenge-4 {
+    background-color: lightsalmon;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    /* Your code here */
+
+}

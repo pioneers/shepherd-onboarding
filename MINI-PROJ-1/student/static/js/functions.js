@@ -10,3 +10,6 @@
 // - Add js that uses DOM
 
 // Your code here
+
+//Inspect the page and Click on Console 
+console.log("I'm using Javascript!");
