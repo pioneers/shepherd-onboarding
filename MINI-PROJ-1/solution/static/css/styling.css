@@ -24,6 +24,19 @@
    
 }
 
+.btn {
+    background-color:black ;
+    color:white;
+    margin-bottom: 20%;
+    box-shadow: 0 2px 2px #888888; 
+    border-radius: 4px;
+}
+
+.btn:hover {
+    background-color: white;
+    color: black;
+}
+
 .challenge-3{
     background-color: lightslategray;
     display: flex;
