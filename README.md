@@ -6,7 +6,7 @@ Join the liberals and discover the wolves in sheep's clothing, or help the fasci
 
 ### Getting Started
 
-Hopefully you have been to the git tutorial by now. If you haven't, please talk to Sam or Jon!
+Hopefully you have been to the git tutorial by now. If you haven't, please talk to Adam, Sam, Jon!
 
 First you need to fork this repository. You will do this by clicking on fork in the upper right corner of github.
 
@@ -83,14 +83,16 @@ After you have completed this phase, you should be able to start a game and the 
 
 ## General Tips and Instructions
 
-To run the game, enter `python3 server.py` in the terminal. You should see the messages
+To run the game, open up three seperate terminals and cd into the shepherd folder for all terminals with the command `cd shepherd`. Then enter `python3 server.py`, `python3 -m ydl`, and `python3 shepherd.py` each in separate terminals. You should see the messages
 
 ```
-# Pseudo-LCM: channel lcm_target_server registered
-# Pseudo-LCM: channel lcm_target_shepherd registered
+Hello, world!
+Running server on port 5000. Pages:  
+        http://localhost:5000/index.html
+        http://localhost:5000/game.html
 ```
 
-which mean that the Pseudo-LCM is up and running! Go to localhost:5000 in the browser to play your game!
+which mean that the server, ydl, and shepherd is up and running! Go to localhost:5000 in the browser to play your game!
 
 To debug your code, use `print` statements in `.py` files, which display in the terminal, or `console.log` statements in `.html` files, which you can view in your browser using `right click -> Inspect`. `Shepherd.py` also prints information about the game state in the terminal whenever it receives a header, which you can change in the `diagnostics` function.
 
@@ -178,6 +180,8 @@ Lastly, lets talk about Shepherd.py. It might be useful to read the section on Y
 - Game specific variables, which are global variables that are subject to change each year.
 
 ### How Shepherd uses YDL
+
+Please refer to the [updated ydl guide](https://github.com/pioneers/ydl/blob/main/docs/tutorial.md) for more details. The following guide below is outdated. 
 
 YDL is used to send messages asynchronously throughout the shepherd backend. We use these messages to request a certain action to be performed by another program. When an YDL message is sent to a piece of shepherd, that message is stored in a queue, where it will be processed in a FIFO (first in first out) order. Thus, there is constantly a queue of incoming requests that dictate the actions that our programs must take. When a message is pulled off the queue, it is dispatched via some dispatching code and runs the corresponding function.
 
