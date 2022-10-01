@@ -1,6 +1,6 @@
 # pylint: disable=invalid-name
 from typing import List, Union
-from header import header
+from ydl import header
 
 class YDL_TARGETS:
     SHEPHERD = "ydl_target_shepherd"
@@ -8,6 +8,7 @@ class YDL_TARGETS:
 
 
 class SHEPHERD_HEADERS:
+    @staticmethod
     @header(YDL_TARGETS.SHEPHERD, "player_joined")
     def PLAYER_JOINED(name: str, id: str, secret: str):
         """
@@ -20,6 +21,7 @@ class SHEPHERD_HEADERS:
                      between the username, password, and secret sauce
         """
 
+    @staticmethod
     @header(YDL_TARGETS.SHEPHERD, "next_stage")
     def NEXT_STAGE():
         """
@@ -27,6 +29,7 @@ class SHEPHERD_HEADERS:
         This is only useful for moving from END->SETUP and SETUP->CHANCELLOR.
         """
 
+    @staticmethod
     @header(YDL_TARGETS.SHEPHERD, "chancellor_nomination")
     def CHANCELLOR_NOMINATION(secret: str, nominee: str):
         """
@@ -36,6 +39,7 @@ class SHEPHERD_HEADERS:
             nominee - the id of the player who was nominated to be chancellor
         """
 
+    @staticmethod
     @header(YDL_TARGETS.SHEPHERD, "player_voted")
     def PLAYER_VOTED(secret: str, id: str, vote: str):
         """
@@ -46,6 +50,7 @@ class SHEPHERD_HEADERS:
             vote - ja if the vote was yes.
         """
 
+    @staticmethod
     @header(YDL_TARGETS.SHEPHERD, "end_election_results")
     def END_ELECTION_RESULTS(secret: str):
         """
@@ -55,6 +60,7 @@ class SHEPHERD_HEADERS:
             secret - the president's secret
         """
 
+    @staticmethod
     @header(YDL_TARGETS.SHEPHERD, "president_discarded")
     def PRESIDENT_DISCARDED(secret: str, cards: list, discarded: str):
         """
@@ -65,6 +71,7 @@ class SHEPHERD_HEADERS:
             discarded - the card discarded
         """
 
+    @staticmethod
     @header(YDL_TARGETS.SHEPHERD, "chancellor_discarded")
     def CHANCELLOR_DISCARDED(secret: str, card: str, discarded: str):
         """
@@ -75,6 +82,7 @@ class SHEPHERD_HEADERS:
             discarded - the card discarded
         """
 
+    @staticmethod
     @header(YDL_TARGETS.SHEPHERD, "chancellor_vetoed")
     def CHANCELLOR_VETOED(secret: str):
         """
@@ -83,6 +91,7 @@ class SHEPHERD_HEADERS:
             secret - the chancellor's secret
         """
 
+    @staticmethod
     @header(YDL_TARGETS.SHEPHERD, "president_veto_answer")
     def PRESIDENT_VETO_ANSWER(secret: str, veto: bool):
         """
@@ -92,6 +101,7 @@ class SHEPHERD_HEADERS:
             veto   - Boolean if the president vetoes
         """
 
+    @staticmethod
     @header(YDL_TARGETS.SHEPHERD, "end_policy_peek")
     def END_POLICY_PEEK(secret: str):
         """
@@ -100,6 +110,7 @@ class SHEPHERD_HEADERS:
             secret - the president's secret
         """
 
+    @staticmethod
     @header(YDL_TARGETS.SHEPHERD, "investigate_player")
     def INVESTIGATE_PLAYER(secret: str, player: str):
         """
@@ -109,6 +120,7 @@ class SHEPHERD_HEADERS:
             player - the id of the player to investigate
         """
 
+    @staticmethod
     @header(YDL_TARGETS.SHEPHERD, "end_investigate_player")
     def END_INVESTIGATE_PLAYER(secret: str):
         """
@@ -117,6 +129,7 @@ class SHEPHERD_HEADERS:
             secret - the president's secret
         """
 
+    @staticmethod
     @header(YDL_TARGETS.SHEPHERD, "special_election_pick")
     def SPECIAL_ELECTION_PICK(secret: str, player: str):
         """
@@ -126,6 +139,7 @@ class SHEPHERD_HEADERS:
             player - the id of the new president
         """
 
+    @staticmethod
     @header(YDL_TARGETS.SHEPHERD, "perform_execution")
     def PERFORM_EXECUTION(secret: str, player: str):
         """
@@ -139,6 +153,7 @@ class SHEPHERD_HEADERS:
 
 
 class UI_HEADERS:
+    @staticmethod
     @header(YDL_TARGETS.UI, "on_join")
     def ON_JOIN(usernames: list, ids: list, ongoing_game: bool, recipients = None):
         """
@@ -150,12 +165,14 @@ class UI_HEADERS:
             ongoing_game - a boolean value that is True iff a game has been started.
         """
 
+    @staticmethod
     @header(YDL_TARGETS.UI, "bad_login")
     def BAD_LOGIN(message: str, recipients = None):
         """
         Header sent to server to tell a player that their login attempt was unsuccessful
         """
 
+    @staticmethod
     @header(YDL_TARGETS.UI, "not_enough_players")
     def NOT_ENOUGH_PLAYERS(players: int, recipients = None):
         """
@@ -164,6 +181,7 @@ class UI_HEADERS:
             players - number of players currently joined
         """
 
+    @staticmethod
     @header(YDL_TARGETS.UI, "individual_setup")
     def INDIVIDUAL_SETUP(roles: list, individual_role: str, powers: list, recipients = None):
         """
@@ -174,6 +192,7 @@ class UI_HEADERS:
             powers - the list of powers for the current game board (from the BOARDS class)
         """
 
+    @staticmethod
     @header(YDL_TARGETS.UI, "current_government")
     def CURRENT_GOVERNMENT(president: str, chancellor, recipients = None):
         """
@@ -183,6 +202,7 @@ class UI_HEADERS:
             chancellor  - the id of the nominated chancellor (or None/null)
         """
 
+    @staticmethod
     @header(YDL_TARGETS.UI, "chancellor_request")
     def CHANCELLOR_REQUEST(eligibles: list, recipients = None):
         """
@@ -193,6 +213,7 @@ class UI_HEADERS:
             eligibles   - the ids of players who can be nominated
         """
 
+    @staticmethod
     @header(YDL_TARGETS.UI, "await_vote")
     def AWAIT_VOTE(has_voted: list, recipients = None):
         """
@@ -202,6 +223,7 @@ class UI_HEADERS:
             has_voted  - the ids of people who have voted
         """
 
+    @staticmethod
     @header(YDL_TARGETS.UI, "election_results")
     def ELECTION_RESULTS(voted_yes: list, voted_no: list, result: bool, failed_elections: int, recipients = None):
         """
@@ -215,6 +237,7 @@ class UI_HEADERS:
             failed_elections - the number of failed elections in a row
         """
 
+    @staticmethod
     @header(YDL_TARGETS.UI, "president_discard")
     def PRESIDENT_DISCARD(cards: list, recipients = None):
         """
@@ -223,6 +246,7 @@ class UI_HEADERS:
             cards     - the three cards from which one must be discarded
         """
 
+    @staticmethod
     @header(YDL_TARGETS.UI, "chancellor_discard")
     def CHANCELLOR_DISCARD(cards: list, can_veto: bool, recipients = None):
         """
@@ -232,12 +256,14 @@ class UI_HEADERS:
             can_veto   - True if the chancellor is allowed to exercise a veto
         """
 
+    @staticmethod
     @header(YDL_TARGETS.UI, "ask_president_veto")
     def ASK_PRESIDENT_VETO(recipients = None):
         """
         Header sent to server to ask the president if they want to veto
         """
 
+    @staticmethod
     @header(YDL_TARGETS.UI, "policies_enacted")
     def POLICIES_ENACTED(liberal: int, fascist: int, recipients = None):
         """
@@ -247,6 +273,7 @@ class UI_HEADERS:
             fascist - the number of fascist policies enacted
         """
 
+    @staticmethod
     @header(YDL_TARGETS.UI, "failed_elections")
     def FAILED_ELECTIONS(num: int, recipients = None):
         """
@@ -255,6 +282,7 @@ class UI_HEADERS:
             num - the number of failed elections
         """
 
+    @staticmethod
     @header(YDL_TARGETS.UI, "begin_investigation")
     def BEGIN_INVESTIGATION(eligibles: list, recipients = None):
         """
@@ -263,6 +291,7 @@ class UI_HEADERS:
             eligibles  - the ids of those who have haven't been investigated yet
         """
 
+    @staticmethod
     @header(YDL_TARGETS.UI, "receive_investigation")
     def RECEIVE_INVESTIGATION(player: str, role: str, recipients = None):
         """
@@ -272,6 +301,7 @@ class UI_HEADERS:
             role      - the role of the person who was investigated
         """
 
+    @staticmethod
     @header(YDL_TARGETS.UI, "begin_special_election")
     def BEGIN_SPECIAL_ELECTION(eligibles: list, recipients = None):
         """
@@ -280,6 +310,7 @@ class UI_HEADERS:
             eligibles - the ids of the players that can be elected (anyone except the president)
         """
 
+    @staticmethod
     @header(YDL_TARGETS.UI, "perform_policy_peek")
     def PERFORM_POLICY_PEEK(cards: list, recipients = None):
         """
@@ -288,6 +319,7 @@ class UI_HEADERS:
             cards     - the top 3 (or fewer if the deck is smaller) cards
         """
 
+    @staticmethod
     @header(YDL_TARGETS.UI, "begin_execution")
     def BEGIN_EXECUTION(eligibles: list, recipients = None):
         """
@@ -296,6 +328,7 @@ class UI_HEADERS:
             eligibles - players who can be executed (anyone but the president)
         """
 
+    @staticmethod
     @header(YDL_TARGETS.UI, "player_executed")
     def PLAYER_EXECUTED(player: str, recipients = None):
         """
@@ -304,6 +337,7 @@ class UI_HEADERS:
             player - the id of the executed player
         """
 
+    @staticmethod
     @header(YDL_TARGETS.UI, "game_over")
     def GAME_OVER(winner: str, roles, recipients = None):
         """
@@ -313,6 +347,7 @@ class UI_HEADERS:
             roles - the [id, name, role] of all the players
         """
     
+    @staticmethod
     @header(YDL_TARGETS.UI, "new_lobby")
     def NEW_LOBBY(recipients = None):
         """

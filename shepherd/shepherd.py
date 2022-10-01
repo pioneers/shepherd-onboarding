@@ -4,11 +4,12 @@ import random
 from player import Player
 from typing import List, Set, Dict, Tuple, Optional
 from utils import *
-from ydl import ydl_send, ydl_start_read
+from ydl import YDLClient
 from board import Board
 import time
 
 
+YC = YDLClient(YDL_TARGETS.SHEPHERD)
 
 # ===================================
 # game variables
@@ -51,21 +52,16 @@ def start():
     Main loop which processes the event queue and calls the appropriate function
     based on game state and the dictionary of available functions
     '''
-    events = queue.Queue()
-    ydl_start_read(YDL_TARGETS.SHEPHERD, events)
     while True:
-        try:
-            payload = events.get(True, timeout=1) #this timeout is required because windows is really stupid and terrible.
-        except queue.Empty:
-            continue
+        payload = YC.receive()
         print("GAME STATE OUTSIDE: ", GAME_STATE)
         print(payload)
 
         if GAME_STATE in FUNCTION_MAPPINGS:
             func_list = FUNCTION_MAPPINGS.get(GAME_STATE)
-            func = func_list.get(payload[0]) or EVERYWHERE_FUNCTIONS.get(payload[0])
+            func = func_list.get(payload[1]) or EVERYWHERE_FUNCTIONS.get(payload[1])
             if func is not None:
-                func(**payload[1]) #deconstructs dictionary into arguments
+                func(**payload[2]) #deconstructs dictionary into arguments
             else:
                 print(f"Invalid Event in {GAME_STATE}")
         else:
@@ -89,20 +85,20 @@ def player_joined(id: str, name: str, secret: str):
 
     if id in PLAYERS:
         if PLAYERS[id].name != name or PLAYERS[id].secret != secret:
-            ydl_send(*UI_HEADERS.BAD_LOGIN(
+            YC.send(UI_HEADERS.BAD_LOGIN(
                 message="Your login info was bad try again", 
                 recipients=[id]
             ))
             return
     elif id in SPECTATORS:
         if SPECTATORS[id].name != name or SPECTATORS[id].secret != secret:
-            ydl_send(*UI_HEADERS.BAD_LOGIN(
+            YC.send(UI_HEADERS.BAD_LOGIN(
                 message="Your login info was bad try again", 
                 recipients=[id]
             ))
             return
     elif name in all_names:
-        ydl_send(*UI_HEADERS.BAD_LOGIN(
+        YC.send(UI_HEADERS.BAD_LOGIN(
             message="Somebody already took that name! Try again with a different name",
             recipients=[id]
         ))
@@ -114,7 +110,7 @@ def player_joined(id: str, name: str, secret: str):
         else:
             PLAYERS[id] = Player(id, name, secret)
 
-    ydl_send(*UI_HEADERS.ON_JOIN(
+    YC.send(UI_HEADERS.ON_JOIN(
         usernames= [p.name for p in PLAYERS.values()],
         ids= [p.id for p in PLAYERS.values()],
         ongoing_game= GAME_STATE != STATE.SETUP,
@@ -164,7 +160,7 @@ def send_individual_setup(id):
         see_roles = role == ROLES.FASCIST or (role == ROLES.HITLER and len(PLAYERS) <= 6)
     player_roles = [[oth.name, oth.id, oth.role if see_roles or oth == p else ROLES.NONE]
         for oth in PLAYERS.values()]
-    ydl_send(*UI_HEADERS.INDIVIDUAL_SETUP(
+    YC.send(UI_HEADERS.INDIVIDUAL_SETUP(
         roles=player_roles,
         individual_role=role,
         powers=BOARD.board,
@@ -187,7 +183,7 @@ def to_setup():
     global AFTER_SPECIAL_ELECTION_PRESIDENT_ID; AFTER_SPECIAL_ELECTION_PRESIDENT_ID = None
     global FAILED_ELECTION_TRACKER; FAILED_ELECTION_TRACKER = 0
     global GAME_STATE; GAME_STATE = STATE.SETUP
-    ydl_send(*UI_HEADERS.NEW_LOBBY())
+    YC.send(UI_HEADERS.NEW_LOBBY())
 
 
 
@@ -197,7 +193,7 @@ def start_game():
     """
     global PLAYERS, BOARD, PRESIDENT_ID, CARD_DECK
     if len(PLAYERS) < 5:
-        ydl_send(*UI_HEADERS.NOT_ENOUGH_PLAYERS(players=len(PLAYERS)))
+        YC.send(UI_HEADERS.NOT_ENOUGH_PLAYERS(players=len(PLAYERS)))
         return
 
     PRESIDENT_ID = next_president_id()
@@ -591,7 +587,7 @@ def execution(id = None):
     """
     eligibles = list(PLAYERS)
     remove_if_exists(eligibles, PRESIDENT_ID)
-    ydl_send(*UI_HEADERS.BEGIN_EXECUTION(
+    YC.send(UI_HEADERS.BEGIN_EXECUTION(
         eligibles=eligibles,
         recipients=None if id is None else [id]
     ))
@@ -623,7 +619,7 @@ def perform_execution(secret, player: str):
 
     SPECTATORS[player] = player_obj
     advance_president() # also sends current government, in case chancellor dies
-    ydl_send(*UI_HEADERS.PLAYER_EXECUTED(player=player))
+    YC.send(UI_HEADERS.PLAYER_EXECUTED(player=player))
     to_pick_chancellor()
 
 
@@ -659,7 +655,7 @@ def game_over(winner):
 # ===================================
 
 def send_current_government(id = None):
-    ydl_send(*UI_HEADERS.CURRENT_GOVERNMENT(
+    YC.send(UI_HEADERS.CURRENT_GOVERNMENT(
         president=PRESIDENT_ID,
         chancellor=NOMINATED_CHANCELLOR_ID,
         recipients=None if id is None else [id]
@@ -670,7 +666,7 @@ def send_policies_enacted(id = None):
     # Using the BOARD object, fill in these blanks to send the correct info
     # Hint: look at utils.py for this header,
     # and look at Board.py to see what instance attributes you need
-    ydl_send(*UI_HEADERS.POLICIES_ENACTED(
+    YC.send(UI_HEADERS.POLICIES_ENACTED(
         _____________________,
         _____________________,
         recipients=None if id is None else [id]
@@ -678,7 +674,7 @@ def send_policies_enacted(id = None):
     # END QUESTION 2
 
 def send_failed_elections(id = None):
-    ydl_send(*UI_HEADERS.FAILED_ELECTIONS(
+    YC.send(UI_HEADERS.FAILED_ELECTIONS(
         num=FAILED_ELECTION_TRACKER,
         recipients=None if id is None else [id]
     ))
@@ -695,13 +691,13 @@ def send_chancellor_request(id = None):
     # END QUESTION 3
 
 def send_await_vote(id = None):
-    ydl_send(*UI_HEADERS.AWAIT_VOTE(
+    YC.send(UI_HEADERS.AWAIT_VOTE(
         has_voted=players_who_have_voted(),
         recipients=None if id is None else [id]
     ))
 
 def send_election_results(id = None):
-    ydl_send(*UI_HEADERS.ELECTION_RESULTS(
+    YC.send(UI_HEADERS.ELECTION_RESULTS(
         voted_yes=players_who_have_voted(VOTES.JA),
         voted_no=players_who_have_voted(VOTES.NEIN),
         result=VOTE_PASSED,
@@ -711,12 +707,12 @@ def send_election_results(id = None):
 
 def send_president_discard(id = None):
     if id is None or id == PRESIDENT_ID:
-        ydl_send(*UI_HEADERS.PRESIDENT_DISCARD(
+        YC.send(UI_HEADERS.PRESIDENT_DISCARD(
             cards=DRAWN_CARDS,
             recipients=[PRESIDENT_ID]
         ))
     if id != PRESIDENT_ID:
-        ydl_send(*UI_HEADERS.PRESIDENT_DISCARD(
+        YC.send(UI_HEADERS.PRESIDENT_DISCARD(
             cards=[], #for security, don't want other UIs to know cards
             recipients=[d for d in PLAYERS if d != PRESIDENT_ID]\
                 if id is None else [id]
@@ -743,12 +739,12 @@ def send_chancellor_discard(id = None):
     # END QUESTION 4
 
 def send_ask_president_veto(id = None):
-    ydl_send(*UI_HEADERS.ASK_PRESIDENT_VETO(
+    YC.send(UI_HEADERS.ASK_PRESIDENT_VETO(
         recipients=None if id is None else [id]
     ))
 
 def send_game_over(id = None):
-    ydl_send(*UI_HEADERS.GAME_OVER(
+    YC.send(UI_HEADERS.GAME_OVER(
         winner=WINNER,
         roles=[[p.name, p.id, p.role] for p in PLAYERS.values()],
         recipients=None if id is None else [id]

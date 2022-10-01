@@ -63,14 +63,11 @@ class HeaderPrimitive():
                 + " requires keyword arguments, but positional arguments were given")
         # check the typing for each arg in kwargs against the annotation.
         annots = self.typing_function.__annotations__
-        for arg in kwargs:
+        for arg, value in kwargs.items():
             # skips unannotated arguments, typechecks annotated arguments.
-            if arg in annots:
-                try:
-                    check_type(arg, kwargs[arg], annots[arg])
-                except TypeError:
-                    raise TypeError(f"argument {arg} is of type {annots[arg]}, "
-                        + f"but was given type {type(kwargs[arg])}")
+            # skips nonetype args, those will get handled later if they are an issue.
+            if arg in annots and value is not None:
+                check_type(f"{self.typing_function.__name__}({arg})", value, annots[arg])
         # call the typing_function and ignore any return value.
         # the typing_function must raise an error to have an effect.
         self.typing_function(**kwargs)

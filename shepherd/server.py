@@ -3,7 +3,8 @@ import json
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit, join_room, leave_room, send
 from utils import *
-from ydl import ydl_send, ydl_start_read
+from ydl import YDLClient
+import gevent
 
 HOST_URL = "0.0.0.0"
 PORT = 5000
@@ -12,6 +13,8 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'omegalul!'
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 socketio = SocketIO(app, async_mode="gevent", cors_allowed_origins="*")
+
+YC = YDLClient(YDL_TARGETS.UI)
 
 
 @app.route('/')
@@ -53,9 +56,9 @@ def ui_to_server(p, header, args=None):
     if not password(p):
         return
     if args is None:
-        ydl_send(YDL_TARGETS.SHEPHERD, header)
+        YC.send((YDL_TARGETS.SHEPHERD, header, {}))
     else:
-        ydl_send(YDL_TARGETS.SHEPHERD, header, json.loads(args))
+        YC.send((YDL_TARGETS.SHEPHERD, header, json.loads(args)))
 
 
 
@@ -69,16 +72,18 @@ def emit_to_all(message, data):
 
 
 def receiver():
-    events = queue.Queue()
-    ydl_start_read(YDL_TARGETS.UI, events)
     while True:
-        while not events.empty():
-            header, data = events.get()
-            print("RECEIVED:", header, data)
-            if data.get('recipients', None) is not None:
-                emit_to_rooms(header, data, data['recipients'])
-            else:
-                emit_to_all(header, data)
+        tpool = gevent.get_hub().threadpool
+        event = tpool.spawn(YC.receive).get()
+        print("RECEIVED:", event)
+        header = event[1]
+        data = event[2]
+
+        if data.get('recipients', None) is not None:
+            emit_to_rooms(header, data, data['recipients'])
+        else:
+            emit_to_all(header, data)
+            
         socketio.sleep(0.1) # needed because neither windows not socketio play nice. A timeout on the events.get is not sufficient here.
 
 if __name__ == "__main__":
