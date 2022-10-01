@@ -6,7 +6,7 @@ Welcome to the Secret Hitler project! We suggest doing the mini-projects before 
 # Question 0A: Getting Started
 
 First, let's get the game running. Open the `shepherd-onboarding/shepherd` folder in VSCode (or preferred editor) and then open 3 terminal windows in that folder (in VSCode, you can use the "Split terminal" button):
- - in the first window, run `python3 ydl.py`
+ - in the first window, run `python3 -m ydl`
  - in the second window, run `python3 server.py`
  - in the third window, run `python3 shepherd.py`
 
