@@ -7,7 +7,7 @@ How do shepherds communicate with each other? By yodeling. In this mini-project 
 
 Open up 3 terminals (you can do "split terminal" in VSCode). In the first terminal, run
 ```
-python3 ydl.py
+python3 -m ydl
 ```
 In the second terminal, run
 ```
@@ -18,16 +18,16 @@ If you want to stop the first two terminals, press `Ctrl C` in each of them.
 
 __Question 1__: What does first terminal say?
 
-__Task 1__: Modify `pi.py` such that `po.py` receive the message "BLUEBERRY", with the description "Goats eat blueberries".
+__Task 1__: Modify `pi.py` such that `po.py` receives the message `("PO", "Goats eat blueberries")`.
 
-__Task 2__: Modify `po.py` such that instead of listening indefinately, it will stop running after receiving 5 messages.
+__Task 2__: Modify `po.py` such that instead of listening indefinitely, it will stop running after receiving 5 messages.
 
 
 ## Part 2: Real communication
 
 In your 3 terminals, run:
 
-Terminal 1: `python3 ydl.py`
+Terminal 1: `python3 -m ydl`
 Terminal 2: `python3 pong.py`
 Terminal 3: `python3 ping.py`
 

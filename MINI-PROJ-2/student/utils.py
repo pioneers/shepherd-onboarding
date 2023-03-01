@@ -1,6 +1,5 @@
 # pylint: disable=invalid-name
-from typing import List
-from header import header
+from ydl import header
 
 class YDL_TARGETS:
     PING = "ydl_target_ping"
@@ -8,6 +7,7 @@ class YDL_TARGETS:
 
 
 class PING_HEADERS:
+    @staticmethod
     @header(YDL_TARGETS.PING, "respond")
     def RESPOND(text: str, time: float):
         """
@@ -20,6 +20,7 @@ class PING_HEADERS:
 
 
 class PONG_HEADERS:
+    @staticmethod
     @header(YDL_TARGETS.PONG, "notify")
     def NOTIFY(text: str):
         """
@@ -29,6 +30,8 @@ class PONG_HEADERS:
             ids          - an ordered list of ids
             ongoing_game - a boolean value that is True iff a game has been started.
         """
+
+    @staticmethod
     @header(YDL_TARGETS.PONG, "repeat")
     def REPEAT():
         """
@@ -40,7 +43,8 @@ class RESPONSES():
     CANNED_RESPONSES = {
         "cheese": "I like cheese",
         "shepherd": "baaaaaaa",
-        "ydl": "yodelayheehoo"
+        "ydl": "yodelayheehoo",
+        "blueberry": "Goats eat blueberries"
     }
     BANNED_RESPONSES = [
         "stanford",
@@ -48,7 +52,3 @@ class RESPONSES():
         "is_fork",
         "St. Anford's school for gifted and special children"
     ]
-
-
-
-
