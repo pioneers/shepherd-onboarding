@@ -32,7 +32,7 @@ def start():
         print(f"received: {(data)}")
         # if we get a header that we know how to process, dispatch it to the
         # correct function.
-        YH.handle(YC.recieve())
+        YH.handle(YC.receive())
 
 def respond_to_notify(text):
     """
@@ -76,11 +76,11 @@ def respond_to_repeat():
     pass
 
 # a mapping of header names to the functions that will be called to handle that header.
-@YH.on(increment_message)
+#@YH.on(increment_message)
 def increment(num):
     YC.send(result_message(num+1))
 
-@YH.on(double_message)
+#@YH.on(double_message)
 def double(num):
     YC.send(result_message(num*2))
 
