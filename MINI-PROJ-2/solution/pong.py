@@ -5,7 +5,7 @@ stamp back to ping. If ping sends a banned message, pong will refuse to send any
 back ever again.
 """
 import time
-from ydl import YDLClient
+from ydl import Client, Handler
 from utils import *
 
 # global variable to keep track of if we have decided to stop sending messages
@@ -14,7 +14,9 @@ BANNED = False
 # global variable to keep track of the last message so that we can repeat it.
 LAST_MESSAGE = None
 # create a client that listens to the channel YDL_TARGETS.PONG
-YC = YDLClient(YDL_TARGETS.PONG)
+YC = Client(YDL_TARGETS.PONG)
+YH = Handler()
+
 
 def start():
     """
@@ -26,12 +28,11 @@ def start():
     while True:
         # YC.receive() "blocks", which means the program will wait here until
         # something is received.
-        channel, header, message = YC.receive()
+        data = YC.receive()
         # print out the received message for transparency.
-        print(f"received: {(channel, header, message)}")
+        print(f"received: {data}")
         # if we get a header that we know how to process, dispatch it to the
         # correct function.
-        if header in HEADER_MAPPINGS:
             # get the correct function from our mappings and call this function
             # will the message from the header as arguments.
             # ** turns a dictionary into keyword arguments, allowing us to call
@@ -39,7 +40,7 @@ def start():
             # HEADER_MAPPINGS.get(header)(arg = message[arg]) for every arg in
             # the function. We do it this way, because each function has different
             # args, so writing it all out would be next to impossible.
-            HEADER_MAPPINGS.get(header)(**message)
+        YH.handle(YC.receive)
 
 
 def respond_to_notify(text):
@@ -64,7 +65,7 @@ def respond_to_notify(text):
         # construct a tuple from the header with the appropriate args and
         # send the header via ydl_send. The tuple returned from PING_HEADERS.RESPOND
         # contains (ydl_target, header_name, data).
-        YC.send(PING_HEADERS.RESPOND(text=response, time=time.time()))
+        YC.send(PING_HEADERS.RESPOND(response, time.time()))
     # if we get a banned message, ban the user.
     elif text in RESPONSES.BANNED_RESPONSES:
         BANNED = True
@@ -73,7 +74,7 @@ def respond_to_notify(text):
         # see above comments; only difference is we're saving and sending
         # the original message instead of a canned response
         LAST_MESSAGE = text
-        YC.send(PING_HEADERS.RESPOND(text=text, time=time.time()))
+        YC.send(PING_HEADERS.RESPOND(text, time.time()))
     
 
 
