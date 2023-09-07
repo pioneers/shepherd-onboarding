@@ -2,7 +2,7 @@
 The sending half of the pi / po introduction. This file will send one message
 to po.
 """
-from ydl import YDLClient
+from ydl import Client
 
 # sends a tuple ("PO", "I like cheese") to the channel PO
 # the channel is always the first part of the tuple
@@ -11,5 +11,5 @@ from ydl import YDLClient
 # This is nice and simple; however, hard-coding information as strings is really
 # error prone (what if we mistype something?). That's why in the next section,
 # we'll introduce an alternative syntax for creating messages to send. 
-YC = YDLClient()
+YC = Client()
 YC.send(("PO", "I like cheese"))

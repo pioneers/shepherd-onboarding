@@ -5,7 +5,7 @@ pong.
 """
 import threading
 import time
-from ydl import YDLClient
+from ydl import Client
 from utils import YDL_TARGETS, PONG_HEADERS
 
 

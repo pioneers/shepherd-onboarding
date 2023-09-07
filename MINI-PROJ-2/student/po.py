@@ -3,11 +3,11 @@ The receiving half of the pi / po introduction. This file will wait for messages
 from pi and print them when it receives them. You can run pi multiple times without
 having to restart po.
 """
-from ydl import YDLClient
+from ydl import Client
 
 
 # create a client that listens to the channel PO
-YC = YDLClient("PO")
+YC = Client("PO")
 
 # an infinite while loop. This program only ends when the user presses ctrl+c.
 while True:

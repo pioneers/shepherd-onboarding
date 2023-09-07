@@ -2,6 +2,11 @@
 
 How do shepherds communicate with each other? By yodeling. In this mini-project you will learn how to yodel well.
 
+## Part 0: Installing YDL
+
+Step 1: Make sure you have Python3 installed, if you don't, open up a terminal and type "pip install python3". This will install Python3 for you.
+
+Step 2: Open any type of terminal (ex. in VS code or git bash, or use the one you used to install Python) and type in the command "python3 -m pip install --upgrade ydl-ipc". This command will install YDL for you.
 
 ## Part 1: Send and receive
 

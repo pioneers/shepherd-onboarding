@@ -5,7 +5,7 @@ stamp back to ping. If ping sends a banned message, pong will refuse to send any
 back ever again.
 """
 import time
-from ydl import YDLClient
+from ydl import Client, Handler
 from utils import *
 
 # global variable to keep track of if we have decided to stop sending messages
@@ -14,7 +14,8 @@ BANNED = False
 # global variable to keep track of the last message so that we can repeat it.
 LAST_MESSAGE = None
 # create a client that listens to the channel YDL_TARGETS.PONG
-YC = YDLClient(YDL_TARGETS.PONG)
+YC = Client(YDL_TARGETS.PONG)
+YH = Handler()
 
 def start():
     """
@@ -26,21 +27,12 @@ def start():
     while True:
         # YC.receive() "blocks", which means the program will wait here until
         # something is received.
-        channel, header, message = YC.receive()
+        data = YC.receive()
         # print out the received message for transparency.
-        print(f"received: {(channel, header, message)}")
+        print(f"received: {(data)}")
         # if we get a header that we know how to process, dispatch it to the
         # correct function.
-        if header in HEADER_MAPPINGS:
-            # get the correct function from our mappings and call this function
-            # will the message from the header as arguments.
-            # ** turns a dictionary into keyword arguments, allowing us to call
-            # the function easily. This is the same as writing:
-            # HEADER_MAPPINGS.get(header)(arg = message[arg]) for every arg in
-            # the function. We do it this way, because each function has different
-            # args, so writing it all out would be next to impossible.
-            HEADER_MAPPINGS.get(header)(**message)
-
+        YH.handle(YC.recieve())
 
 def respond_to_notify(text):
     """
@@ -84,10 +76,13 @@ def respond_to_repeat():
     pass
 
 # a mapping of header names to the functions that will be called to handle that header.
-HEADER_MAPPINGS = {
-    PONG_HEADERS.NOTIFY.name: respond_to_notify,
-    PONG_HEADERS.REPEAT.name: respond_to_repeat
-}
+@YH.on(increment_message)
+def increment(num):
+    YC.send(result_message(num+1))
+
+@YH.on(double_message)
+def double(num):
+    YC.send(result_message(num*2))
 
 # run start() when this program is run.
 if __name__ == '__main__':
