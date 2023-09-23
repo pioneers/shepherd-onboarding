@@ -10,6 +10,7 @@ from ydl import Client
 YC = Client("PO")
 
 # an infinite while loop. This program only ends when the user presses ctrl+c.
+# TODO: Change the line below so that it stops receiving messages after receiving 5.
 while True:
     # YC.receive() "blocks", which means the program will wait here until
     # something is received. rcvd will be the tuple that was sent from the 

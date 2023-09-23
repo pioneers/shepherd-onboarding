@@ -15,7 +15,7 @@ BANNED = False
 LAST_MESSAGE = None
 # create a client that listens to the channel YDL_TARGETS.PONG
 YC = Client(YDL_TARGETS.PONG)
-YH = Handler()
+PONG_HANDLER = Handler()
 
 def start():
     """
@@ -32,8 +32,12 @@ def start():
         print(f"received: {(data)}")
         # if we get a header that we know how to process, dispatch it to the
         # correct function.
-        YH.handle(YC.receive())
+        PONG_HANDLER.handle(YC.receive())
 
+# this is a decorator, which is a feature of python that allows us to modify functions
+# here, we are modifying the function respond_to_notify so that it is called whenever
+# we receive a message with the header PING_HEADERS.NOTIFY
+@PONG_HANDLER.on(PING_HEADERS.NOTIFY)
 def respond_to_notify(text):
     """
     The function called to respond to a notify header. This function makes sure
@@ -67,22 +71,15 @@ def respond_to_notify(text):
         LAST_MESSAGE = text
         YC.send(PING_HEADERS.RESPOND(text=text, time=time.time()))
 
-
+# this function will be called whenever we receive a message with the header
+# PING_HEADERS.REPEAT
+@PONG_HANDLER.on(PING_HEADERS.REPEAT)
 def respond_to_repeat():
     """
     Send the most recent response back to ping via ydl so long as we are not banned.
     """
     ###### YOUR CODE HERE ######
     pass
-
-# a mapping of header names to the functions that will be called to handle that header.
-#@YH.on(increment_message)
-def increment(num):
-    YC.send(result_message(num+1))
-
-#@YH.on(double_message)
-def double(num):
-    YC.send(result_message(num*2))
 
 # run start() when this program is run.
 if __name__ == '__main__':

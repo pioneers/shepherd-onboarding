@@ -46,7 +46,7 @@ def listen_for_input():
         time.sleep(0.5)
 
 # create a client that listens to the channel YDL_TARGETS.PING
-YC = YDLClient(YDL_TARGETS.PING)
+YC = Client(YDL_TARGETS.PING)
 # spawn our thread that listens for terminal inputs.
 threading.Thread(target=listen_for_input, daemon=True).start()
 # an infinite while loop. This program only ends when the user presses ctrl+c.

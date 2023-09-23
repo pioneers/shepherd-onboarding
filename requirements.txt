@@ -12,3 +12,6 @@ gevent-websocket
 
 ##### Shepherd things #####
 typeguard
+
+##### Shepherd things #####
+ydl-ipc
