@@ -37,7 +37,7 @@ def start():
 # this is a decorator, which is a feature of python that allows us to modify functions
 # here, we are modifying the function respond_to_notify so that it is called whenever
 # we receive a message with the header PING_HEADERS.NOTIFY
-@PONG_HANDLER.on(PING_HEADERS.NOTIFY)
+@PONG_HANDLER.on(PONG_HEADERS.NOTIFY)
 def respond_to_notify(text):
     """
     The function called to respond to a notify header. This function makes sure
@@ -73,7 +73,7 @@ def respond_to_notify(text):
 
 # this function will be called whenever we receive a message with the header
 # PING_HEADERS.REPEAT
-@PONG_HANDLER.on(PING_HEADERS.REPEAT)
+@PONG_HANDLER.on(PONG_HEADERS.REPEAT)
 def respond_to_repeat():
     """
     Send the most recent response back to ping via ydl so long as we are not banned.
