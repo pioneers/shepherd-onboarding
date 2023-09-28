@@ -4,12 +4,12 @@ import random
 from player import Player
 from typing import List, Set, Dict, Tuple, Optional
 from utils import *
-from ydl import YDLClient
+from ydl import Client
 from board import Board
 import time
 
 
-YC = YDLClient(YDL_TARGETS.SHEPHERD)
+YC = Client(YDL_TARGETS.SHEPHERD)
 
 # ===================================
 # game variables

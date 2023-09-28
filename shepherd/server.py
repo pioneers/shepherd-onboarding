@@ -3,7 +3,7 @@ import json
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit, join_room, leave_room, send
 from utils import *
-from ydl import YDLClient
+from ydl import Client
 import gevent
 
 HOST_URL = "0.0.0.0"
@@ -14,7 +14,7 @@ app.config['SECRET_KEY'] = 'omegalul!'
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 socketio = SocketIO(app, async_mode="gevent", cors_allowed_origins="*")
 
-YC = YDLClient(YDL_TARGETS.UI)
+YC = Client(YDL_TARGETS.UI)
 
 
 @app.route('/')
