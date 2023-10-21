@@ -1,6 +1,7 @@
 # pylint: disable=invalid-name
 from typing import List, Union
-from ydl import header
+from ydl import Handler, header
+
 
 class YDL_TARGETS:
     SHEPHERD = "ydl_target_shepherd"
@@ -155,7 +156,7 @@ class SHEPHERD_HEADERS:
 class UI_HEADERS:
     @staticmethod
     @header(YDL_TARGETS.UI, "on_join")
-    def ON_JOIN(usernames: list, ids: list, ongoing_game: bool, recipients = None):
+    def ON_JOIN(usernames: list, ids: list, ongoing_game: bool, recipients=None):
         """
         Header sent to the server either because a player has reconnected and needs
         to be brought up to speed, or because a new player has connected.
@@ -167,14 +168,14 @@ class UI_HEADERS:
 
     @staticmethod
     @header(YDL_TARGETS.UI, "bad_login")
-    def BAD_LOGIN(message: str, recipients = None):
+    def BAD_LOGIN(message: str, recipients=None):
         """
         Header sent to server to tell a player that their login attempt was unsuccessful
         """
 
     @staticmethod
     @header(YDL_TARGETS.UI, "not_enough_players")
-    def NOT_ENOUGH_PLAYERS(players: int, recipients = None):
+    def NOT_ENOUGH_PLAYERS(players: int, recipients=None):
         """
         Header sent to server to tell clients that there are not enough players
         contains:
@@ -183,7 +184,7 @@ class UI_HEADERS:
 
     @staticmethod
     @header(YDL_TARGETS.UI, "individual_setup")
-    def INDIVIDUAL_SETUP(roles: list, individual_role: str, powers: list, recipients = None):
+    def INDIVIDUAL_SETUP(roles: list, individual_role: str, powers: list, recipients=None):
         """
         Header sent to server to tell each individual client information necessary to render the ui and have the appropriate game state
         contains:
@@ -194,7 +195,7 @@ class UI_HEADERS:
 
     @staticmethod
     @header(YDL_TARGETS.UI, "current_government")
-    def CURRENT_GOVERNMENT(president: str, chancellor, recipients = None):
+    def CURRENT_GOVERNMENT(president: str, chancellor, recipients=None):
         """
         Header sent to the server to inform everyone who the current president and chancellor are
         contains:
@@ -204,7 +205,7 @@ class UI_HEADERS:
 
     @staticmethod
     @header(YDL_TARGETS.UI, "chancellor_request")
-    def CHANCELLOR_REQUEST(eligibles: list, recipients = None):
+    def CHANCELLOR_REQUEST(eligibles: list, recipients=None):
         """
         Header sent to server to start chancellor state for all players and request
         chancellor nomination from current president through a
@@ -215,7 +216,7 @@ class UI_HEADERS:
 
     @staticmethod
     @header(YDL_TARGETS.UI, "await_vote")
-    def AWAIT_VOTE(has_voted: list, recipients = None):
+    def AWAIT_VOTE(has_voted: list, recipients=None):
         """
         Header sent to server to request vote from all players on the chancellor
         through a PLAYER_VOTED header sent back to shepherd
@@ -225,7 +226,7 @@ class UI_HEADERS:
 
     @staticmethod
     @header(YDL_TARGETS.UI, "election_results")
-    def ELECTION_RESULTS(voted_yes: list, voted_no: list, result: bool, failed_elections: int, recipients = None):
+    def ELECTION_RESULTS(voted_yes: list, voted_no: list, result: bool, failed_elections: int, recipients=None):
         """
         Header sent to server to tell everyone how everyone voted, and 
         display the result of the election. Gives president a button which
@@ -239,7 +240,7 @@ class UI_HEADERS:
 
     @staticmethod
     @header(YDL_TARGETS.UI, "president_discard")
-    def PRESIDENT_DISCARD(cards: list, recipients = None):
+    def PRESIDENT_DISCARD(cards: list, recipients=None):
         """
         Header sent to server to tell the president to discard a policy
         contains:
@@ -248,7 +249,7 @@ class UI_HEADERS:
 
     @staticmethod
     @header(YDL_TARGETS.UI, "chancellor_discard")
-    def CHANCELLOR_DISCARD(cards: list, can_veto: bool, recipients = None):
+    def CHANCELLOR_DISCARD(cards: list, can_veto: bool, recipients=None):
         """
         Header sent to server to tell the chancellor to discard a policy
         contains:
@@ -258,14 +259,14 @@ class UI_HEADERS:
 
     @staticmethod
     @header(YDL_TARGETS.UI, "ask_president_veto")
-    def ASK_PRESIDENT_VETO(recipients = None):
+    def ASK_PRESIDENT_VETO(recipients=None):
         """
         Header sent to server to ask the president if they want to veto
         """
 
     @staticmethod
     @header(YDL_TARGETS.UI, "policies_enacted")
-    def POLICIES_ENACTED(liberal: int, fascist: int, recipients = None):
+    def POLICIES_ENACTED(liberal: int, fascist: int, recipients=None):
         """
         Header sent to server to update the number of each policy enacted
         contains:
@@ -275,7 +276,7 @@ class UI_HEADERS:
 
     @staticmethod
     @header(YDL_TARGETS.UI, "failed_elections")
-    def FAILED_ELECTIONS(num: int, recipients = None):
+    def FAILED_ELECTIONS(num: int, recipients=None):
         """
         Header send to server to update the number of failed elections
         contains:
@@ -284,7 +285,7 @@ class UI_HEADERS:
 
     @staticmethod
     @header(YDL_TARGETS.UI, "begin_investigation")
-    def BEGIN_INVESTIGATION(eligibles: list, recipients = None):
+    def BEGIN_INVESTIGATION(eligibles: list, recipients=None):
         """
         Header sent to server to tell the president to select a person to investigate
         contains:
@@ -293,7 +294,7 @@ class UI_HEADERS:
 
     @staticmethod
     @header(YDL_TARGETS.UI, "receive_investigation")
-    def RECEIVE_INVESTIGATION(player: str, role: str, recipients = None):
+    def RECEIVE_INVESTIGATION(player: str, role: str, recipients=None):
         """
         Header sent to server to give the president the result of the investigation
         contains:
@@ -303,7 +304,7 @@ class UI_HEADERS:
 
     @staticmethod
     @header(YDL_TARGETS.UI, "begin_special_election")
-    def BEGIN_SPECIAL_ELECTION(eligibles: list, recipients = None):
+    def BEGIN_SPECIAL_ELECTION(eligibles: list, recipients=None):
         """
         Header sent to server to ask the president to pick a new president
         contains:
@@ -312,7 +313,7 @@ class UI_HEADERS:
 
     @staticmethod
     @header(YDL_TARGETS.UI, "perform_policy_peek")
-    def PERFORM_POLICY_PEEK(cards: list, recipients = None):
+    def PERFORM_POLICY_PEEK(cards: list, recipients=None):
         """
         Header sent to server to allow the president to peek at the top 3 policies
         contains:
@@ -321,7 +322,7 @@ class UI_HEADERS:
 
     @staticmethod
     @header(YDL_TARGETS.UI, "begin_execution")
-    def BEGIN_EXECUTION(eligibles: list, recipients = None):
+    def BEGIN_EXECUTION(eligibles: list, recipients=None):
         """
         Header sent to server to ask for an execution
         contains:
@@ -330,7 +331,7 @@ class UI_HEADERS:
 
     @staticmethod
     @header(YDL_TARGETS.UI, "player_executed")
-    def PLAYER_EXECUTED(player: str, recipients = None):
+    def PLAYER_EXECUTED(player: str, recipients=None):
         """
         Header sent to server to tell everyone who has been executed
         contains:
@@ -339,17 +340,17 @@ class UI_HEADERS:
 
     @staticmethod
     @header(YDL_TARGETS.UI, "game_over")
-    def GAME_OVER(winner: str, roles, recipients = None):
+    def GAME_OVER(winner: str, roles, recipients=None):
         """
         Header sent to server to report the end of the game
         contains:
             winner - the role of the winning team
             roles - the [id, name, role] of all the players
         """
-    
+
     @staticmethod
     @header(YDL_TARGETS.UI, "new_lobby")
-    def NEW_LOBBY(recipients = None):
+    def NEW_LOBBY(recipients=None):
         """
         Header sent to server to tell clients that a new lobby has been made
         """
@@ -364,8 +365,6 @@ UI_PAGES = {
     "index.html": False,
     "game.html": False
 }
-
-
 
 
 class LCM_UTILS:
@@ -389,6 +388,32 @@ class STATE:
     ACTION = "action"
 
 # pylint: disable=invalid-name
+
+
+class SHEPHERD_HANDLER():
+    EVERYWHERE = Handler()
+    SETUP = Handler()
+    END = Handler()
+    PICK_CHANCELLOR = Handler()
+    VOTE = Handler()
+    ELECTION_RESULTS = Handler()
+    PRESIDENT_DISCARD = Handler()
+    CHANCELLOR_DISCARD = Handler()
+    CHANCELLOR_VETOED = Handler()
+    ACTION = Handler()
+
+
+STATE_HANDLERS = {
+    STATE.SETUP: SHEPHERD_HANDLER.SETUP,
+    STATE.END: SHEPHERD_HANDLER.END,
+    STATE.PICK_CHANCELLOR: SHEPHERD_HANDLER.PICK_CHANCELLOR,
+    STATE.VOTE: SHEPHERD_HANDLER.VOTE,
+    STATE.ELECTION_RESULTS: SHEPHERD_HANDLER.ELECTION_RESULTS,
+    STATE.PRESIDENT_DISCARD: SHEPHERD_HANDLER.PRESIDENT_DISCARD,
+    STATE.CHANCELLOR_DISCARD: SHEPHERD_HANDLER.CHANCELLOR_DISCARD,
+    STATE.CHANCELLOR_VETOED: SHEPHERD_HANDLER.CHANCELLOR_VETOED,
+    STATE.ACTION: SHEPHERD_HANDLER.ACTION
+}
 
 
 class VOTES:
@@ -426,4 +451,3 @@ class BOARDS:
         POWERS.EXECUTION], [POWERS.EXECUTION, POWERS.VETO], []]
     NINE_TEN = [[POWERS.INVESTIGATE_LOYALTY], [POWERS.INVESTIGATE_LOYALTY], [
         POWERS.SPECIAL_ELECTION], [POWERS.EXECUTION], [POWERS.EXECUTION, POWERS.VETO], []]
-

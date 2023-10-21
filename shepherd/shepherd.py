@@ -4,7 +4,7 @@ import random
 from player import Player
 from typing import List, Set, Dict, Tuple, Optional
 from utils import *
-from ydl import Client
+from ydl import Client, Handler
 from board import Board
 import time
 
@@ -38,13 +38,13 @@ BOARD = Board(5)  # the game board
 
 # state specific variables
 
-VOTE_PASSED = False # only valid in election_results state, says whether the vote passed
-DRAWN_CARDS = [] # only valid in president_discard and chancellor discard states,
-                 # cards that are up for discarding
-CAN_VETO_THIS_ROUND = True # only valid in chancellor discard state
-CURRENT_ACTION = None # only valid in the action state
-CURRENT_INVESTIGATED_PLAYER = None # only valid in the action state
-WINNER = None # only valid in end state; who the winner of the game is
+VOTE_PASSED = False  # only valid in election_results state, says whether the vote passed
+DRAWN_CARDS = []  # only valid in president_discard and chancellor discard states,
+# cards that are up for discarding
+CAN_VETO_THIS_ROUND = True  # only valid in chancellor discard state
+CURRENT_ACTION = None  # only valid in the action state
+CURRENT_INVESTIGATED_PLAYER = None  # only valid in the action state
+WINNER = None  # only valid in end state; who the winner of the game is
 
 
 def start():
@@ -57,26 +57,20 @@ def start():
         print("GAME STATE OUTSIDE: ", GAME_STATE)
         print(payload)
 
-        if GAME_STATE in FUNCTION_MAPPINGS:
-            func_list = FUNCTION_MAPPINGS.get(GAME_STATE)
-            func = func_list.get(payload[1]) or EVERYWHERE_FUNCTIONS.get(payload[1])
-            if func is not None:
-                func(**payload[2]) #deconstructs dictionary into arguments
-            else:
-                print(f"Invalid Event in {GAME_STATE}")
+        if GAME_STATE in STATE_HANDLERS:
+            handler = STATE_HANDLERS.get(GAME_STATE)
+            handler.handle(payload)
         else:
             print(f"Invalid State: {GAME_STATE}")
 
         print(diagnostics())
 
 
-
 # ===================================
 # game functions
 # ===================================
 
-
-
+@SHEPHERD_HANDLER.SETUP.on(SHEPHERD_HEADERS.PLAYER_JOINED)
 def player_joined(id: str, name: str, secret: str):
     global PLAYERS
 
@@ -86,14 +80,14 @@ def player_joined(id: str, name: str, secret: str):
     if id in PLAYERS:
         if PLAYERS[id].name != name or PLAYERS[id].secret != secret:
             YC.send(UI_HEADERS.BAD_LOGIN(
-                message="Your login info was bad try again", 
+                message="Your login info was bad try again",
                 recipients=[id]
             ))
             return
     elif id in SPECTATORS:
         if SPECTATORS[id].name != name or SPECTATORS[id].secret != secret:
             YC.send(UI_HEADERS.BAD_LOGIN(
-                message="Your login info was bad try again", 
+                message="Your login info was bad try again",
                 recipients=[id]
             ))
             return
@@ -104,16 +98,16 @@ def player_joined(id: str, name: str, secret: str):
         ))
         return
     else:
-        if len(PLAYERS) >= 10 or GAME_STATE != STATE.SETUP: #TODO: remove hardcoding
+        if len(PLAYERS) >= 10 or GAME_STATE != STATE.SETUP:  # TODO: remove hardcoding
             SPECTATORS[id] = Player(id, name, secret)
             SPECTATORS[id].role = ROLES.SPECTATOR
         else:
             PLAYERS[id] = Player(id, name, secret)
 
     YC.send(UI_HEADERS.ON_JOIN(
-        usernames= [p.name for p in PLAYERS.values()],
-        ids= [p.id for p in PLAYERS.values()],
-        ongoing_game= GAME_STATE != STATE.SETUP,
+        usernames=[p.name for p in PLAYERS.values()],
+        ids=[p.id for p in PLAYERS.values()],
+        ongoing_game=GAME_STATE != STATE.SETUP,
     ))
 
     if GAME_STATE != STATE.SETUP:
@@ -143,12 +137,12 @@ def player_joined(id: str, name: str, secret: str):
         send_funs.get(GAME_STATE)(id)
 
 
-
 def send_individual_setups():
     for p in PLAYERS:
         send_individual_setup(p)
     for p in SPECTATORS:
         send_individual_setup(p)
+
 
 def send_individual_setup(id):
     p = None
@@ -157,9 +151,10 @@ def send_individual_setup(id):
     if id in PLAYERS:
         p = PLAYERS[id]
         role = p.role
-        see_roles = role == ROLES.FASCIST or (role == ROLES.HITLER and len(PLAYERS) <= 6)
+        see_roles = role == ROLES.FASCIST or (
+            role == ROLES.HITLER and len(PLAYERS) <= 6)
     player_roles = [[oth.name, oth.id, oth.role if see_roles or oth == p else ROLES.NONE]
-        for oth in PLAYERS.values()]
+                    for oth in PLAYERS.values()]
     YC.send(UI_HEADERS.INDIVIDUAL_SETUP(
         roles=player_roles,
         individual_role=role,
@@ -168,25 +163,37 @@ def send_individual_setup(id):
     ))
 
 
+@SHEPHERD_HANDLER.END.on(SHEPHERD_HEADERS.NEXT_STAGE)
 def to_setup():
     """
     A function that resets everything and moves the game into setup phase.
     """
-    global PLAYERS; PLAYERS = {}
-    global SPECTATORS; SPECTATORS = {}
-    global CARD_DECK; CARD_DECK = []
-    global DISCARD_DECK; DISCARD_DECK = []
-    global PRESIDENT_ID; PRESIDENT_ID = None
-    global PREVIOUS_PRESIDENT_ID; PREVIOUS_PRESIDENT_ID = None
-    global PREVIOUS_CHANCELLOR_ID; PREVIOUS_CHANCELLOR_ID = None
-    global NOMINATED_CHANCELLOR_ID; NOMINATED_CHANCELLOR_ID = None
-    global AFTER_SPECIAL_ELECTION_PRESIDENT_ID; AFTER_SPECIAL_ELECTION_PRESIDENT_ID = None
-    global FAILED_ELECTION_TRACKER; FAILED_ELECTION_TRACKER = 0
-    global GAME_STATE; GAME_STATE = STATE.SETUP
+    global PLAYERS
+    PLAYERS = {}
+    global SPECTATORS
+    SPECTATORS = {}
+    global CARD_DECK
+    CARD_DECK = []
+    global DISCARD_DECK
+    DISCARD_DECK = []
+    global PRESIDENT_ID
+    PRESIDENT_ID = None
+    global PREVIOUS_PRESIDENT_ID
+    PREVIOUS_PRESIDENT_ID = None
+    global PREVIOUS_CHANCELLOR_ID
+    PREVIOUS_CHANCELLOR_ID = None
+    global NOMINATED_CHANCELLOR_ID
+    NOMINATED_CHANCELLOR_ID = None
+    global AFTER_SPECIAL_ELECTION_PRESIDENT_ID
+    AFTER_SPECIAL_ELECTION_PRESIDENT_ID = None
+    global FAILED_ELECTION_TRACKER
+    FAILED_ELECTION_TRACKER = 0
+    global GAME_STATE
+    GAME_STATE = STATE.SETUP
     YC.send(UI_HEADERS.NEW_LOBBY())
 
 
-
+@SHEPHERD_HANDLER.SETUP.on(SHEPHERD_HEADERS.NEXT_STAGE)
 def start_game():
     """
     A function that initializes variables that require the number of players.
@@ -201,7 +208,6 @@ def start_game():
 
     # BEGIN QUESTION 1: initialize the list deck with 1 hitler and the relevant number of fascist and liberal cards. Hint: don't use raw strings to represent the roles. Instead, look for a useful class in Utils.py.
     # see the table on page 2 of the rules: https://secrethitler.com/assets/Secret_Hitler_Rules.pdf#page=2. For a challenge, try coming up with a formula for it.
-
 
     # TODO: add lines here!
 
@@ -234,9 +240,10 @@ def to_pick_chancellor():
     # that this is where the send_chancellor_request gets called.
     GAME_STATE = STATE.PICK_CHANCELLOR
     NOMINATED_CHANCELLOR_ID = None
-    send_current_government() # so UIs know that there is no current chancellor
+    send_current_government()  # so UIs know that there is no current chancellor
     send_chancellor_request()
     # END QUESTION 3
+
 
 def eligible_chancellor_nominees():
     """
@@ -258,6 +265,7 @@ def eligible_chancellor_nominees():
     # END QUESTION 3
 
 
+@SHEPHERD_HANDLER.PICK_CHANCELLOR.on(SHEPHERD_HEADERS.CHANCELLOR_NOMINATION)
 def receive_chancellor_nomination(secret, nominee):
     """
     A function that reads who the president has nominated for chancellor and
@@ -265,7 +273,8 @@ def receive_chancellor_nomination(secret, nominee):
     """
     global GAME_STATE, NOMINATED_CHANCELLOR_ID
 
-    if bad_credentials(PRESIDENT_ID, secret): return
+    if bad_credentials(PRESIDENT_ID, secret):
+        return
 
     GAME_STATE = STATE.VOTE
     NOMINATED_CHANCELLOR_ID = nominee
@@ -273,15 +282,18 @@ def receive_chancellor_nomination(secret, nominee):
     send_await_vote()
 
 
+@SHEPHERD_HANDLER.VOTE.on(SHEPHERD_HEADERS.PLAYER_VOTED)
 def receive_vote(secret, id, vote):
     """
     A function that notes a vote and acts if the voting is done.
     """
-    if bad_credentials(id, secret): return
+    if bad_credentials(id, secret):
+        return
     PLAYERS[id].vote = vote
     send_await_vote()
     if number_of_votes() >= len(PLAYERS):
         to_election_results()
+
 
 def to_election_results():
     """
@@ -290,19 +302,22 @@ def to_election_results():
     global GAME_STATE, VOTE_PASSED, FAILED_ELECTION_TRACKER
     GAME_STATE = STATE.ELECTION_RESULTS
     VOTE_PASSED = passing_vote()
-    if not VOTE_PASSED: 
+    if not VOTE_PASSED:
         FAILED_ELECTION_TRACKER += 1
     send_election_results()
 
+
+@SHEPHERD_HANDLER.ELECTION_RESULTS.on(SHEPHERD_HEADERS.END_ELECTION_RESULTS)
 def end_election_results(secret):
     """
     clears everyone's votes, then either advances to the next stage based on whether the
     vote has passed. May enact chaos.
     """
     global PREVIOUS_PRESIDENT_ID, PREVIOUS_CHANCELLOR_ID, GAME_STATE, DRAWN_CARDS
-    
-    if bad_credentials(PRESIDENT_ID, secret): return
-    
+
+    if bad_credentials(PRESIDENT_ID, secret):
+        return
+
     for player in PLAYERS.values():
         player.clear_vote()
 
@@ -314,7 +329,7 @@ def end_election_results(secret):
         # game_over is called and the function is terminated
 
         # feel free to add lines if needed!
-        #if _____________________________________:
+        # if _____________________________________:
         #   ___________________
         #   return
 
@@ -325,7 +340,7 @@ def end_election_results(secret):
         DRAWN_CARDS = draw_cards(3)
         send_president_discard()
     else:
-        if chaos(): 
+        if chaos():
             enact_chaos()
         advance_president()
         to_pick_chancellor()
@@ -348,6 +363,7 @@ def enact_chaos():
     send_policies_enacted()
 
 
+@SHEPHERD_HANDLER.PRESIDENT_DISCARD.on(SHEPHERD_HEADERS.PRESIDENT_DISCARDED)
 def president_discarded(secret, cards, discarded):
     """
     A function that takes the cards left and passes them to the chancellor.
@@ -357,10 +373,11 @@ def president_discarded(secret, cards, discarded):
 
     # this is to make sure that the person discarding is actually
     # the president and not some hackermans
-    if bad_credentials(PRESIDENT_ID, secret): return
+    if bad_credentials(PRESIDENT_ID, secret):
+        return
     GAME_STATE = STATE.CHANCELLOR_DISCARD
     # BEGIN QUESTION 4
-    # In order to forward the game after the president discards a card, 
+    # In order to forward the game after the president discards a card,
     # a few variables need to be updated:
     # - the discarded card needs to be added to DISCARD_DECK
     # - DRAWN_CARDS needs to be set the the remaining two cards
@@ -372,25 +389,29 @@ def president_discarded(secret, cards, discarded):
     send_chancellor_discard()
 
 
+@SHEPHERD_HANDLER.CHANCELLOR_DISCARD.on(SHEPHERD_HEADERS.CHANCELLOR_VETOED)
 def chancellor_vetoed(secret):
     """
     A function that asks for the president's response after a chancellor veto.
     """
     global GAME_STATE
 
-    if bad_credentials(NOMINATED_CHANCELLOR_ID, secret): return
+    if bad_credentials(NOMINATED_CHANCELLOR_ID, secret):
+        return
 
     GAME_STATE = STATE.CHANCELLOR_VETOED
     send_ask_president_veto()
 
 
+@SHEPHERD_HANDLER.CHANCELLOR_VETOED.on(SHEPHERD_HEADERS.PRESIDENT_VETO_ANSWER)
 def president_veto_answer(secret: str, veto: bool):
     """
     A function that receives if the president vetoes or not.
     """
     global FAILED_ELECTION_TRACKER, GAME_STATE, CAN_VETO_THIS_ROUND
-    
-    if bad_credentials(PRESIDENT_ID, secret): return
+
+    if bad_credentials(PRESIDENT_ID, secret):
+        return
 
     if veto:
         FAILED_ELECTION_TRACKER += 1
@@ -405,6 +426,7 @@ def president_veto_answer(secret: str, veto: bool):
         send_chancellor_discard()
 
 
+@SHEPHERD_HANDLER.CHANCELLOR_DISCARD.on(SHEPHERD_HEADERS.CHANCELLOR_DISCARDED)
 def chancellor_discarded(secret, card, discarded):
     """
     A function that enacts the policy left over after two have been discarded.
@@ -412,11 +434,12 @@ def chancellor_discarded(secret, card, discarded):
     global GAME_STATE, BOARD, PRESIDENT_ID, CURRENT_ACTION, \
         CURRENT_INVESTIGATED_PLAYER, FAILED_ELECTION_TRACKER
 
-    if bad_credentials(NOMINATED_CHANCELLOR_ID, secret): return
+    if bad_credentials(NOMINATED_CHANCELLOR_ID, secret):
+        return
 
     DISCARD_DECK.append(discarded)
     BOARD.enact_policy(card)
-    FAILED_ELECTION_TRACKER = 0 # government has successfully enacted a policy
+    FAILED_ELECTION_TRACKER = 0  # government has successfully enacted a policy
     DISCARD_DECK.append(card)
     send_failed_elections()
     send_policies_enacted()
@@ -424,10 +447,10 @@ def chancellor_discarded(secret, card, discarded):
     # BEGIN QUESTION 5
     # If the fascists enact 6 or more policies, they win.
     # If the liberals enact 5 or more policies, they win.
-    #if _______________________:
+    # if _______________________:
     #    _______________________
     #    return
-    #if _______________________:
+    # if _______________________:
     #    _______________________
     #    return
     # END QUESTION 5
@@ -449,7 +472,7 @@ def chancellor_discarded(secret, card, discarded):
                 send_current_action()
 
 
-def send_current_action(id = None):
+def send_current_action(id=None):
     # BEGIN QUESTION 6
     # This function is called at the beginning of the action stage, as well as
     # when a player reloads the page during the action stage. Here, it calls
@@ -466,7 +489,7 @@ def send_current_action(id = None):
     # END QUESTION 6
 
 
-def send_loyalty(id = None):
+def send_loyalty(id=None):
     """
     A function that begins the Investigate Loyalty power. No player may be
     investigated twice in a game. Also resends headers if Investigate Loyalty
@@ -485,20 +508,15 @@ def send_loyalty(id = None):
     if CURRENT_INVESTIGATED_PLAYER is None:
         # TODO: replace the pass with your own code!
         pass
-        
-
-
 
     else:
         # TODO: replace the pass with your own code!
         pass
 
-
-
-        
     # END QUESTION 6
 
 
+@SHEPHERD_HANDLER.ACTION.on(SHEPHERD_HEADERS.INVESTIGATE_PLAYER)
 def investigate_player(secret, player):
     """
     A function that returns the loyalty (as a role) of the player the president
@@ -513,14 +531,17 @@ def investigate_player(secret, player):
     # got investigated.
     # CHALLANGE: what calls this function?
     global CURRENT_INVESTIGATED_PLAYER
-    if bad_id(player): return
-    if bad_credentials(PRESIDENT_ID, secret): return 
+    if bad_id(player):
+        return
+    if bad_credentials(PRESIDENT_ID, secret):
+        return
     _________________________
     _________________________
     send_loyalty()
     # END QUESTION 6
 
-def call_special_election(id = None):
+
+def call_special_election(id=None):
     """
     A function that begins the special election power.
     Send the appropriate header to the server with the correct data.
@@ -536,20 +557,23 @@ def call_special_election(id = None):
     # END QUESTION 6
 
 
+@SHEPHERD_HANDLER.ACTION.on(SHEPHERD_HEADERS.SPECIAL_ELECTION_PICK)
 def perform_special_election(secret, player):
     """
     A function that starts the next session with the new president.
     """
     global PRESIDENT_ID, AFTER_SPECIAL_ELECTION_PRESIDENT_ID
-    if bad_id(player): return
-    if bad_credentials(PRESIDENT_ID, secret): return
+    if bad_id(player):
+        return
+    if bad_credentials(PRESIDENT_ID, secret):
+        return
     AFTER_SPECIAL_ELECTION_PRESIDENT_ID = next_president_id()
     PRESIDENT_ID = player
     send_current_government()
     to_pick_chancellor()
 
 
-def policy_peek(id = None):
+def policy_peek(id=None):
     """
     A function that executes the policy peek power.
     """
@@ -559,29 +583,33 @@ def policy_peek(id = None):
 
     # TODO: replace the pass with your own code
     pass
-    
+
     # END QUESTION 6
 
 
+@SHEPHERD_HANDLER.ACTION.on(SHEPHERD_HEADERS.END_POLICY_PEEK)
 def end_policy_peek(secret: str):
     """
     A function that ends the policy peek.
     """
-    if bad_credentials(PRESIDENT_ID, secret): return
+    if bad_credentials(PRESIDENT_ID, secret):
+        return
     advance_president()
     to_pick_chancellor()
 
 
+@SHEPHERD_HANDLER.ACTION.on(SHEPHERD_HEADERS.END_INVESTIGATE_PLAYER)
 def end_investigate_player(secret: str):
     """
     A function that ends the investigate player.
     """
-    if bad_credentials(PRESIDENT_ID, secret): return
+    if bad_credentials(PRESIDENT_ID, secret):
+        return
     advance_president()
     to_pick_chancellor()
 
 
-def execution(id = None):
+def execution(id=None):
     """
     A function that begins the execution power.
     """
@@ -593,6 +621,7 @@ def execution(id = None):
     ))
 
 
+@SHEPHERD_HANDLER.ACTION.on(SHEPHERD_HEADERS.PERFORM_EXECUTION)
 def perform_execution(secret, player: str):
     """
     A function that executes a player.
@@ -601,8 +630,10 @@ def perform_execution(secret, player: str):
     player - the id of the player to be executed 
     """
     global PRESIDENT_ID, NOMINATED_CHANCELLOR_ID, PREVIOUS_PRESIDENT_ID, PREVIOUS_CHANCELLOR_ID
-    if bad_id(player): return
-    if bad_credentials(PRESIDENT_ID, secret): return
+    if bad_id(player):
+        return
+    if bad_credentials(PRESIDENT_ID, secret):
+        return
 
     # BEGIN QUESTION 5
     # if Hitler is executed, the liberals win
@@ -612,13 +643,17 @@ def perform_execution(secret, player: str):
     # END QUESTION 5
     player_obj = PLAYERS.pop(player)
 
-    if player == PRESIDENT_ID: PRESIDENT_ID = None
-    if player == NOMINATED_CHANCELLOR_ID: NOMINATED_CHANCELLOR_ID = None
-    if player == PREVIOUS_PRESIDENT_ID: PREVIOUS_PRESIDENT_ID = None
-    if player == PREVIOUS_CHANCELLOR_ID: PREVIOUS_CHANCELLOR_ID = None
+    if player == PRESIDENT_ID:
+        PRESIDENT_ID = None
+    if player == NOMINATED_CHANCELLOR_ID:
+        NOMINATED_CHANCELLOR_ID = None
+    if player == PREVIOUS_PRESIDENT_ID:
+        PREVIOUS_PRESIDENT_ID = None
+    if player == PREVIOUS_CHANCELLOR_ID:
+        PREVIOUS_CHANCELLOR_ID = None
 
     SPECTATORS[player] = player_obj
-    advance_president() # also sends current government, in case chancellor dies
+    advance_president()  # also sends current government, in case chancellor dies
     YC.send(UI_HEADERS.PLAYER_EXECUTED(player=player))
     to_pick_chancellor()
 
@@ -641,9 +676,9 @@ def game_over(winner):
     # state (by setting the GAME_STATE to STATE.END), sets any related variables
     # (in this case, just need to set WINNER), and notifies the UIs of the change
     # (we've already made a sender function for this - you just have to figure out
-    # which one it is. Hint: it's in the below "sender functions" section) 
+    # which one it is. Hint: it's in the below "sender functions" section)
     # You shouldn't need to add any addition lines.
-    global GAME_STATE, WINNER    
+    global GAME_STATE, WINNER
     _____________________
     _____________________
     _____________________
@@ -654,14 +689,15 @@ def game_over(winner):
 # sender functions
 # ===================================
 
-def send_current_government(id = None):
+def send_current_government(id=None):
     YC.send(UI_HEADERS.CURRENT_GOVERNMENT(
         president=PRESIDENT_ID,
         chancellor=NOMINATED_CHANCELLOR_ID,
         recipients=None if id is None else [id]
     ))
 
-def send_policies_enacted(id = None):
+
+def send_policies_enacted(id=None):
     # BEGIN QUESTION 2
     # Using the BOARD object, fill in these blanks to send the correct info
     # Hint: look at utils.py for this header,
@@ -673,30 +709,34 @@ def send_policies_enacted(id = None):
     ))
     # END QUESTION 2
 
-def send_failed_elections(id = None):
+
+def send_failed_elections(id=None):
     YC.send(UI_HEADERS.FAILED_ELECTIONS(
         num=FAILED_ELECTION_TRACKER,
         recipients=None if id is None else [id]
     ))
 
-def send_chancellor_request(id = None):
+
+def send_chancellor_request(id=None):
     # BEGIN QUESTION 3
     # Fill this function out! Look at other sender functions for best practices
     # and look at utils.py for what header to use
     # Hint: you should use the eligible_chancellor_nominees function
-    
+
     # TODO: replace pass with your code!
     pass
 
     # END QUESTION 3
 
-def send_await_vote(id = None):
+
+def send_await_vote(id=None):
     YC.send(UI_HEADERS.AWAIT_VOTE(
         has_voted=players_who_have_voted(),
         recipients=None if id is None else [id]
     ))
 
-def send_election_results(id = None):
+
+def send_election_results(id=None):
     YC.send(UI_HEADERS.ELECTION_RESULTS(
         voted_yes=players_who_have_voted(VOTES.JA),
         voted_no=players_who_have_voted(VOTES.NEIN),
@@ -705,7 +745,8 @@ def send_election_results(id = None):
         recipients=None if id is None else [id]
     ))
 
-def send_president_discard(id = None):
+
+def send_president_discard(id=None):
     if id is None or id == PRESIDENT_ID:
         YC.send(UI_HEADERS.PRESIDENT_DISCARD(
             cards=DRAWN_CARDS,
@@ -713,16 +754,17 @@ def send_president_discard(id = None):
         ))
     if id != PRESIDENT_ID:
         YC.send(UI_HEADERS.PRESIDENT_DISCARD(
-            cards=[], #for security, don't want other UIs to know cards
+            cards=[],  # for security, don't want other UIs to know cards
             recipients=[d for d in PLAYERS if d != PRESIDENT_ID]\
                 if id is None else [id]
-        ))
+                ))
 
-def send_chancellor_discard(id = None):
+
+def send_chancellor_discard(id=None):
     # BEGIN QUESTION 4
     # fill this function out! This is an example of a "secure"
-    # sender function - essentially, only the chancellor 
-    # (NOMINATED_CHANCELLOR_ID) should get to know what the actual cards are, 
+    # sender function - essentially, only the chancellor
+    # (NOMINATED_CHANCELLOR_ID) should get to know what the actual cards are,
     # and everyone else should just receive an empty list instead of the cards.
     # Look in utils.py for the correct header, and look at
     # send_president_discard above for an example of how this could work.
@@ -730,20 +772,20 @@ def send_chancellor_discard(id = None):
         # TODO: replace pass with your own code!
         pass
 
-
     if id != NOMINATED_CHANCELLOR_ID:
         # TODO: replace pass with your own code!
         pass
 
-
     # END QUESTION 4
 
-def send_ask_president_veto(id = None):
+
+def send_ask_president_veto(id=None):
     YC.send(UI_HEADERS.ASK_PRESIDENT_VETO(
         recipients=None if id is None else [id]
     ))
 
-def send_game_over(id = None):
+
+def send_game_over(id=None):
     YC.send(UI_HEADERS.GAME_OVER(
         winner=WINNER,
         roles=[[p.name, p.id, p.role] for p in PLAYERS.values()],
@@ -754,6 +796,7 @@ def send_game_over(id = None):
 # helper functions
 # ===================================
 
+
 def bad_id(id):
     """
     Checks to make sure id is a valid id
@@ -762,6 +805,7 @@ def bad_id(id):
         print(f"BAD ID: {id}")
         return True
     return False
+
 
 def bad_credentials(id, secret):
     """
@@ -778,6 +822,7 @@ def bad_credentials(id, secret):
 def remove_if_exists(ar, element):
     if element in ar:
         ar.remove(element)
+
 
 def player_names(players):
     """
@@ -849,12 +894,12 @@ def next_president_id():
         return all_ids[0]
 
 
-
 def number_of_votes():
     """
     Returns the number of players that recorded votes
     """
     return len(players_who_have_voted())
+
 
 def players_who_have_voted(vote=None):
     """
@@ -895,61 +940,18 @@ def diagnostics():
     diag += "\n\tPlayers: " + str([str(p) for p in PLAYERS.values()])
     diag += "\n\tSpectators: " + str([str(s) for s in SPECTATORS.values()])
     diag += "\n\tPresident: " + str(PLAYERS.get(PRESIDENT_ID, None))
-    diag += "\n\tNominated Chancellor: " + str(PLAYERS.get(NOMINATED_CHANCELLOR_ID, None))
-    diag += "\n\tPrevious President: " + str(PLAYERS.get(PREVIOUS_PRESIDENT_ID, None))
-    diag += "\n\tPrevious Chancellor: " + str(PLAYERS.get(PREVIOUS_CHANCELLOR_ID, None))
+    diag += "\n\tNominated Chancellor: " + \
+        str(PLAYERS.get(NOMINATED_CHANCELLOR_ID, None))
+    diag += "\n\tPrevious President: " + \
+        str(PLAYERS.get(PREVIOUS_PRESIDENT_ID, None))
+    diag += "\n\tPrevious Chancellor: " + \
+        str(PLAYERS.get(PREVIOUS_CHANCELLOR_ID, None))
     diag += "\n\tElection Tracker: " + str(FAILED_ELECTION_TRACKER)
     diag += "\n\tLiberal Enacted: " + str(BOARD.liberal_enacted)
     diag += "\n\tFascist Enacted: " + str(BOARD.fascist_enacted)
     diag += "\n\tCard Deck: " + str(CARD_DECK)
     return diag
 
-
-
-
-###########################################
-# Event to Function Mappings for each Stage
-###########################################
-
-FUNCTION_MAPPINGS = {
-    STATE.SETUP: {
-        SHEPHERD_HEADERS.PLAYER_JOINED.name: player_joined,
-        SHEPHERD_HEADERS.NEXT_STAGE.name: start_game
-    },
-    STATE.PICK_CHANCELLOR: {
-        SHEPHERD_HEADERS.CHANCELLOR_NOMINATION.name: receive_chancellor_nomination
-    },
-    STATE.VOTE: {
-        SHEPHERD_HEADERS.PLAYER_VOTED.name: receive_vote
-    },
-    STATE.ELECTION_RESULTS: {
-        SHEPHERD_HEADERS.END_ELECTION_RESULTS.name: end_election_results
-    },
-    STATE.PRESIDENT_DISCARD: {
-        SHEPHERD_HEADERS.PRESIDENT_DISCARDED.name: president_discarded
-    },
-    STATE.CHANCELLOR_DISCARD: {
-        SHEPHERD_HEADERS.CHANCELLOR_DISCARDED.name: chancellor_discarded,
-        SHEPHERD_HEADERS.CHANCELLOR_VETOED.name: chancellor_vetoed,
-    },
-    STATE.CHANCELLOR_VETOED: {
-        SHEPHERD_HEADERS.PRESIDENT_VETO_ANSWER.name: president_veto_answer,
-    },
-    STATE.ACTION: {
-        SHEPHERD_HEADERS.INVESTIGATE_PLAYER.name: investigate_player,
-        SHEPHERD_HEADERS.SPECIAL_ELECTION_PICK.name: perform_special_election,
-        SHEPHERD_HEADERS.PERFORM_EXECUTION.name: perform_execution,
-        SHEPHERD_HEADERS.END_POLICY_PEEK.name: end_policy_peek,
-        SHEPHERD_HEADERS.END_INVESTIGATE_PLAYER.name: end_investigate_player
-    },
-    STATE.END: {
-        SHEPHERD_HEADERS.NEXT_STAGE.name: to_setup
-    }
-}
-
-EVERYWHERE_FUNCTIONS = {
-    SHEPHERD_HEADERS.PLAYER_JOINED.name: player_joined,
-}
 
 if __name__ == '__main__':
     start()

@@ -21,12 +21,14 @@ YC = Client(YDL_TARGETS.UI)
 def hello_world():
     return 'Hello, World!'
 
+
 def password(_p):
     """
     checks to make sure p is the correct password
     password protection not used in this project
     """
     return True
+
 
 @app.route('/<path:subpath>')
 def give_page(subpath):
@@ -38,18 +40,22 @@ def give_page(subpath):
     if subpath[-1] == "/":
         subpath = subpath[:-1]
     if subpath in UI_PAGES:
-        passed = (not UI_PAGES[subpath]) or password(request.cookies.get('password'))
+        passed = (not UI_PAGES[subpath]) or password(
+            request.cookies.get('password'))
         return render_template(subpath if passed else "password.html")
     return "oops page not found"
+
 
 @socketio.event
 def connect():
     print('Established socketio connection')
 
+
 @socketio.on('join')
 def handle_join(name, id):
     join_room(id)
     print(f'confirmed join: {(name, id)}')
+
 
 @socketio.on('ui-to-server')
 def ui_to_server(p, header, args=None):
@@ -61,11 +67,10 @@ def ui_to_server(p, header, args=None):
         YC.send((YDL_TARGETS.SHEPHERD, header, json.loads(args)))
 
 
-
-
 def emit_to_rooms(message, data, recipients):
     for recipient in recipients:
         socketio.emit(message, json.dumps(data), room=recipient)
+
 
 def emit_to_all(message, data):
     socketio.emit(message, json.dumps(data))
@@ -83,8 +88,10 @@ def receiver():
             emit_to_rooms(header, data, data['recipients'])
         else:
             emit_to_all(header, data)
-            
-        socketio.sleep(0.1) # needed because neither windows not socketio play nice. A timeout on the events.get is not sufficient here.
+
+        # needed because neither windows not socketio play nice. A timeout on the events.get is not sufficient here.
+        socketio.sleep(0.1)
+
 
 if __name__ == "__main__":
     print("Hello, world!")
