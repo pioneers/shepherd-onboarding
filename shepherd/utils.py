@@ -11,7 +11,7 @@ class YDL_TARGETS:
 class SHEPHERD_HEADERS:
     @staticmethod
     @header(YDL_TARGETS.SHEPHERD, "player_joined")
-    def PLAYER_JOINED(name: str, id: str, secret: str):
+    def PLAYER_JOINED(id: str, name: str, secret: str):
         """
         Header sent to shepherd whenever a player joins or reconnects to the server
         contains:

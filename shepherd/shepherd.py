@@ -29,7 +29,7 @@ PRESIDENT_ID = None
 PREVIOUS_PRESIDENT_ID = None
 # the previous elected chancellor (for remembering who is ineligible)
 PREVIOUS_CHANCELLOR_ID = None
-# the player who is nominated for chancellor
+# the player who is nominated ffdsor chancellor
 NOMINATED_CHANCELLOR_ID = None
 # for remembering the president after a special election cycle, None if not a special election cycle
 AFTER_SPECIAL_ELECTION_PRESIDENT_ID = None
